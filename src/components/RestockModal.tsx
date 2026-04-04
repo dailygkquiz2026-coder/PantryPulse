@@ -1,0 +1,101 @@
+import React, { useState } from 'react';
+import { ShoppingListItem } from '../types';
+import { motion, AnimatePresence } from 'motion/react';
+import { ShoppingBag, CheckCircle2, X, Info } from 'lucide-react';
+
+interface RestockModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  item: ShoppingListItem | null;
+  onConfirm: (item: ShoppingListItem) => void;
+}
+
+export default function RestockModal({ isOpen, onClose, item, onConfirm }: RestockModalProps) {
+  const [quantity, setQuantity] = useState(item?.quantity || 1);
+  const [usageFrequency, setUsageFrequency] = useState(item?.usageFrequency || 1);
+
+  React.useEffect(() => {
+    if (item) {
+      setQuantity(item.quantity);
+      setUsageFrequency(item.usageFrequency);
+    }
+  }, [item]);
+
+  if (!item) return null;
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+            className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden"
+          >
+            <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-green-50/50">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-green-100 rounded-xl">
+                  <ShoppingBag className="w-6 h-6 text-green-600" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900">Add to Inventory?</h2>
+                  <p className="text-sm text-gray-500">You just bought <span className="font-semibold text-green-600">{item.name}</span></p>
+                </div>
+              </div>
+              <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-all">
+                <X className="w-6 h-6 text-gray-400" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div className="bg-blue-50 p-4 rounded-2xl flex gap-3 items-start">
+                <Info className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+                <p className="text-sm text-blue-700 leading-relaxed">
+                  Confirm the details below to add this item back to your pantry. This will help recalculate your next restock date.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Quantity</label>
+                  <input
+                    type="number"
+                    value={quantity}
+                    onChange={(e) => setQuantity(Number(e.target.value))}
+                    className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:ring-2 focus:ring-green-500 outline-none"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Usage (x/day)</label>
+                  <input
+                    type="number"
+                    value={usageFrequency}
+                    onChange={(e) => setUsageFrequency(Number(e.target.value))}
+                    className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:ring-2 focus:ring-green-500 outline-none"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6 border-t border-gray-100 bg-gray-50 flex gap-3">
+              <button
+                onClick={onClose}
+                className="flex-1 px-6 py-3 bg-white border border-gray-200 text-gray-600 font-bold rounded-xl hover:bg-gray-100 transition-all"
+              >
+                Skip
+              </button>
+              <button
+                onClick={() => onConfirm({ ...item, quantity, usageFrequency })}
+                className="flex-1 px-6 py-3 bg-green-600 text-white font-bold rounded-xl hover:bg-green-700 transition-all flex items-center justify-center gap-2"
+              >
+                <CheckCircle2 className="w-5 h-5" />
+                Add to Pantry
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
+  );
+}

@@ -1,0 +1,5 @@
+{
+  "name": "PantryPulse",
+  "description": "Smart grocery management with predictive restocking, price comparison, and household consumption tracking.",
+  "requestFramePermissions": ["geolocation", "camera"]
+}

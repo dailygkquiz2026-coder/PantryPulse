@@ -1,0 +1,60 @@
+{
+  "entities": {
+    "GroceryItem": {
+      "title": "Grocery Item",
+      "description": "An item in the user's pantry inventory",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "category": { "type": "string" },
+        "quantity": { "type": "number" },
+        "unit": { "type": "string" },
+        "purchaseDate": { "type": "string", "format": "date-time" },
+        "usageFrequency": { "type": "number" },
+        "lastUpdated": { "type": "string", "format": "date-time" },
+        "uid": { "type": "string", "description": "Owner's user ID" }
+      },
+      "required": ["id", "name", "quantity", "unit", "purchaseDate", "usageFrequency", "uid"]
+    },
+    "ShoppingListItem": {
+      "title": "Shopping List Item",
+      "description": "An item the user needs to buy",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "quantity": { "type": "number" },
+        "unit": { "type": "string" },
+        "status": { "type": "string", "enum": ["to-buy", "bought"] },
+        "uid": { "type": "string" }
+      },
+      "required": ["id", "name", "quantity", "unit", "status", "uid"]
+    },
+    "HouseholdInfo": {
+      "title": "Household Info",
+      "description": "Settings for the user's household",
+      "type": "object",
+      "properties": {
+        "members": { "type": "number" },
+        "preferences": { "type": "array", "items": { "type": "string" } },
+        "uid": { "type": "string" }
+      },
+      "required": ["members", "uid"]
+    }
+  },
+  "firestore": {
+    "/inventory/{itemId}": {
+      "schema": "GroceryItem",
+      "description": "User's pantry items"
+    },
+    "/shoppingList/{itemId}": {
+      "schema": "ShoppingListItem",
+      "description": "User's shopping list"
+    },
+    "/households/{userId}": {
+      "schema": "HouseholdInfo",
+      "description": "User's household settings"
+    }
+  }
+}

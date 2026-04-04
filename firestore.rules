@@ -1,0 +1,74 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    function isDocOwner() {
+      return isAuthenticated() && request.auth.uid == resource.data.uid;
+    }
+    function isRequestOwner() {
+      return isAuthenticated() && request.auth.uid == request.resource.data.uid;
+    }
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+    function isValidGroceryItem(data) {
+      return data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.category is string &&
+             data.quantity is number &&
+             data.unit is string &&
+             data.usageFrequency is number &&
+             data.uid == request.auth.uid;
+    }
+
+    function isValidShoppingItem(data) {
+      return data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.status in ['to-buy', 'bought'] &&
+             data.uid == request.auth.uid;
+    }
+
+    function isValidHousehold(data) {
+      return data.members is number && data.members > 0 &&
+             data.preferences is list &&
+             data.uid == request.auth.uid;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+    match /inventory/{itemId} {
+      allow read: if isDocOwner();
+      allow create: if isAuthenticated() && isValidGroceryItem(request.resource.data);
+      allow update: if isDocOwner() && isValidGroceryItem(request.resource.data);
+      allow delete: if isDocOwner();
+    }
+
+    match /shoppingList/{itemId} {
+      allow read: if isDocOwner();
+      allow create: if isAuthenticated() && isValidShoppingItem(request.resource.data);
+      allow update: if isDocOwner() && isValidShoppingItem(request.resource.data);
+      allow delete: if isDocOwner();
+    }
+
+    match /households/{userId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidHousehold(request.resource.data);
+      allow update: if isOwner(userId) && isValidHousehold(request.resource.data);
+      allow delete: if isOwner(userId);
+    }
+  }
+}
