@@ -17,9 +17,19 @@ export default function InventoryList({ items, onDelete, onAddToShopping, onUpda
   return (
     <div className="space-y-4">
       {items.length === 0 ? (
-        <div className="text-center py-12 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200">
-          <p className="text-gray-500">Your pantry is empty. Log some purchases!</p>
-        </div>
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="text-center py-20 bg-white rounded-[2.5rem] border-2 border-dashed border-gray-100 flex flex-col items-center justify-center gap-4 px-6"
+        >
+          <div className="w-20 h-20 bg-blue-50 rounded-3xl flex items-center justify-center mb-2">
+            <ShoppingBag className="text-blue-600 w-10 h-10" />
+          </div>
+          <h3 className="text-xl font-bold text-gray-900">Your pantry is empty</h3>
+          <p className="text-gray-500 max-w-xs mx-auto">
+            Start by logging your recent grocery purchases or scanning a receipt to see your inventory here.
+          </p>
+        </motion.div>
       ) : (
         items.map((item, index) => {
           const daysRemaining = predictions[item.id];

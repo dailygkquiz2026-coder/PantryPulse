@@ -13,11 +13,14 @@ import {
   Search, 
   TrendingUp,
   AlertCircle,
+  AlertTriangle,
   CheckCircle2,
   Calendar,
   Users,
   LogIn,
-  LogOut
+  LogOut,
+  Camera,
+  X
 } from 'lucide-react';
 import { 
   onAuthStateChanged, 
@@ -393,29 +396,105 @@ function AppContent() {
     );
   }
 
+  const [isTroubleshootingOpen, setIsTroubleshootingOpen] = useState(false);
+
   if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-6">
+      <div className="min-h-screen flex items-center justify-center bg-white p-6 relative overflow-hidden">
+        {/* Decorative elements */}
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-50 rounded-full blur-3xl opacity-50" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-amber-50 rounded-full blur-3xl opacity-50" />
+
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white p-10 rounded-[2.5rem] shadow-2xl shadow-blue-100 max-w-md w-full text-center border border-gray-100"
+          className="bg-white p-10 rounded-[3rem] shadow-2xl shadow-blue-100 max-w-md w-full text-center border border-gray-100 relative z-10"
         >
-          <div className="w-20 h-20 bg-blue-600 rounded-3xl flex items-center justify-center shadow-xl shadow-blue-200 mx-auto mb-8">
-            <ShoppingBag className="text-white w-10 h-10" />
+          <div className="w-24 h-24 bg-blue-600 rounded-[2rem] flex items-center justify-center shadow-2xl shadow-blue-200 mx-auto mb-10 transform -rotate-6">
+            <ShoppingBag className="text-white w-12 h-12" />
           </div>
-          <h1 className="text-4xl font-black text-gray-900 mb-4 tracking-tight">PantryPulse</h1>
-          <p className="text-gray-500 mb-10 text-lg leading-relaxed">
-            Smart grocery management with AI-powered consumption tracking and price research.
+          <h1 className="text-5xl font-black text-gray-900 mb-4 tracking-tighter">PantryPulse</h1>
+          <p className="text-gray-600 mb-12 text-lg leading-relaxed font-medium">
+            Your AI-powered kitchen companion for smarter shopping and zero waste.
           </p>
+          
+          <div className="space-y-4 mb-12 text-left">
+            <div className="flex items-center gap-3 text-gray-500">
+              <div className="w-8 h-8 bg-green-50 rounded-lg flex items-center justify-center">
+                <CheckCircle2 className="w-5 h-5 text-green-600" />
+              </div>
+              <span className="text-sm font-semibold">Track freshness automatically</span>
+            </div>
+            <div className="flex items-center gap-3 text-gray-500">
+              <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
+                <Camera className="w-5 h-5 text-blue-600" />
+              </div>
+              <span className="text-sm font-semibold">Scan receipts with Gemini AI</span>
+            </div>
+            <div className="flex items-center gap-3 text-gray-500">
+              <div className="w-8 h-8 bg-amber-50 rounded-lg flex items-center justify-center">
+                <AlertTriangle className="w-5 h-5 text-amber-600" />
+              </div>
+              <span className="text-sm font-semibold">Reduce food waste & save money</span>
+            </div>
+          </div>
+
           <button
             onClick={handleLogin}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-2xl transition-all flex items-center justify-center gap-3 shadow-lg shadow-blue-200 group"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-5 rounded-2xl transition-all flex items-center justify-center gap-3 shadow-xl shadow-blue-200 group active:scale-95"
           >
             <LogIn className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
-            Sign in with Google
+            Get Started with Google
+          </button>
+          
+          <button 
+            onClick={() => setIsTroubleshootingOpen(true)}
+            className="mt-8 text-xs text-gray-400 font-bold hover:text-blue-600 transition-colors uppercase tracking-widest"
+          >
+            Deployment Troubleshooting
           </button>
         </motion.div>
+
+        {/* Troubleshooting Modal */}
+        <AnimatePresence>
+          {isTroubleshootingOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                className="bg-white w-full max-w-lg rounded-3xl shadow-2xl p-8"
+              >
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-bold text-gray-900">Vercel Setup Guide</h2>
+                  <button onClick={() => setIsTroubleshootingOpen(false)} className="p-2 hover:bg-gray-100 rounded-full">
+                    <X className="w-6 h-6 text-gray-400" />
+                  </button>
+                </div>
+                <div className="space-y-6 text-gray-600">
+                  <div className="flex gap-4">
+                    <div className="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center font-bold flex-shrink-0">1</div>
+                    <p>Ensure you have added <strong>GEMINI_API_KEY</strong> in your Vercel Project Settings under "Environment Variables".</p>
+                  </div>
+                  <div className="flex gap-4">
+                    <div className="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center font-bold flex-shrink-0">2</div>
+                    <p>Make sure <strong>firebase-applet-config.json</strong> is included in your repository or its values are added as environment variables.</p>
+                  </div>
+                  <div className="flex gap-4">
+                    <div className="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center font-bold flex-shrink-0">3</div>
+                    <p>Check the <strong>Build Logs</strong> in Vercel to ensure the project compiled successfully with the "Vite" preset.</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsTroubleshootingOpen(false)}
+                  className="w-full mt-8 py-4 bg-gray-100 hover:bg-gray-200 text-gray-900 font-bold rounded-2xl transition-all"
+                >
+                  Got it!
+                </button>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
       </div>
     );
   }

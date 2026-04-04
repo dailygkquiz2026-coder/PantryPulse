@@ -1,6 +1,15 @@
 import { GoogleGenAI, Type } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+let ai: any;
+try {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    console.warn("GEMINI_API_KEY is not set. AI features will be disabled.");
+  }
+  ai = new GoogleGenAI({ apiKey: apiKey || "dummy_key" });
+} catch (e) {
+  console.error("Failed to initialize Gemini AI:", e);
+}
 
 export async function predictRestock(
   itemName: string,
