@@ -1,14 +1,16 @@
 import { GoogleGenAI, Type } from "@google/genai";
 
-let ai: any;
-try {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    console.warn("GEMINI_API_KEY is not set. AI features will be disabled.");
+let aiInstance: any = null;
+
+function getAI() {
+  if (!aiInstance) {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      console.warn("GEMINI_API_KEY is not set. AI features will be disabled.");
+    }
+    aiInstance = new GoogleGenAI({ apiKey: apiKey || "dummy_key" });
   }
-  ai = new GoogleGenAI({ apiKey: apiKey || "dummy_key" });
-} catch (e) {
-  console.error("Failed to initialize Gemini AI:", e);
+  return aiInstance;
 }
 
 export async function predictRestock(
@@ -18,6 +20,7 @@ export async function predictRestock(
   members: number,
   usageFrequency: number
 ) {
+  const ai = getAI();
   const response = await ai.models.generateContent({
     model: "gemini-3-flash-preview",
     contents: `Predict how many days it will take for a household of ${members} people to consume ${quantity} ${unit} of ${itemName}, given it's used ${usageFrequency} times per day. Provide a single number representing days.`,
@@ -37,6 +40,7 @@ export async function predictRestock(
 }
 
 export async function analyzeProductImage(base64Image: string) {
+  const ai = getAI();
   const response = await ai.models.generateContent({
     model: "gemini-3-flash-preview",
     contents: [
@@ -69,6 +73,7 @@ export async function analyzeProductImage(base64Image: string) {
 }
 
 export async function analyzeInvoiceImage(base64Image: string) {
+  const ai = getAI();
   const response = await ai.models.generateContent({
     model: "gemini-3-flash-preview",
     contents: [
@@ -118,6 +123,7 @@ export async function analyzeInvoiceImage(base64Image: string) {
 
 export async function getItemSuggestions(prefix: string) {
   if (prefix.length < 2) return [];
+  const ai = getAI();
   const response = await ai.models.generateContent({
     model: "gemini-3-flash-preview",
     contents: `Provide a list of 5 common grocery items that start with or are similar to "${prefix}". Provide only the names as a JSON array of strings.`,
@@ -133,6 +139,7 @@ export async function getItemSuggestions(prefix: string) {
 }
 
 export async function searchCheapestSource(itemName: string, location?: string, previousPurchase?: string) {
+  const ai = getAI();
   const locationContext = location ? ` near ${location}` : "";
   const purchaseContext = previousPurchase ? `The user previously bought "${previousPurchase}".` : "";
   

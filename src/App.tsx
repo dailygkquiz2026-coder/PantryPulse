@@ -395,9 +395,9 @@ function AppContent() {
       
       const results = await searchCheapestSource(name, userLocation || undefined, previousPurchase);
       setSearchResults(results);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Search failed:', error);
-      setSearchResults('Failed to find price information. Please try again.');
+      setSearchResults(`Failed to find price information: ${error.message || 'Unknown error'}. Please ensure GEMINI_API_KEY is set in Vercel.`);
     } finally {
       setIsSearching(false);
     }

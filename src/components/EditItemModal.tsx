@@ -33,15 +33,21 @@ export default function EditItemModal({ isOpen, onClose, item, onUpdate }: EditI
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!item) return;
-    onUpdate(item.id, {
+    
+    const updates: Partial<GroceryItem> = {
       name,
       category,
       quantity,
       unit,
       usageFrequency,
-      expiryDate: expiryDate || undefined,
       lastUpdated: new Date().toISOString()
-    });
+    };
+    
+    if (expiryDate) {
+      updates.expiryDate = expiryDate;
+    }
+
+    onUpdate(item.id, updates);
   };
 
   return (
