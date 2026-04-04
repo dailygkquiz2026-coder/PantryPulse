@@ -120,6 +120,7 @@ function AppContent() {
   const [itemToUpdate, setItemToUpdate] = useState<GroceryItem | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [itemToEdit, setItemToEdit] = useState<GroceryItem | null>(null);
+  const [isTroubleshootingOpen, setIsTroubleshootingOpen] = useState(false);
 
   // Auth Listener
   useEffect(() => {
@@ -395,8 +396,6 @@ function AppContent() {
       </div>
     );
   }
-
-  const [isTroubleshootingOpen, setIsTroubleshootingOpen] = useState(false);
 
   if (!user) {
     return (
