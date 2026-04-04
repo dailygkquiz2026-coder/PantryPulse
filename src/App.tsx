@@ -224,12 +224,26 @@ function AppContent() {
     }
   }, [inventory, household]);
 
+  const [loginError, setLoginError] = useState<string | null>(null);
+
   const handleLogin = async () => {
+    setLoginError(null);
     try {
       const provider = new GoogleAuthProvider();
+      // Set custom parameters to force account selection if needed
+      provider.setCustomParameters({ prompt: 'select_account' });
       await signInWithPopup(auth, provider);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Login failed", error);
+      if (error.code === 'auth/unauthorized-domain') {
+        setLoginError("This domain is not authorized in Firebase. Please add your Vercel URL to 'Authorized Domains' in the Firebase Console.");
+      } else if (error.code === 'auth/popup-closed-by-user') {
+        setLoginError("Login popup was closed before completion.");
+      } else if (error.code === 'auth/cancelled-popup-request') {
+        // Ignore this one, it happens when multiple clicks occur
+      } else {
+        setLoginError(error.message || "An unexpected error occurred during login.");
+      }
     }
   };
 
@@ -445,6 +459,20 @@ function AppContent() {
             <LogIn className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
             Get Started with Google
           </button>
+
+          {loginError && (
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mt-4 p-4 bg-red-50 border border-red-100 rounded-2xl text-red-600 text-sm font-medium"
+            >
+              <div className="flex items-center gap-2 mb-1">
+                <AlertCircle className="w-4 h-4" />
+                <span className="font-bold">Login Error</span>
+              </div>
+              {loginError}
+            </motion.div>
+          )}
           
           <button 
             onClick={() => setIsTroubleshootingOpen(true)}
@@ -482,6 +510,10 @@ function AppContent() {
                   <div className="flex gap-4">
                     <div className="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center font-bold flex-shrink-0">3</div>
                     <p>Check the <strong>Build Logs</strong> in Vercel to ensure the project compiled successfully with the "Vite" preset.</p>
+                  </div>
+                  <div className="flex gap-4">
+                    <div className="w-8 h-8 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center font-bold flex-shrink-0">4</div>
+                    <p><strong>CRITICAL:</strong> Go to <strong>Firebase Console &gt; Authentication &gt; Settings &gt; Authorized Domains</strong> and add your Vercel domain (e.g., <code>pantry-pulse.vercel.app</code>).</p>
                   </div>
                 </div>
                 <button
