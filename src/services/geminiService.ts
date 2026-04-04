@@ -5,10 +5,10 @@ let aiInstance: any = null;
 function getAI() {
   if (!aiInstance) {
     const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      console.warn("GEMINI_API_KEY is not set. AI features will be disabled.");
+    if (!apiKey || apiKey === "dummy_key") {
+      throw new Error("GEMINI_API_KEY is missing. Please add it to your Vercel Environment Variables and trigger a new deployment.");
     }
-    aiInstance = new GoogleGenAI({ apiKey: apiKey || "dummy_key" });
+    aiInstance = new GoogleGenAI({ apiKey });
   }
   return aiInstance;
 }

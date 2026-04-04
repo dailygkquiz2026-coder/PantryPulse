@@ -501,19 +501,19 @@ function AppContent() {
                 <div className="space-y-6 text-gray-600">
                   <div className="flex gap-4">
                     <div className="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center font-bold flex-shrink-0">1</div>
-                    <p>Ensure you have added <strong>GEMINI_API_KEY</strong> in your Vercel Project Settings under "Environment Variables".</p>
+                    <p>Go to <strong>Vercel Dashboard &gt; Project &gt; Settings &gt; Environment Variables</strong>.</p>
                   </div>
                   <div className="flex gap-4">
                     <div className="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center font-bold flex-shrink-0">2</div>
-                    <p>Make sure <strong>firebase-applet-config.json</strong> is included in your repository or its values are added as environment variables.</p>
+                    <p>Add <strong>GEMINI_API_KEY</strong> with your key from <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="text-blue-600 underline">Google AI Studio</a>.</p>
                   </div>
                   <div className="flex gap-4">
                     <div className="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center font-bold flex-shrink-0">3</div>
-                    <p>Check the <strong>Build Logs</strong> in Vercel to ensure the project compiled successfully with the "Vite" preset.</p>
+                    <p><strong>IMPORTANT:</strong> You must <strong>Redeploy</strong> (Deployments &gt; Redeploy) for the changes to take effect.</p>
                   </div>
                   <div className="flex gap-4">
                     <div className="w-8 h-8 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center font-bold flex-shrink-0">4</div>
-                    <p><strong>CRITICAL:</strong> Go to <strong>Firebase Console &gt; Authentication &gt; Settings &gt; Authorized Domains</strong> and add your Vercel domain (e.g., <code>pantry-pulse.vercel.app</code>).</p>
+                    <p><strong>Authorized Domains:</strong> Add your Vercel domain to <strong>Firebase Console &gt; Auth &gt; Settings</strong>.</p>
                   </div>
                 </div>
                 <button
