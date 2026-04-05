@@ -1,14 +1,26 @@
 @import "tailwindcss";
 
+@theme {
+  --color-cred-black: #000000;
+  --color-cred-dark: #111111;
+  --color-cred-gray: #1a1a1a;
+  --color-cred-light: #f5f5f5;
+  --color-cred-accent: #00e5ff;
+}
+
 @layer base {
   body {
-    @apply bg-gray-50 text-gray-900 antialiased;
+    @apply bg-white text-gray-900 antialiased transition-colors duration-300;
+  }
+  
+  .dark body {
+    @apply bg-cred-black text-white;
   }
   
   /* Custom scrollbar */
   ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 6px;
+    height: 6px;
   }
   ::-webkit-scrollbar-track {
     @apply bg-transparent;
@@ -16,45 +28,45 @@
   ::-webkit-scrollbar-thumb {
     @apply bg-gray-200 rounded-full hover:bg-gray-300 transition-colors;
   }
+  .dark ::-webkit-scrollbar-thumb {
+    @apply bg-cred-gray hover:bg-cred-dark;
+  }
 
   .markdown-body {
     @apply text-gray-700 leading-relaxed;
   }
+  .dark .markdown-body {
+    @apply text-gray-300;
+  }
   .markdown-body h1 {
     @apply text-2xl font-bold mb-4 mt-6 text-gray-900;
   }
-  .markdown-body h2 {
-    @apply text-xl font-bold mb-3 mt-5 text-gray-900;
+  .dark .markdown-body h1 {
+    @apply text-white;
   }
-  .markdown-body h3 {
-    @apply text-lg font-bold mb-2 mt-4 text-gray-900;
+  /* ... other markdown styles ... */
+}
+
+@layer components {
+  .cred-card {
+    @apply bg-white border border-gray-100 rounded-[32px] shadow-sm transition-all duration-300;
   }
-  .markdown-body p {
-    @apply mb-4;
+  .dark .cred-card {
+    @apply bg-cred-dark border-cred-gray shadow-none;
   }
-  .markdown-body ul {
-    @apply list-disc pl-6 mb-4 space-y-1;
+  
+  .cred-input {
+    @apply w-full px-6 py-4 rounded-2xl border border-gray-100 focus:ring-2 focus:ring-blue-500 outline-none transition-all;
   }
-  .markdown-body ol {
-    @apply list-decimal pl-6 mb-4 space-y-1;
+  .dark .cred-input {
+    @apply bg-cred-gray border-cred-gray text-white focus:ring-cred-accent;
   }
-  .markdown-body li {
-    @apply mb-1;
+  
+  .cred-button-primary {
+    @apply px-8 py-4 bg-black text-white font-bold rounded-2xl hover:bg-gray-900 transition-all active:scale-95;
   }
-  .markdown-body strong {
-    @apply font-bold text-gray-900;
-  }
-  .markdown-body a {
-    @apply text-blue-600 hover:underline font-medium;
-  }
-  .markdown-body blockquote {
-    @apply border-l-4 border-gray-200 pl-4 italic text-gray-600 my-4;
-  }
-  .markdown-body code {
-    @apply bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono text-blue-600;
-  }
-  .markdown-body pre {
-    @apply bg-gray-900 text-gray-100 p-4 rounded-xl overflow-x-auto my-4;
+  .dark .cred-button-primary {
+    @apply bg-white text-black hover:bg-gray-100;
   }
 }
 

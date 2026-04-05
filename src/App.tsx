@@ -20,7 +20,9 @@ import {
   LogIn,
   LogOut,
   Camera,
-  X
+  X,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { 
   onAuthStateChanged, 
@@ -79,14 +81,16 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
       }
 
       return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50 p-6">
-          <div className="bg-white p-8 rounded-3xl shadow-xl max-w-md w-full text-center">
-            <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Oops!</h2>
-            <p className="text-gray-600 mb-6">{message}</p>
+        <div className="min-h-screen flex items-center justify-center bg-white dark:bg-cred-black p-6">
+          <div className="cred-card p-8 max-w-md w-full text-center">
+            <div className="w-16 h-16 bg-red-100 dark:bg-red-900/20 text-red-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
+              <AlertCircle className="w-8 h-8" />
+            </div>
+            <h2 className="text-2xl font-black text-gray-900 dark:text-white mb-2">Oops!</h2>
+            <p className="text-gray-500 dark:text-gray-400 mb-8">{message}</p>
             <button
               onClick={() => window.location.reload()}
-              className="px-6 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-all"
+              className="cred-button-primary w-full"
             >
               Reload Application
             </button>
@@ -99,7 +103,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
   }
 }
 
-function AppContent() {
+function AppContent({ theme, setTheme }: { theme: 'light' | 'dark', setTheme: (t: 'light' | 'dark') => void }) {
   const [activeTab, setActiveTab] = useState<'inventory' | 'add' | 'shopping' | 'settings'>('inventory');
   const [inventory, setInventory] = useState<GroceryItem[]>([]);
   const [shoppingList, setShoppingList] = useState<ShoppingListItem[]>([]);
@@ -417,58 +421,54 @@ function AppContent() {
 
   if (!isAuthReady) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="w-12 h-12 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin" />
+      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-cred-black transition-colors duration-500">
+        <div className="w-12 h-12 border-4 border-gray-100 dark:border-cred-gray border-t-black dark:border-t-white rounded-full animate-spin" />
       </div>
     );
   }
 
   if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white p-6 relative overflow-hidden">
-        {/* Decorative elements */}
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-50 rounded-full blur-3xl opacity-50" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-amber-50 rounded-full blur-3xl opacity-50" />
-
+      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-cred-black p-6 relative overflow-hidden transition-colors duration-500">
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white p-10 rounded-[3rem] shadow-2xl shadow-blue-100 max-w-md w-full text-center border border-gray-100 relative z-10"
+          className="cred-card p-10 max-w-md w-full text-center relative z-10"
         >
-          <div className="w-24 h-24 bg-blue-600 rounded-[2rem] flex items-center justify-center shadow-2xl shadow-blue-200 mx-auto mb-10 transform -rotate-6">
-            <ShoppingBag className="text-white w-12 h-12" />
+          <div className="w-24 h-24 bg-black dark:bg-white rounded-[2rem] flex items-center justify-center shadow-2xl mx-auto mb-10 transform -rotate-6">
+            <ShoppingBag className="text-white dark:text-black w-12 h-12" />
           </div>
-          <h1 className="text-5xl font-black text-gray-900 mb-4 tracking-tighter">PantryPulse</h1>
-          <p className="text-gray-600 mb-12 text-lg leading-relaxed font-medium">
+          <h1 className="text-5xl font-black text-gray-900 dark:text-white mb-4 tracking-tighter">PantryPulse</h1>
+          <p className="text-gray-600 dark:text-gray-400 mb-12 text-lg leading-relaxed font-medium">
             Your AI-powered kitchen companion for smarter shopping and zero waste.
           </p>
           
           <div className="space-y-4 mb-12 text-left">
-            <div className="flex items-center gap-3 text-gray-500">
-              <div className="w-8 h-8 bg-green-50 rounded-lg flex items-center justify-center">
-                <CheckCircle2 className="w-5 h-5 text-green-600" />
+            <div className="flex items-center gap-3 text-gray-500 dark:text-gray-400">
+              <div className="w-8 h-8 bg-gray-50 dark:bg-cred-gray rounded-lg flex items-center justify-center">
+                <CheckCircle2 className="w-5 h-5 text-black dark:text-white" />
               </div>
-              <span className="text-sm font-semibold">Track freshness automatically</span>
+              <span className="text-sm font-bold uppercase tracking-widest text-[10px]">Track freshness automatically</span>
             </div>
-            <div className="flex items-center gap-3 text-gray-500">
-              <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
-                <Camera className="w-5 h-5 text-blue-600" />
+            <div className="flex items-center gap-3 text-gray-500 dark:text-gray-400">
+              <div className="w-8 h-8 bg-gray-50 dark:bg-cred-gray rounded-lg flex items-center justify-center">
+                <Camera className="w-5 h-5 text-black dark:text-white" />
               </div>
-              <span className="text-sm font-semibold">Scan receipts with Gemini AI</span>
+              <span className="text-sm font-bold uppercase tracking-widest text-[10px]">Scan receipts with Gemini AI</span>
             </div>
-            <div className="flex items-center gap-3 text-gray-500">
-              <div className="w-8 h-8 bg-amber-50 rounded-lg flex items-center justify-center">
-                <AlertTriangle className="w-5 h-5 text-amber-600" />
+            <div className="flex items-center gap-3 text-gray-500 dark:text-gray-400">
+              <div className="w-8 h-8 bg-gray-50 dark:bg-cred-gray rounded-lg flex items-center justify-center">
+                <AlertTriangle className="w-5 h-5 text-black dark:text-white" />
               </div>
-              <span className="text-sm font-semibold">Reduce food waste & save money</span>
+              <span className="text-sm font-bold uppercase tracking-widest text-[10px]">Reduce food waste & save money</span>
             </div>
           </div>
 
           <button
             onClick={handleLogin}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-5 rounded-2xl transition-all flex items-center justify-center gap-3 shadow-xl shadow-blue-200 group active:scale-95"
+            className="w-full cred-button-primary flex items-center justify-center gap-3"
           >
-            <LogIn className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
+            <LogIn className="w-6 h-6" />
             Get Started with Google
           </button>
 
@@ -476,7 +476,7 @@ function AppContent() {
             <motion.div 
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="mt-4 p-4 bg-red-50 border border-red-100 rounded-2xl text-red-600 text-sm font-medium"
+              className="mt-4 p-4 bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-900 rounded-2xl text-red-600 dark:text-red-400 text-sm font-medium"
             >
               <div className="flex items-center gap-2 mb-1">
                 <AlertCircle className="w-4 h-4" />
@@ -488,7 +488,7 @@ function AppContent() {
           
           <button 
             onClick={() => setIsTroubleshootingOpen(true)}
-            className="mt-8 text-xs text-gray-400 font-bold hover:text-blue-600 transition-colors uppercase tracking-widest"
+            className="mt-8 text-[10px] text-gray-400 font-black hover:text-black dark:hover:text-white transition-colors uppercase tracking-[0.2em]"
           >
             Deployment Troubleshooting
           </button>
@@ -502,35 +502,35 @@ function AppContent() {
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.9 }}
-                className="bg-white w-full max-w-lg rounded-3xl shadow-2xl p-8"
+                className="cred-card w-full max-w-lg p-8"
               >
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-2xl font-bold text-gray-900">Vercel Setup Guide</h2>
-                  <button onClick={() => setIsTroubleshootingOpen(false)} className="p-2 hover:bg-gray-100 rounded-full">
+                  <h2 className="text-2xl font-black text-gray-900 dark:text-white">Vercel Setup Guide</h2>
+                  <button onClick={() => setIsTroubleshootingOpen(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-cred-gray rounded-full">
                     <X className="w-6 h-6 text-gray-400" />
                   </button>
                 </div>
-                <div className="space-y-6 text-gray-600">
+                <div className="space-y-6 text-gray-600 dark:text-gray-400">
                   <div className="flex gap-4">
-                    <div className="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center font-bold flex-shrink-0">1</div>
+                    <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/20 text-blue-600 rounded-full flex items-center justify-center font-bold flex-shrink-0">1</div>
                     <p>Go to <strong>Vercel Dashboard &gt; Project &gt; Settings &gt; Environment Variables</strong>.</p>
                   </div>
                   <div className="flex gap-4">
-                    <div className="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center font-bold flex-shrink-0">2</div>
+                    <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/20 text-blue-600 rounded-full flex items-center justify-center font-bold flex-shrink-0">2</div>
                     <p>Add <strong>GEMINI_API_KEY</strong> with your key from <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="text-blue-600 underline">Google AI Studio</a>.</p>
                   </div>
                   <div className="flex gap-4">
-                    <div className="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center font-bold flex-shrink-0">3</div>
+                    <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/20 text-blue-600 rounded-full flex items-center justify-center font-bold flex-shrink-0">3</div>
                     <p><strong>IMPORTANT:</strong> You must <strong>Redeploy</strong> (Deployments &gt; Redeploy) for the changes to take effect.</p>
                   </div>
                   <div className="flex gap-4">
-                    <div className="w-8 h-8 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center font-bold flex-shrink-0">5</div>
+                    <div className="w-8 h-8 bg-amber-100 dark:bg-amber-900/20 text-amber-600 rounded-full flex items-center justify-center font-bold flex-shrink-0">5</div>
                     <p><strong>Quota Exceeded (429):</strong> If you see "Resource Exhausted", go to <a href="https://aistudio.google.com/app/billing" target="_blank" rel="noreferrer" className="text-blue-600 underline font-bold">AI Studio Billing</a> and enable Pay-as-you-go to get higher search limits.</p>
                   </div>
                 </div>
                 <button
                   onClick={() => setIsTroubleshootingOpen(false)}
-                  className="w-full mt-8 py-4 bg-gray-100 hover:bg-gray-200 text-gray-900 font-bold rounded-2xl transition-all"
+                  className="w-full mt-8 py-4 bg-gray-100 dark:bg-cred-gray hover:bg-gray-200 dark:hover:bg-cred-dark text-gray-900 dark:text-white font-black uppercase tracking-widest rounded-2xl transition-all"
                 >
                   Got it!
                 </button>
@@ -545,54 +545,70 @@ function AppContent() {
   const lowStockItems = inventory.filter(item => (predictions[item.id] || 10) < 3);
 
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900 font-sans selection:bg-blue-100 selection:text-blue-900">
-      {/* Sidebar / Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-6 py-3 z-40 md:top-0 md:bottom-auto md:border-t-0 md:border-b md:flex md:items-center md:justify-between">
-        <div className="flex items-center gap-2 mb-4 md:mb-0">
-          <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-200">
-            <ShoppingBag className="text-white w-6 h-6" />
+    <div className="min-h-screen bg-white dark:bg-cred-black text-gray-900 dark:text-white font-sans transition-colors duration-500">
+      {/* Header */}
+      <header className="fixed top-0 left-0 right-0 bg-white/80 dark:bg-cred-black/80 backdrop-blur-md border-b border-gray-100 dark:border-cred-gray px-6 py-4 z-40 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-black dark:bg-white rounded-xl flex items-center justify-center shadow-lg">
+            <ShoppingBag className="text-white dark:text-black w-6 h-6" />
           </div>
-          <h1 className="text-xl font-bold tracking-tight text-gray-900 hidden md:block">PantryPulse</h1>
+          <h1 className="text-2xl font-black tracking-tighter">PantryPulse</h1>
         </div>
 
-        <div className="flex items-center justify-between md:gap-2">
-          <NavButton 
-            active={activeTab === 'inventory'} 
-            onClick={() => setActiveTab('inventory')}
-            icon={<LayoutDashboard className="w-5 h-5" />}
-            label="Inventory"
-          />
-          <NavButton 
-            active={activeTab === 'add'} 
-            onClick={() => setActiveTab('add')}
-            icon={<PlusCircle className="w-5 h-5" />}
-            label="Log Purchase"
-          />
-          <NavButton 
-            active={activeTab === 'shopping'} 
-            onClick={() => setActiveTab('shopping')}
-            icon={<ShoppingBag className="w-5 h-5" />}
-            label="Shopping List"
-            badge={shoppingList.filter(i => i.status === 'to-buy').length}
-          />
-          <NavButton 
-            active={activeTab === 'settings'} 
-            onClick={() => setActiveTab('settings')}
-            icon={<Settings className="w-5 h-5" />}
-            label="Settings"
-          />
+        <div className="flex items-center gap-4">
           <button
-            onClick={handleLogout}
-            className="flex flex-col md:flex-row items-center gap-2 px-4 py-2 rounded-2xl text-gray-400 hover:text-red-600 hover:bg-red-50 transition-all"
+            onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+            className="p-3 bg-gray-50 dark:bg-cred-gray rounded-2xl hover:bg-gray-100 dark:hover:bg-cred-dark transition-all"
+            title="Toggle Theme"
           >
-            <LogOut className="w-5 h-5" />
-            <span className="text-[10px] md:text-sm font-bold uppercase md:capitalize tracking-wider md:tracking-normal">Logout</span>
+            {theme === 'light' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
           </button>
+          
+          <div className="hidden md:flex items-center gap-3 pl-4 border-l border-gray-100 dark:border-cred-gray">
+            <div className="text-right">
+              <p className="text-xs font-black uppercase tracking-widest text-gray-400">{user.displayName}</p>
+              <button onClick={handleLogout} className="text-[10px] font-black uppercase tracking-widest text-red-500 hover:text-red-600">Sign Out</button>
+            </div>
+            <img src={user.photoURL || ''} alt="" className="w-10 h-10 rounded-full border-2 border-white dark:border-cred-dark shadow-sm" />
+          </div>
         </div>
+      </header>
+
+      {/* Navigation */}
+      <nav className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-black/90 dark:bg-white/90 backdrop-blur-xl px-4 py-3 rounded-[2.5rem] z-50 flex items-center gap-2 shadow-2xl border border-white/10 dark:border-black/10">
+        <NavButton 
+          active={activeTab === 'inventory'} 
+          onClick={() => setActiveTab('inventory')}
+          icon={<LayoutDashboard className="w-5 h-5" />}
+          label="Inventory"
+          theme={theme}
+        />
+        <NavButton 
+          active={activeTab === 'add'} 
+          onClick={() => setActiveTab('add')}
+          icon={<PlusCircle className="w-5 h-5" />}
+          label="Log"
+          theme={theme}
+        />
+        <NavButton 
+          active={activeTab === 'shopping'} 
+          onClick={() => setActiveTab('shopping')}
+          icon={<ShoppingBag className="w-5 h-5" />}
+          label="Shop"
+          badge={shoppingList.filter(i => i.status === 'to-buy').length}
+          theme={theme}
+        />
+        <NavButton 
+          active={activeTab === 'settings'} 
+          onClick={() => setActiveTab('settings')}
+          icon={<Settings className="w-5 h-5" />}
+          label="Settings"
+          theme={theme}
+        />
       </nav>
 
       {/* Main Content */}
-      <main className="max-w-5xl mx-auto px-6 pt-24 pb-32 md:pt-32">
+      <main className="max-w-5xl mx-auto px-6 pt-32 pb-40">
         <AnimatePresence mode="wait">
           {activeTab === 'inventory' && (
             <motion.div
@@ -600,37 +616,37 @@ function AppContent() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className="space-y-8"
+              className="space-y-12"
             >
-              <header className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+              <header className="flex flex-col md:flex-row md:items-end justify-between gap-8">
                 <div>
-                  <h2 className="text-3xl font-bold text-gray-900">Your Pantry</h2>
-                  <p className="text-gray-500 mt-1">Smart tracking for your household of {household.members}</p>
+                  <h2 className="text-5xl font-black tracking-tighter mb-2">Your Pantry</h2>
+                  <p className="text-gray-500 dark:text-gray-400 font-medium text-lg">Smart tracking for your household of {household.members}</p>
                 </div>
-                <div className="flex gap-3">
-                  <div className="bg-white px-4 py-2 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-2">
-                    <Users className="w-4 h-4 text-purple-600" />
-                    <span className="text-sm font-semibold text-gray-700">{household.members} Members</span>
+                <div className="flex gap-4">
+                  <div className="cred-card px-6 py-3 flex items-center gap-3">
+                    <Users className="w-5 h-5 text-purple-500" />
+                    <span className="text-sm font-black uppercase tracking-widest">{household.members} Members</span>
                   </div>
-                  <div className="bg-white px-4 py-2 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-2">
-                    <TrendingUp className="w-4 h-4 text-green-600" />
-                    <span className="text-sm font-semibold text-gray-700">{inventory.length} Items</span>
+                  <div className="cred-card px-6 py-3 flex items-center gap-3">
+                    <TrendingUp className="w-5 h-5 text-green-500" />
+                    <span className="text-sm font-black uppercase tracking-widest">{inventory.length} Items</span>
                   </div>
                 </div>
               </header>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
-                  <p className="text-sm font-medium text-gray-500 mb-1">Total Items</p>
-                  <p className="text-3xl font-bold text-gray-900">{inventory.length}</p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="cred-card p-8 group hover:scale-[1.02] transition-all">
+                  <p className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-2">Total Items</p>
+                  <p className="text-5xl font-black tracking-tighter">{inventory.length}</p>
                 </div>
-                <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
-                  <p className="text-sm font-medium text-gray-500 mb-1">Low Stock</p>
-                  <p className="text-3xl font-bold text-amber-600">{lowStockItems.length}</p>
+                <div className="cred-card p-8 group hover:scale-[1.02] transition-all">
+                  <p className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-2">Low Stock</p>
+                  <p className="text-5xl font-black tracking-tighter text-red-500">{lowStockItems.length}</p>
                 </div>
-                <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
-                  <p className="text-sm font-medium text-gray-500 mb-1">Shopping List</p>
-                  <p className="text-3xl font-bold text-blue-600">{shoppingList.filter(i => i.status === 'to-buy').length}</p>
+                <div className="cred-card p-8 group hover:scale-[1.02] transition-all">
+                  <p className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-2">Shopping List</p>
+                  <p className="text-5xl font-black tracking-tighter text-blue-500">{shoppingList.filter(i => i.status === 'to-buy').length}</p>
                 </div>
               </div>
 
@@ -700,11 +716,11 @@ function AppContent() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className="space-y-8"
+              className="space-y-12"
             >
               <header>
-                <h2 className="text-3xl font-bold text-gray-900">Shopping List</h2>
-                <p className="text-gray-500 mt-1">Search and compare variants across all platforms</p>
+                <h2 className="text-5xl font-black tracking-tighter">Shopping List</h2>
+                <p className="text-gray-500 dark:text-gray-400 font-medium text-lg mt-2">Search and compare variants across all platforms</p>
               </header>
 
               <ShoppingList 
@@ -769,27 +785,37 @@ function AppContent() {
 }
 
 export default function App() {
+  const [theme, setTheme] = useState<'light' | 'dark'>('dark');
+
+  useEffect(() => {
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [theme]);
+
   return (
     <ErrorBoundary>
-      <AppContent />
+      <AppContent theme={theme} setTheme={setTheme} />
     </ErrorBoundary>
   );
 }
 
-function NavButton({ active, onClick, icon, label, badge }: { active: boolean, onClick: () => void, icon: React.ReactNode, label: string, badge?: number }) {
+function NavButton({ active, onClick, icon, label, badge, theme }: { active: boolean, onClick: () => void, icon: React.ReactNode, label: string, badge?: number, theme: 'light' | 'dark' }) {
   return (
     <button
       onClick={onClick}
-      className={`relative flex flex-col md:flex-row items-center gap-2 px-4 py-2 rounded-2xl transition-all ${
+      className={`relative flex flex-col md:flex-row items-center gap-3 px-6 py-4 rounded-2xl transition-all duration-300 ${
         active 
-          ? 'bg-blue-50 text-blue-600 md:bg-blue-600 md:text-white' 
-          : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
+          ? 'bg-black text-white dark:bg-white dark:text-black shadow-xl' 
+          : 'text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-cred-gray'
       }`}
     >
       {icon}
-      <span className="text-[10px] md:text-sm font-bold uppercase md:capitalize tracking-wider md:tracking-normal">{label}</span>
+      <span className="text-[10px] md:text-base font-black uppercase md:capitalize tracking-widest md:tracking-tight">{label}</span>
       {badge !== undefined && badge > 0 && (
-        <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-white">
+        <span className="absolute top-2 right-2 md:static md:ml-auto w-5 h-5 bg-red-500 text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white dark:border-cred-dark">
           {badge}
         </span>
       )}

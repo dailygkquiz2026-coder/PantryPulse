@@ -140,6 +140,32 @@ export async function analyzeInvoiceImage(base64Image: string) {
   return parseGeminiResponse(response.text);
 }
 
+export async function identifyProductByBarcode(barcode: string) {
+  const ai = getAI();
+  const response = await ai.models.generateContent({
+    model: "gemini-3-flash-preview",
+    contents: `Identify this Indian grocery product from its barcode (EAN/GTIN): ${barcode}. 
+    Provide the full brand name, product name, common unit (e.g., g, ml, kg, pcs), and category. 
+    Format the output as JSON.`,
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: Type.OBJECT,
+        properties: {
+          brand: { type: Type.STRING },
+          productName: { type: Type.STRING },
+          unit: { type: Type.STRING },
+          category: { type: Type.STRING },
+          suggestedQuantity: { type: Type.NUMBER }
+        },
+        required: ["brand", "productName", "unit", "category", "suggestedQuantity"]
+      },
+      tools: [{ googleSearch: {} }]
+    }
+  });
+  return parseGeminiResponse(response.text);
+}
+
 export async function getItemSuggestions(prefix: string) {
   if (prefix.length < 2) return [];
   const ai = getAI();
