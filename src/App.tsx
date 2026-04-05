@@ -250,11 +250,17 @@ function AppContent() {
   const handleLogout = () => signOut(auth);
 
   const handleAddGrocery = async (item: Omit<GroceryItem, 'id'>) => {
-    if (!user) return;
+    if (!user) {
+      console.error("No user found in handleAddGrocery");
+      return;
+    }
     try {
+      console.log("Adding grocery item:", item);
       await addDoc(collection(db, 'inventory'), { ...item, uid: user.uid });
+      console.log("Successfully added item to inventory");
       setActiveTab('inventory');
     } catch (error) {
+      console.error("Error in handleAddGrocery:", error);
       handleFirestoreError(error, OperationType.CREATE, 'inventory');
     }
   };
@@ -397,7 +403,13 @@ function AppContent() {
       setSearchResults(results);
     } catch (error: any) {
       console.error('Search failed:', error);
-      setSearchResults(`Failed to find price information: ${error.message || 'Unknown error'}. Please ensure GEMINI_API_KEY is set in Vercel.`);
+      let errorMessage = error.message || 'Unknown error';
+      
+      if (errorMessage.includes('RESOURCE_EXHAUSTED') || errorMessage.includes('429')) {
+        errorMessage = "You've hit the Gemini API Free Tier limit. To fix this, enable billing in Google AI Studio or wait a few minutes for the quota to reset.";
+      }
+      
+      setSearchResults(`Failed to find price information: ${errorMessage}. Please ensure GEMINI_API_KEY is set in Vercel.`);
     } finally {
       setIsSearching(false);
     }
@@ -512,8 +524,8 @@ function AppContent() {
                     <p><strong>IMPORTANT:</strong> You must <strong>Redeploy</strong> (Deployments &gt; Redeploy) for the changes to take effect.</p>
                   </div>
                   <div className="flex gap-4">
-                    <div className="w-8 h-8 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center font-bold flex-shrink-0">4</div>
-                    <p><strong>Authorized Domains:</strong> Add your Vercel domain to <strong>Firebase Console &gt; Auth &gt; Settings</strong>.</p>
+                    <div className="w-8 h-8 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center font-bold flex-shrink-0">5</div>
+                    <p><strong>Quota Exceeded (429):</strong> If you see "Resource Exhausted", go to <a href="https://aistudio.google.com/app/billing" target="_blank" rel="noreferrer" className="text-blue-600 underline font-bold">AI Studio Billing</a> and enable Pay-as-you-go to get higher search limits.</p>
                   </div>
                 </div>
                 <button

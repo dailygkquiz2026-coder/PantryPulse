@@ -31,18 +31,30 @@ export default function GroceryForm({ onAdd, onAddMultiple }: GroceryFormProps) 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name) return;
-    onAdd({
+    if (!name) {
+      alert("Please enter a product name");
+      return;
+    }
+    
+    console.log("Submitting manual input:", { name, category, quantity, unit, price, usageFrequency });
+
+    const newItem: any = {
       name,
       category,
       quantity,
       unit,
       price,
       usageFrequency,
-      expiryDate: expiryDate || undefined,
       purchaseDate: new Date().toISOString(),
       lastUpdated: new Date().toISOString()
-    });
+    };
+
+    if (expiryDate) {
+      newItem.expiryDate = expiryDate;
+    }
+
+    onAdd(newItem);
+    
     setName('');
     setQuantity(1);
     setPrice(0);
@@ -55,9 +67,9 @@ export default function GroceryForm({ onAdd, onAddMultiple }: GroceryFormProps) 
     if (!file) return;
 
     setIsAnalyzing(true);
-    try {
-      const reader = new FileReader();
-      reader.onloadend = async () => {
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      try {
         const base64 = (reader.result as string).split(',')[1];
         const details = await analyzeProductImage(base64);
         
@@ -65,13 +77,18 @@ export default function GroceryForm({ onAdd, onAddMultiple }: GroceryFormProps) 
         setCategory(details.category);
         setUnit(details.unit);
         setQuantity(details.suggestedQuantity || 1);
+      } catch (error: any) {
+        console.error("Image analysis failed:", error);
+        alert(`Product analysis failed: ${error.message || 'Unknown error'}`);
+      } finally {
         setIsAnalyzing(false);
-      };
-      reader.readAsDataURL(file);
-    } catch (error) {
-      console.error("Image analysis failed:", error);
+      }
+    };
+    reader.onerror = () => {
+      console.error("File reading failed");
       setIsAnalyzing(false);
-    }
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleInvoiceCapture = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -79,20 +96,25 @@ export default function GroceryForm({ onAdd, onAddMultiple }: GroceryFormProps) 
     if (!file) return;
 
     setIsScanningInvoice(true);
-    try {
-      const reader = new FileReader();
-      reader.onloadend = async () => {
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      try {
         const base64 = (reader.result as string).split(',')[1];
         const data = await analyzeInvoiceImage(base64);
         setScannedInvoiceData(data);
         setIsInvoiceModalOpen(true);
+      } catch (error: any) {
+        console.error("Invoice analysis failed:", error);
+        alert(`Invoice analysis failed: ${error.message || 'Unknown error'}`);
+      } finally {
         setIsScanningInvoice(false);
-      };
-      reader.readAsDataURL(file);
-    } catch (error) {
-      console.error("Invoice analysis failed:", error);
+      }
+    };
+    reader.onerror = () => {
+      console.error("File reading failed");
       setIsScanningInvoice(false);
-    }
+    };
+    reader.readAsDataURL(file);
   };
 
   return (

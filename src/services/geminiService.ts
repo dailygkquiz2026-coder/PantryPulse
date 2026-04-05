@@ -13,6 +13,25 @@ function getAI() {
   return aiInstance;
 }
 
+function parseGeminiResponse(text: string) {
+  try {
+    // Try direct parsing first
+    return JSON.parse(text);
+  } catch (e) {
+    // Try to extract JSON from markdown code blocks
+    const match = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+    if (match && match[1]) {
+      try {
+        return JSON.parse(match[1]);
+      } catch (innerE) {
+        console.error("Failed to parse extracted JSON:", innerE);
+      }
+    }
+    // If all fails, throw original error
+    throw new Error(`Failed to parse AI response as JSON: ${text.substring(0, 100)}...`);
+  }
+}
+
 export async function predictRestock(
   itemName: string,
   quantity: number,
@@ -36,7 +55,7 @@ export async function predictRestock(
       }
     }
   });
-  return JSON.parse(response.text);
+  return parseGeminiResponse(response.text);
 }
 
 export async function analyzeProductImage(base64Image: string) {
@@ -69,7 +88,7 @@ export async function analyzeProductImage(base64Image: string) {
       }
     }
   });
-  return JSON.parse(response.text);
+  return parseGeminiResponse(response.text);
 }
 
 export async function analyzeInvoiceImage(base64Image: string) {
@@ -118,7 +137,7 @@ export async function analyzeInvoiceImage(base64Image: string) {
       }
     }
   });
-  return JSON.parse(response.text);
+  return parseGeminiResponse(response.text);
 }
 
 export async function getItemSuggestions(prefix: string) {
