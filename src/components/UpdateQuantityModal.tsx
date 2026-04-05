@@ -27,15 +27,15 @@ export default function UpdateQuantityModal({ isOpen, onClose, item, onConfirm }
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden"
+            className="bg-white dark:bg-cred-black w-full max-w-md rounded-3xl shadow-2xl overflow-hidden border border-white/10"
           >
-            <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-amber-50/50">
+            <div className="p-6 border-b border-gray-100 dark:border-cred-gray flex items-center justify-between bg-amber-50/50 dark:bg-amber-950/20">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-amber-100 rounded-xl">
                   <TrendingDown className="w-6 h-6 text-amber-600" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold text-gray-900">Update Quantity</h2>
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">Update Quantity</h2>
                   <p className="text-sm text-gray-500">Correcting inventory for <span className="font-semibold text-amber-600">{item.name}</span></p>
                 </div>
               </div>

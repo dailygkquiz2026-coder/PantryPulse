@@ -8,9 +8,10 @@ interface RestockModalProps {
   onClose: () => void;
   item: ShoppingListItem | null;
   onConfirm: (item: ShoppingListItem) => void;
+  onSkip: (item: ShoppingListItem) => void;
 }
 
-export default function RestockModal({ isOpen, onClose, item, onConfirm }: RestockModalProps) {
+export default function RestockModal({ isOpen, onClose, item, onConfirm, onSkip }: RestockModalProps) {
   const [quantity, setQuantity] = useState(item?.quantity || 1);
   const [usageFrequency, setUsageFrequency] = useState(item?.usageFrequency || 1);
 
@@ -31,15 +32,15 @@ export default function RestockModal({ isOpen, onClose, item, onConfirm }: Resto
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden"
+            className="bg-white dark:bg-cred-black w-full max-w-md rounded-3xl shadow-2xl overflow-hidden border border-white/10"
           >
-            <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-green-50/50">
+            <div className="p-6 border-b border-gray-100 dark:border-cred-gray flex items-center justify-between bg-green-50/50 dark:bg-green-950/20">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-green-100 rounded-xl">
                   <ShoppingBag className="w-6 h-6 text-green-600" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold text-gray-900">Add to Inventory?</h2>
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">Add to Inventory?</h2>
                   <p className="text-sm text-gray-500">You just bought <span className="font-semibold text-green-600">{item.name}</span></p>
                 </div>
               </div>
@@ -80,7 +81,7 @@ export default function RestockModal({ isOpen, onClose, item, onConfirm }: Resto
 
             <div className="p-6 border-t border-gray-100 bg-gray-50 flex gap-3">
               <button
-                onClick={onClose}
+                onClick={() => onSkip(item)}
                 className="flex-1 px-6 py-3 bg-white border border-gray-200 text-gray-600 font-bold rounded-xl hover:bg-gray-100 transition-all"
               >
                 Skip

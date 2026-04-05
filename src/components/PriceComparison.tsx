@@ -20,15 +20,15 @@ export default function PriceComparison({ isOpen, onClose, itemName, results, is
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[80vh]"
+            className="bg-white dark:bg-cred-black w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[80vh] border border-white/10"
           >
-            <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-blue-50/50">
+            <div className="p-6 border-b border-gray-100 dark:border-cred-gray flex items-center justify-between bg-blue-50/50 dark:bg-blue-950/20">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-blue-100 rounded-xl">
                   <ShoppingCart className="w-6 h-6 text-blue-600" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold text-gray-900">Price Comparison</h2>
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">Price Comparison</h2>
                   <p className="text-sm text-gray-500">Finding best deals for <span className="font-semibold text-blue-600">{itemName}</span></p>
                 </div>
               </div>

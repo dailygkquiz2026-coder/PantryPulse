@@ -58,10 +58,10 @@ export default function EditItemModal({ isOpen, onClose, item, onUpdate }: EditI
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden"
+            className="bg-white dark:bg-cred-black w-full max-w-md rounded-3xl shadow-2xl overflow-hidden border border-white/10"
           >
-            <div className="p-6 border-b border-gray-100 flex items-center justify-between">
-              <h2 className="text-xl font-bold text-gray-900">Edit Item</h2>
+            <div className="p-6 border-b border-gray-100 dark:border-cred-gray flex items-center justify-between">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">Edit Item</h2>
               <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-all">
                 <X className="w-6 h-6 text-gray-400" />
               </button>
@@ -69,7 +69,7 @@ export default function EditItemModal({ isOpen, onClose, item, onUpdate }: EditI
 
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div className="space-y-1">
-                <label className="text-sm font-medium text-gray-700">Item Name</label>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Item Name</label>
                 <input
                   type="text"
                   value={name}
@@ -80,7 +80,7 @@ export default function EditItemModal({ isOpen, onClose, item, onUpdate }: EditI
               </div>
 
               <div className="space-y-1">
-                <label className="text-sm font-medium text-gray-700">Category</label>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Category</label>
                 <select
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
@@ -94,7 +94,7 @@ export default function EditItemModal({ isOpen, onClose, item, onUpdate }: EditI
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-sm font-medium text-gray-700">Quantity</label>
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Quantity</label>
                   <input
                     type="number"
                     value={quantity}
@@ -106,7 +106,7 @@ export default function EditItemModal({ isOpen, onClose, item, onUpdate }: EditI
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-sm font-medium text-gray-700">Unit</label>
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Unit</label>
                   <select
                     value={unit}
                     onChange={(e) => setUnit(e.target.value)}
@@ -120,7 +120,7 @@ export default function EditItemModal({ isOpen, onClose, item, onUpdate }: EditI
               </div>
 
               <div className="space-y-1">
-                <label className="text-sm font-medium text-gray-700">Usage Frequency (times/day)</label>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Usage Frequency (times/day)</label>
                 <input
                   type="number"
                   value={usageFrequency}
@@ -133,7 +133,7 @@ export default function EditItemModal({ isOpen, onClose, item, onUpdate }: EditI
               </div>
 
               <div className="space-y-1">
-                <label className="text-sm font-medium text-gray-700">Expiry Date (Optional)</label>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Expiry Date (Optional)</label>
                 <input
                   type="date"
                   value={expiryDate}

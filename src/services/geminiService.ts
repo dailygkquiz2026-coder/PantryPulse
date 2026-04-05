@@ -144,9 +144,14 @@ export async function identifyProductByBarcode(barcode: string) {
   const ai = getAI();
   const response = await ai.models.generateContent({
     model: "gemini-3-flash-preview",
-    contents: `Identify this Indian grocery product from its barcode (EAN/GTIN): ${barcode}. 
-    Provide the full brand name, product name, common unit (e.g., g, ml, kg, pcs), and category. 
-    Format the output as JSON.`,
+    contents: `Identify this grocery product from its barcode (EAN/GTIN/UPC): ${barcode}. 
+    
+    CRITICAL INSTRUCTIONS:
+    1. Search for the product using the barcode number.
+    2. Identify the brand name, product name, and standard unit (e.g., g, ml, kg, pcs, pack).
+    3. Determine the most appropriate category from: Dairy, Bakery, Produce, Meat, Pantry, Beverages, Snacks, Household, Personal Care.
+    4. If the product is not found, use your knowledge of barcode prefixes (e.g., 890 for India) to guess the likely origin or type.
+    5. Format the output as JSON.`,
     config: {
       responseMimeType: "application/json",
       responseSchema: {
@@ -164,6 +169,29 @@ export async function identifyProductByBarcode(barcode: string) {
     }
   });
   return parseGeminiResponse(response.text);
+}
+
+export async function fetchProductImage(itemName: string) {
+  const ai = getAI();
+  const response = await ai.models.generateContent({
+    model: "gemini-3-flash-preview",
+    contents: `Find a high-quality, direct image URL for the grocery product: "${itemName}". 
+    The URL must be a public, direct link to an image (jpg, png, or webp). 
+    Return only the URL as a string in a JSON object.`,
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: Type.OBJECT,
+        properties: {
+          imageUrl: { type: Type.STRING }
+        },
+        required: ["imageUrl"]
+      },
+      tools: [{ googleSearch: {} }]
+    }
+  });
+  const data = parseGeminiResponse(response.text);
+  return data.imageUrl;
 }
 
 export async function getItemSuggestions(prefix: string) {
@@ -203,7 +231,7 @@ export async function searchCheapestSource(itemName: string, location?: string, 
     - DO NOT hallucinate direct product URLs with internal IDs (e.g., /product/123). These often break.
     - INSTEAD, use stable SEARCH URLs for each platform. This ensures the user sees available items for their specific location.
     - Format examples:
-      - Zepto: https://www.zepto.com/search?q=[Product+Name]
+      - Zepto: https://www.zepto.com/search?query=[Product+Name]
       - Blinkit: https://blinkit.com/s/?q=[Product+Name]
       - BigBasket: https://www.bigbasket.com/ps/?q=[Product+Name]
       - Swiggy Instamart: https://www.swiggy.com/instamart/search?query=[Product+Name]

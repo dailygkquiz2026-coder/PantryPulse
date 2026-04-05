@@ -355,10 +355,23 @@ function AppContent({ theme, setTheme }: { theme: 'light' | 'dark', setTheme: (t
           uid: user.uid
         });
       }
+      
+      // Remove from shopping list
+      await deleteDoc(doc(db, 'shoppingList', item.id));
+      
       setIsRestockModalOpen(false);
       setActiveTab('inventory');
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, 'inventory');
+    }
+  };
+
+  const handleSkipRestock = async (item: ShoppingListItem) => {
+    try {
+      await deleteDoc(doc(db, 'shoppingList', item.id));
+      setIsRestockModalOpen(false);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, `shoppingList/${item.id}`);
     }
   };
 
@@ -438,7 +451,7 @@ function AppContent({ theme, setTheme }: { theme: 'light' | 'dark', setTheme: (t
           <div className="w-24 h-24 bg-black dark:bg-white rounded-[2rem] flex items-center justify-center shadow-2xl mx-auto mb-10 transform -rotate-6">
             <ShoppingBag className="text-white dark:text-black w-12 h-12" />
           </div>
-          <h1 className="text-5xl font-black text-gray-900 dark:text-white mb-4 tracking-tighter">PantryPulse</h1>
+          <h1 className="text-5xl font-black text-red-600 bg-yellow-400 px-4 py-2 rounded-xl mb-4 tracking-tighter transform rotate-1 shadow-lg">PantryPulse</h1>
           <p className="text-gray-600 dark:text-gray-400 mb-12 text-lg leading-relaxed font-medium">
             Your AI-powered kitchen companion for smarter shopping and zero waste.
           </p>
@@ -556,6 +569,17 @@ function AppContent({ theme, setTheme }: { theme: 'light' | 'dark', setTheme: (t
         </div>
 
         <div className="flex items-center gap-4">
+          {lowStockItems.length > 0 && (
+            <motion.button
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              onClick={() => setActiveTab('shopping')}
+              className="hidden lg:flex items-center gap-2 px-4 py-2 bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400 rounded-xl border border-red-100 dark:border-red-900/40 hover:scale-105 transition-all shadow-sm"
+            >
+              <AlertTriangle className="w-4 h-4" />
+              <span className="text-[10px] font-black uppercase tracking-widest">Restock Needed</span>
+            </motion.button>
+          )}
           <button
             onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
             className="p-3 bg-gray-50 dark:bg-cred-gray rounded-2xl hover:bg-gray-100 dark:hover:bg-cred-dark transition-all"
@@ -573,6 +597,38 @@ function AppContent({ theme, setTheme }: { theme: 'light' | 'dark', setTheme: (t
           </div>
         </div>
       </header>
+
+      {/* Notification Banner */}
+      <AnimatePresence>
+        {lowStockItems.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: -100 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -100 }}
+            className="fixed top-20 left-0 right-0 z-30 px-6"
+          >
+            <div className="max-w-5xl mx-auto">
+              <div className="bg-black dark:bg-white text-white dark:text-black p-4 rounded-2xl shadow-2xl flex items-center justify-between gap-4 border border-white/10 dark:border-black/10">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-red-500 rounded-xl">
+                    <AlertTriangle className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold">Time to restock!</p>
+                    <p className="text-[10px] uppercase tracking-widest opacity-70">{lowStockItems.length} items are running low</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setActiveTab('shopping')}
+                  className="px-6 py-2 bg-white dark:bg-black text-black dark:text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all"
+                >
+                  Go to Shopping List
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Navigation */}
       <nav className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-black/90 dark:bg-white/90 backdrop-blur-xl px-4 py-3 rounded-[2.5rem] z-50 flex items-center gap-2 shadow-2xl border border-white/10 dark:border-black/10">
@@ -620,34 +676,40 @@ function AppContent({ theme, setTheme }: { theme: 'light' | 'dark', setTheme: (t
             >
               <header className="flex flex-col md:flex-row md:items-end justify-between gap-8">
                 <div>
-                  <h2 className="text-5xl font-black tracking-tighter mb-2">Your Pantry</h2>
+                  <h2 className="text-5xl font-black tracking-tighter mb-2 text-gray-900 dark:text-white">Your Pantry</h2>
                   <p className="text-gray-500 dark:text-gray-400 font-medium text-lg">Smart tracking for your household of {household.members}</p>
                 </div>
                 <div className="flex gap-4">
                   <div className="cred-card px-6 py-3 flex items-center gap-3">
                     <Users className="w-5 h-5 text-purple-500" />
-                    <span className="text-sm font-black uppercase tracking-widest">{household.members} Members</span>
+                    <span className="text-sm font-black uppercase tracking-widest text-gray-900 dark:text-white">{household.members} Members</span>
                   </div>
                   <div className="cred-card px-6 py-3 flex items-center gap-3">
                     <TrendingUp className="w-5 h-5 text-green-500" />
-                    <span className="text-sm font-black uppercase tracking-widest">{inventory.length} Items</span>
+                    <span className="text-sm font-black uppercase tracking-widest text-gray-900 dark:text-white">{inventory.length} Items</span>
                   </div>
                 </div>
               </header>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="cred-card p-8 group hover:scale-[1.02] transition-all">
-                  <p className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-2">Total Items</p>
-                  <p className="text-5xl font-black tracking-tighter">{inventory.length}</p>
+                <div className="cred-card p-8 group hover:scale-[1.02] transition-all cursor-default">
+                  <p className="text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] mb-2">Total Items</p>
+                  <p className="text-5xl font-black tracking-tighter text-gray-900 dark:text-white">{inventory.length}</p>
                 </div>
-                <div className="cred-card p-8 group hover:scale-[1.02] transition-all">
-                  <p className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-2">Low Stock</p>
+                <button 
+                  onClick={() => setActiveTab('inventory')}
+                  className="cred-card p-8 group hover:scale-[1.02] transition-all text-left"
+                >
+                  <p className="text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] mb-2">Low Stock</p>
                   <p className="text-5xl font-black tracking-tighter text-red-500">{lowStockItems.length}</p>
-                </div>
-                <div className="cred-card p-8 group hover:scale-[1.02] transition-all">
-                  <p className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-2">Shopping List</p>
+                </button>
+                <button 
+                  onClick={() => setActiveTab('shopping')}
+                  className="cred-card p-8 group hover:scale-[1.02] transition-all text-left"
+                >
+                  <p className="text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] mb-2">Shopping List</p>
                   <p className="text-5xl font-black tracking-tighter text-blue-500">{shoppingList.filter(i => i.status === 'to-buy').length}</p>
-                </div>
+                </button>
               </div>
 
 
@@ -706,7 +768,12 @@ function AppContent({ theme, setTheme }: { theme: 'light' | 'dark', setTheme: (t
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
             >
-              <GroceryForm onAdd={handleAddGrocery} onAddMultiple={handleAddMultipleGrocery} />
+              <GroceryForm 
+                onAdd={handleAddGrocery} 
+                onAddMultiple={handleAddMultipleGrocery} 
+                inventory={inventory}
+                onUpdateQuantity={handleUpdateInventoryQuantity}
+              />
             </motion.div>
           )}
 
@@ -772,6 +839,7 @@ function AppContent({ theme, setTheme }: { theme: 'light' | 'dark', setTheme: (t
         onClose={() => setIsRestockModalOpen(false)}
         item={restockItem}
         onConfirm={handleConfirmRestock}
+        onSkip={handleSkipRestock}
       />
 
       <UpdateQuantityModal

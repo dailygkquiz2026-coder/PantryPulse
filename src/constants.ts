@@ -12,8 +12,8 @@ export const CATEGORIES = [
 ];
 
 export const CATEGORY_IMAGES: Record<string, string> = {
-  'Produce': 'https://images.unsplash.com/photo-1610348725531-843dff563e2c?w=100&h=100&fit=crop&q=80',
-  'Dairy': 'https://images.unsplash.com/photo-1550583724-125581cc258b?w=100&h=100&fit=crop&q=80',
+  'Produce': 'https://images.unsplash.com/photo-1566385101042-1a000c1267c4?w=100&h=100&fit=crop&q=80', // Vegetables
+  'Dairy': 'https://images.unsplash.com/photo-1550583724-125581cc258b?w=100&h=100&fit=crop&q=80', // Milk bottle
   'Bakery': 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=100&h=100&fit=crop&q=80',
   'Meat & Seafood': 'https://images.unsplash.com/photo-1607623814075-e51df1bdc82f?w=100&h=100&fit=crop&q=80',
   'Pantry': 'https://images.unsplash.com/photo-1584473457406-623048ff43f4?w=100&h=100&fit=crop&q=80',

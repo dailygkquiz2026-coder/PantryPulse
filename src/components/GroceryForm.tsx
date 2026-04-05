@@ -3,16 +3,20 @@ import { CATEGORIES, UNITS } from '../constants';
 import { Plus, ShoppingCart, Camera, Loader2, FileText, Barcode } from 'lucide-react';
 import { motion } from 'motion/react';
 import AutocompleteInput from './AutocompleteInput';
-import { analyzeProductImage, analyzeInvoiceImage, identifyProductByBarcode } from '../services/geminiService';
+import { analyzeProductImage, analyzeInvoiceImage, identifyProductByBarcode, fetchProductImage } from '../services/geminiService';
 import InvoiceReviewModal from './InvoiceReviewModal';
 import BarcodeScanner from './BarcodeScanner';
+import DuplicateCheckModal from './DuplicateCheckModal';
+import { GroceryItem } from '../types';
 
 interface GroceryFormProps {
   onAdd: (item: any) => void;
   onAddMultiple: (items: any[]) => void;
+  inventory: GroceryItem[];
+  onUpdateQuantity: (id: string, newQuantity: number) => void;
 }
 
-export default function GroceryForm({ onAdd, onAddMultiple }: GroceryFormProps) {
+export default function GroceryForm({ onAdd, onAddMultiple, inventory, onUpdateQuantity }: GroceryFormProps) {
   const [name, setName] = useState('');
   const [category, setCategory] = useState(CATEGORIES[0]);
   const [quantity, setQuantity] = useState(1);
@@ -24,6 +28,12 @@ export default function GroceryForm({ onAdd, onAddMultiple }: GroceryFormProps) 
   const [isScanningInvoice, setIsScanningInvoice] = useState(false);
   const [isScanningBarcode, setIsScanningBarcode] = useState(false);
   const [isIdentifyingBarcode, setIsIdentifyingBarcode] = useState(false);
+  const [isFetchingImage, setIsFetchingImage] = useState(false);
+  
+  // Duplicate Check State
+  const [isDuplicateModalOpen, setIsDuplicateModalOpen] = useState(false);
+  const [duplicateItem, setDuplicateItem] = useState<GroceryItem | null>(null);
+  const [pendingItem, setPendingItem] = useState<any | null>(null);
   
   // Invoice Review State
   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
@@ -76,15 +86,40 @@ export default function GroceryForm({ onAdd, onAddMultiple }: GroceryFormProps) 
         const base64 = (reader.result as string).split(',')[1];
         const details = await analyzeProductImage(base64);
         
-        setName(`${details.brand} ${details.productName}`);
+        const fullName = `${details.brand} ${details.productName}`;
+        setName(fullName);
         setCategory(details.category);
         setUnit(details.unit);
         setQuantity(details.suggestedQuantity || 1);
+
+        // Fetch image from web
+        setIsFetchingImage(true);
+        const imageUrl = await fetchProductImage(fullName);
+        setIsFetchingImage(false);
+
+        const newItem = {
+          name: fullName,
+          category: details.category,
+          unit: details.unit,
+          quantity: details.suggestedQuantity || 1,
+          imageUrl,
+          purchaseDate: new Date().toISOString(),
+          lastUpdated: new Date().toISOString()
+        };
+
+        // Check for duplicates
+        const existing = inventory.find(i => i.name.toLowerCase() === fullName.toLowerCase());
+        if (existing) {
+          setDuplicateItem(existing);
+          setPendingItem(newItem);
+          setIsDuplicateModalOpen(true);
+        }
       } catch (error: any) {
         console.error("Image analysis failed:", error);
         alert(`Product analysis failed: ${error.message || 'Unknown error'}`);
       } finally {
         setIsAnalyzing(false);
+        setIsFetchingImage(false);
       }
     };
     reader.onerror = () => {
@@ -100,15 +135,40 @@ export default function GroceryForm({ onAdd, onAddMultiple }: GroceryFormProps) 
       console.log("Identifying product by barcode:", barcode);
       const details = await identifyProductByBarcode(barcode);
       
-      setName(`${details.brand} ${details.productName}`);
+      const fullName = `${details.brand} ${details.productName}`;
+      setName(fullName);
       setCategory(details.category);
       setUnit(details.unit);
       setQuantity(details.suggestedQuantity || 1);
+
+      // Fetch image from web
+      setIsFetchingImage(true);
+      const imageUrl = await fetchProductImage(fullName);
+      setIsFetchingImage(false);
+
+      const newItem = {
+        name: fullName,
+        category: details.category,
+        unit: details.unit,
+        quantity: details.suggestedQuantity || 1,
+        imageUrl,
+        purchaseDate: new Date().toISOString(),
+        lastUpdated: new Date().toISOString()
+      };
+
+      // Check for duplicates
+      const existing = inventory.find(i => i.name.toLowerCase() === fullName.toLowerCase());
+      if (existing) {
+        setDuplicateItem(existing);
+        setPendingItem(newItem);
+        setIsDuplicateModalOpen(true);
+      }
     } catch (error: any) {
       console.error("Barcode identification failed:", error);
       alert(`Barcode identification failed: ${error.message || 'Unknown error'}`);
     } finally {
       setIsIdentifyingBarcode(false);
+      setIsFetchingImage(false);
     }
   };
 
@@ -149,7 +209,7 @@ export default function GroceryForm({ onAdd, onAddMultiple }: GroceryFormProps) 
           <div className="p-3 bg-black dark:bg-white rounded-2xl shadow-lg">
             <Plus className="w-6 h-6 text-white dark:text-black" />
           </div>
-          <h2 className="text-3xl font-black tracking-tighter">Log Purchase</h2>
+          <h2 className="text-3xl font-black tracking-tighter text-gray-900 dark:text-white">Log Purchase</h2>
         </div>
         
         <div className="flex flex-wrap items-center gap-3">
@@ -226,6 +286,32 @@ export default function GroceryForm({ onAdd, onAddMultiple }: GroceryFormProps) 
         isOpen={isScanningBarcode}
         onClose={() => setIsScanningBarcode(false)}
         onScan={handleBarcodeScan}
+      />
+
+      <DuplicateCheckModal
+        isOpen={isDuplicateModalOpen}
+        onClose={() => {
+          setIsDuplicateModalOpen(false);
+          setDuplicateItem(null);
+          setPendingItem(null);
+        }}
+        itemName={duplicateItem?.name || ''}
+        onAddToExisting={() => {
+          if (duplicateItem && pendingItem) {
+            onUpdateQuantity(duplicateItem.id, duplicateItem.quantity + pendingItem.quantity);
+            setIsDuplicateModalOpen(false);
+            setDuplicateItem(null);
+            setPendingItem(null);
+          }
+        }}
+        onAddNew={() => {
+          if (pendingItem) {
+            onAdd(pendingItem);
+            setIsDuplicateModalOpen(false);
+            setDuplicateItem(null);
+            setPendingItem(null);
+          }
+        }}
       />
 
       <form onSubmit={handleSubmit} className="space-y-6">
