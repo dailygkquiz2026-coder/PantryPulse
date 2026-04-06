@@ -32,6 +32,41 @@ function parseGeminiResponse(text: string) {
   }
 }
 
+export async function predictMultipleRestocks(
+  items: { id: string; name: string; quantity: number; unit: string; usageFrequency: number }[],
+  members: number
+) {
+  if (items.length === 0) return {};
+  
+  const ai = getAI();
+  const response = await ai.models.generateContent({
+    model: "gemini-3-flash-preview",
+    contents: `Predict how many days it will take for a household of ${members} people to consume these grocery items. 
+    Items: ${JSON.stringify(items.map(i => ({ name: i.name, quantity: i.quantity, unit: i.unit, usageFrequency: i.usageFrequency })))}.
+    Return a JSON object where keys are the item names and values are the predicted days remaining.`,
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: Type.OBJECT,
+        properties: items.reduce((acc, item) => ({
+          ...acc,
+          [item.name]: { type: Type.NUMBER }
+        }), {})
+      }
+    }
+  });
+  
+  const predictions = parseGeminiResponse(response.text);
+  // Map back to item IDs
+  const result: Record<string, number> = {};
+  items.forEach(item => {
+    if (predictions[item.name] !== undefined) {
+      result[item.id] = predictions[item.name];
+    }
+  });
+  return result;
+}
+
 export async function predictRestock(
   itemName: string,
   quantity: number,

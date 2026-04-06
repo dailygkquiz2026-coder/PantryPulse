@@ -72,7 +72,7 @@ export default function InventoryList({ items, onDelete, onAddToShopping, onUpda
                   </div>
                 </div>
                 <div>
-                  <h3 className="font-bold text-gray-900 dark:text-white text-lg leading-tight">{item.name}</h3>
+                  <h3 className="font-bold text-lg leading-tight">{item.name}</h3>
                   <div className="flex items-center gap-3 text-sm text-gray-500 dark:text-gray-400 font-medium">
                     <span>{item.quantity} {item.unit}</span>
                     <span className="text-gray-300 dark:text-cred-gray">•</span>

@@ -29,52 +29,52 @@ export default function UpdateQuantityModal({ isOpen, onClose, item, onConfirm }
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
             className="bg-white dark:bg-cred-black w-full max-w-md rounded-3xl shadow-2xl overflow-hidden border border-white/10"
           >
-            <div className="p-6 border-b border-gray-100 dark:border-cred-gray flex items-center justify-between bg-amber-50/50 dark:bg-amber-950/20">
+            <div className="p-6 border-b border-gray-100 dark:border-white/5 flex items-center justify-between bg-amber-50/50 dark:bg-amber-950/20">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-amber-100 rounded-xl">
-                  <TrendingDown className="w-6 h-6 text-amber-600" />
+                <div className="p-2 bg-amber-100 dark:bg-amber-900/40 rounded-xl">
+                  <TrendingDown className="w-6 h-6 text-amber-600 dark:text-amber-400" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">Update Quantity</h2>
-                  <p className="text-sm text-gray-500">Correcting inventory for <span className="font-semibold text-amber-600">{item.name}</span></p>
+                  <h2 className="text-xl font-bold">Update Quantity</h2>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Correcting inventory for <span className="font-semibold text-amber-600 dark:text-amber-400">{item.name}</span></p>
                 </div>
               </div>
-              <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-all">
+              <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-cred-gray rounded-full transition-all">
                 <X className="w-6 h-6 text-gray-400" />
               </button>
             </div>
 
             <div className="p-6 space-y-4">
-              <div className="bg-amber-50 p-4 rounded-2xl flex gap-3 items-start border border-amber-100">
-                <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-                <p className="text-sm text-amber-700 leading-relaxed">
+              <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-2xl flex gap-3 items-start border border-amber-100 dark:border-amber-900/40">
+                <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                <p className="text-sm text-amber-700 dark:text-amber-300 leading-relaxed font-medium">
                   Enter the estimated quantity left. This will help the AI recalculate your probable reordering date.
                 </p>
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Estimated Quantity Left ({item.unit})</label>
+                <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-2">Estimated Quantity Left ({item.unit})</label>
                 <input
                   type="number"
                   value={quantity}
                   onChange={(e) => setQuantity(Number(e.target.value))}
                   min="0"
                   step="0.1"
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-amber-500 outline-none text-lg font-semibold"
+                  className="cred-input text-lg font-bold"
                 />
               </div>
             </div>
 
-            <div className="p-6 border-t border-gray-100 bg-gray-50 flex gap-3">
+            <div className="p-6 border-t border-gray-100 dark:border-white/5 bg-gray-50 dark:bg-cred-gray/50 flex gap-3">
               <button
                 onClick={onClose}
-                className="flex-1 px-6 py-3 bg-white border border-gray-200 text-gray-600 font-bold rounded-xl hover:bg-gray-100 transition-all"
+                className="flex-1 px-6 py-3 bg-white dark:bg-cred-gray border border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-300 font-bold rounded-xl hover:bg-gray-100 dark:hover:bg-cred-dark transition-all"
               >
                 Cancel
               </button>
               <button
                 onClick={() => onConfirm(item.id, quantity)}
-                className="flex-1 px-6 py-3 bg-amber-600 text-white font-bold rounded-xl hover:bg-amber-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-amber-200"
+                className="flex-1 px-6 py-3 bg-amber-600 text-white font-bold rounded-xl hover:bg-amber-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-amber-200 dark:shadow-none"
               >
                 <CheckCircle2 className="w-5 h-5" />
                 Update Stock

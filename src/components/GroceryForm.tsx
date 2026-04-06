@@ -209,7 +209,7 @@ export default function GroceryForm({ onAdd, onAddMultiple, inventory, onUpdateQ
           <div className="p-3 bg-black dark:bg-white rounded-2xl shadow-lg">
             <Plus className="w-6 h-6 text-white dark:text-black" />
           </div>
-          <h2 className="text-3xl font-black tracking-tighter text-gray-900 dark:text-white">Log Purchase</h2>
+          <h2 className="text-3xl font-black tracking-tighter">Log Purchase</h2>
         </div>
         
         <div className="flex flex-wrap items-center gap-3">

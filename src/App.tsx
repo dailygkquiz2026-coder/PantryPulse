@@ -53,7 +53,7 @@ import RestockModal from './components/RestockModal';
 import UpdateQuantityModal from './components/UpdateQuantityModal';
 import EditItemModal from './components/EditItemModal';
 import { GroceryItem, HouseholdInfo, ShoppingListItem } from './types';
-import { predictRestock, searchCheapestSource } from './services/geminiService';
+import { predictMultipleRestocks, searchCheapestSource } from './services/geminiService';
 
 // Error Boundary Component
 class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean, error: Error | null }> {
@@ -86,7 +86,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
             <div className="w-16 h-16 bg-red-100 dark:bg-red-900/20 text-red-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
               <AlertCircle className="w-8 h-8" />
             </div>
-            <h2 className="text-2xl font-black text-gray-900 dark:text-white mb-2">Oops!</h2>
+            <h2 className="text-2xl font-black mb-2">Oops!</h2>
             <p className="text-gray-500 dark:text-gray-400 mb-8">{message}</p>
             <button
               onClick={() => window.location.reload()}
@@ -206,25 +206,46 @@ function AppContent({ theme, setTheme }: { theme: 'light' | 'dark', setTheme: (t
   useEffect(() => {
     const runPredictions = async () => {
       const newPredictions: Record<string, number> = {};
-      for (const item of inventory) {
-        try {
-          const result = await predictRestock(
-            item.name,
-            item.quantity,
-            item.unit,
-            household.members,
-            item.usageFrequency
-          );
-          newPredictions[item.id] = result.daysRemaining;
-        } catch (error) {
-          console.error(`Prediction failed for ${item.name}:`, error);
-        }
+      
+      // Local fallback calculation to avoid unnecessary API calls
+      inventory.forEach(item => {
+        // Simple heuristic: quantity / (usageFrequency * members)
+        // usageFrequency is times per day. members is number of people.
+        // We assume 1 unit per usage per member as a baseline.
+        const dailyUsage = item.usageFrequency * household.members;
+        const localPrediction = dailyUsage > 0 ? Math.ceil(item.quantity / dailyUsage) : 30;
+        newPredictions[item.id] = localPrediction;
+      });
+
+      // Only use AI for items that might need smarter prediction (e.g., complex units or names)
+      // For now, we'll batch all items to get a single AI refinement if possible
+      try {
+        const aiPredictions = await predictMultipleRestocks(
+          inventory.map(i => ({
+            id: i.id,
+            name: i.name,
+            quantity: i.quantity,
+            unit: i.unit,
+            usageFrequency: i.usageFrequency
+          })),
+          household.members
+        );
+        
+        // Merge AI predictions over local ones
+        Object.assign(newPredictions, aiPredictions);
+      } catch (error) {
+        console.warn("AI Prediction failed, using local fallback:", error);
       }
+      
       setPredictions(newPredictions);
     };
 
     if (inventory.length > 0) {
-      runPredictions();
+      // Debounce predictions to avoid rapid API calls during multiple inventory updates
+      const timer = setTimeout(() => {
+        runPredictions();
+      }, 1000);
+      return () => clearTimeout(timer);
     }
   }, [inventory, household]);
 
@@ -448,8 +469,8 @@ function AppContent({ theme, setTheme }: { theme: 'light' | 'dark', setTheme: (t
           animate={{ opacity: 1, y: 0 }}
           className="cred-card p-10 max-w-md w-full text-center relative z-10"
         >
-          <div className="w-24 h-24 bg-black dark:bg-white rounded-[2rem] flex items-center justify-center shadow-2xl mx-auto mb-10 transform -rotate-6">
-            <ShoppingBag className="text-white dark:text-black w-12 h-12" />
+          <div className="w-24 h-24 bg-yellow-400 rounded-[2rem] flex items-center justify-center shadow-2xl mx-auto mb-10 transform -rotate-6">
+            <ShoppingBag className="text-red-600 w-12 h-12" />
           </div>
           <h1 className="text-5xl font-black text-red-600 bg-yellow-400 px-4 py-2 rounded-xl mb-4 tracking-tighter transform rotate-1 shadow-lg">PantryPulse</h1>
           <p className="text-gray-600 dark:text-gray-400 mb-12 text-lg leading-relaxed font-medium">
@@ -518,7 +539,7 @@ function AppContent({ theme, setTheme }: { theme: 'light' | 'dark', setTheme: (t
                 className="cred-card w-full max-w-lg p-8"
               >
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-2xl font-black text-gray-900 dark:text-white">Vercel Setup Guide</h2>
+                  <h2 className="text-2xl font-black">Vercel Setup Guide</h2>
                   <button onClick={() => setIsTroubleshootingOpen(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-cred-gray rounded-full">
                     <X className="w-6 h-6 text-gray-400" />
                   </button>
@@ -543,7 +564,7 @@ function AppContent({ theme, setTheme }: { theme: 'light' | 'dark', setTheme: (t
                 </div>
                 <button
                   onClick={() => setIsTroubleshootingOpen(false)}
-                  className="w-full mt-8 py-4 bg-gray-100 dark:bg-cred-gray hover:bg-gray-200 dark:hover:bg-cred-dark text-gray-900 dark:text-white font-black uppercase tracking-widest rounded-2xl transition-all"
+                  className="w-full mt-8 py-4 bg-gray-100 dark:bg-cred-gray hover:bg-gray-200 dark:hover:bg-cred-dark font-black uppercase tracking-widest rounded-2xl transition-all"
                 >
                   Got it!
                 </button>
@@ -558,14 +579,14 @@ function AppContent({ theme, setTheme }: { theme: 'light' | 'dark', setTheme: (t
   const lowStockItems = inventory.filter(item => (predictions[item.id] || 10) < 3);
 
   return (
-    <div className="min-h-screen bg-white dark:bg-cred-black text-gray-900 dark:text-white font-sans transition-colors duration-500">
+    <div className="min-h-screen bg-white dark:bg-cred-black font-sans transition-colors duration-500">
       {/* Header */}
-      <header className="fixed top-0 left-0 right-0 bg-white/80 dark:bg-cred-black/80 backdrop-blur-md border-b border-gray-100 dark:border-cred-gray px-6 py-4 z-40 flex items-center justify-between">
+      <header className="fixed top-0 left-0 right-0 bg-white/80 dark:bg-cred-black/80 backdrop-blur-md border-b border-gray-100 dark:border-white/5 px-6 py-4 z-40 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-black dark:bg-white rounded-xl flex items-center justify-center shadow-lg">
-            <ShoppingBag className="text-white dark:text-black w-6 h-6" />
+          <div className="w-10 h-10 bg-yellow-400 rounded-xl flex items-center justify-center shadow-lg">
+            <ShoppingBag className="text-red-600 w-6 h-6" />
           </div>
-          <h1 className="text-2xl font-black tracking-tighter">PantryPulse</h1>
+          <h1 className="text-2xl font-black tracking-tighter text-red-600">PantryPulse</h1>
         </div>
 
         <div className="flex items-center gap-4">
@@ -676,17 +697,17 @@ function AppContent({ theme, setTheme }: { theme: 'light' | 'dark', setTheme: (t
             >
               <header className="flex flex-col md:flex-row md:items-end justify-between gap-8">
                 <div>
-                  <h2 className="text-5xl font-black tracking-tighter mb-2 text-gray-900 dark:text-white">Your Pantry</h2>
+                  <h2 className="text-5xl font-black tracking-tighter mb-2">Your Pantry</h2>
                   <p className="text-gray-500 dark:text-gray-400 font-medium text-lg">Smart tracking for your household of {household.members}</p>
                 </div>
                 <div className="flex gap-4">
                   <div className="cred-card px-6 py-3 flex items-center gap-3">
                     <Users className="w-5 h-5 text-purple-500" />
-                    <span className="text-sm font-black uppercase tracking-widest text-gray-900 dark:text-white">{household.members} Members</span>
+                    <span className="text-sm font-black uppercase tracking-widest">{household.members} Members</span>
                   </div>
                   <div className="cred-card px-6 py-3 flex items-center gap-3">
                     <TrendingUp className="w-5 h-5 text-green-500" />
-                    <span className="text-sm font-black uppercase tracking-widest text-gray-900 dark:text-white">{inventory.length} Items</span>
+                    <span className="text-sm font-black uppercase tracking-widest">{inventory.length} Items</span>
                   </div>
                 </div>
               </header>
@@ -694,7 +715,7 @@ function AppContent({ theme, setTheme }: { theme: 'light' | 'dark', setTheme: (t
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="cred-card p-8 group hover:scale-[1.02] transition-all cursor-default">
                   <p className="text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] mb-2">Total Items</p>
-                  <p className="text-5xl font-black tracking-tighter text-gray-900 dark:text-white">{inventory.length}</p>
+                  <p className="text-5xl font-black tracking-tighter">{inventory.length}</p>
                 </div>
                 <button 
                   onClick={() => setActiveTab('inventory')}

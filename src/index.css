@@ -16,6 +16,15 @@
   .dark body {
     @apply bg-cred-black text-white;
   }
+
+  .dark {
+    color-scheme: dark;
+    @apply text-white;
+  }
+
+  .dark * {
+    @apply border-white/5;
+  }
   
   /* Custom scrollbar */
   ::-webkit-scrollbar {
@@ -52,18 +61,22 @@
     @apply bg-white border border-gray-100 rounded-[32px] shadow-sm transition-all duration-300;
   }
   .dark .cred-card {
-    @apply bg-cred-dark border-cred-gray shadow-none;
+    @apply bg-cred-dark border-cred-gray shadow-none text-white;
   }
   
   .cred-input {
-    @apply w-full px-6 py-4 rounded-2xl border border-gray-100 focus:ring-2 focus:ring-blue-500 outline-none transition-all;
+    @apply w-full px-6 py-4 rounded-2xl border border-gray-100 focus:ring-2 focus:ring-blue-500 outline-none transition-all text-gray-900;
   }
   .dark .cred-input {
-    @apply bg-cred-gray border-cred-gray text-white focus:ring-cred-accent;
+    @apply bg-cred-gray border-white/5 text-white focus:ring-cred-accent;
   }
   
+  .dark select.cred-input option {
+    @apply bg-cred-gray text-white;
+  }
+
   .cred-button-primary {
-    @apply px-8 py-4 bg-black text-white font-bold rounded-2xl hover:bg-gray-900 transition-all active:scale-95;
+    @apply px-8 py-4 bg-black text-white font-bold rounded-2xl hover:bg-gray-900 transition-all active:scale-95 disabled:opacity-50;
   }
   .dark .cred-button-primary {
     @apply bg-white text-black hover:bg-gray-100;

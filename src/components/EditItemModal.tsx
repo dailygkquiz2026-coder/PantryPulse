@@ -61,7 +61,7 @@ export default function EditItemModal({ isOpen, onClose, item, onUpdate }: EditI
             className="bg-white dark:bg-cred-black w-full max-w-md rounded-3xl shadow-2xl overflow-hidden border border-white/10"
           >
             <div className="p-6 border-b border-gray-100 dark:border-cred-gray flex items-center justify-between">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white">Edit Item</h2>
+              <h2 className="text-xl font-bold">Edit Item</h2>
               <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-all">
                 <X className="w-6 h-6 text-gray-400" />
               </button>
@@ -69,22 +69,22 @@ export default function EditItemModal({ isOpen, onClose, item, onUpdate }: EditI
 
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div className="space-y-1">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Item Name</label>
+                <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-2">Item Name</label>
                 <input
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none"
+                  className="cred-input"
                   required
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Category</label>
+                <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-2">Category</label>
                 <select
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
-                  className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none"
+                  className="cred-input appearance-none"
                 >
                   {CATEGORIES.map(cat => (
                     <option key={cat} value={cat}>{cat}</option>
@@ -94,23 +94,23 @@ export default function EditItemModal({ isOpen, onClose, item, onUpdate }: EditI
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Quantity</label>
+                  <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-2">Quantity</label>
                   <input
                     type="number"
                     value={quantity}
                     onChange={(e) => setQuantity(Number(e.target.value))}
                     min="0"
                     step="0.1"
-                    className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none"
+                    className="cred-input"
                     required
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Unit</label>
+                  <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-2">Unit</label>
                   <select
                     value={unit}
                     onChange={(e) => setUnit(e.target.value)}
-                    className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none"
+                    className="cred-input appearance-none"
                   >
                     {UNITS.map(u => (
                       <option key={u} value={u}>{u}</option>
@@ -120,31 +120,31 @@ export default function EditItemModal({ isOpen, onClose, item, onUpdate }: EditI
               </div>
 
               <div className="space-y-1">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Usage Frequency (times/day)</label>
+                <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-2">Usage Frequency (times/day)</label>
                 <input
                   type="number"
                   value={usageFrequency}
                   onChange={(e) => setUsageFrequency(Number(e.target.value))}
                   min="0.1"
                   step="0.1"
-                  className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none"
+                  className="cred-input"
                   required
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Expiry Date (Optional)</label>
+                <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-2">Expiry Date (Optional)</label>
                 <input
                   type="date"
                   value={expiryDate}
                   onChange={(e) => setExpiryDate(e.target.value)}
-                  className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none"
+                  className="cred-input"
                 />
               </div>
 
               <button
                 type="submit"
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2 mt-4"
+                className="cred-button-primary w-full flex items-center justify-center gap-2 mt-4"
               >
                 <Save className="w-5 h-5" />
                 Save Changes

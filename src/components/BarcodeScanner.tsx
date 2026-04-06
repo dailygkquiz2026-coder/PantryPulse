@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
-import { X, Loader2, AlertCircle, Camera, RefreshCw } from 'lucide-react';
+import { X, Loader2, AlertCircle, Camera, RefreshCw, Zap, ZapOff, Image as ImageIcon, Keyboard } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface BarcodeScannerProps {
@@ -13,13 +13,59 @@ export default function BarcodeScanner({ isOpen, onClose, onScan }: BarcodeScann
   const [error, setError] = useState<string | null>(null);
   const [isInitializing, setIsInitializing] = useState(true);
   const [isScanning, setIsScanning] = useState(false);
+  const [isFlashOn, setIsFlashOn] = useState(false);
+  const [hasFlash, setHasFlash] = useState(false);
+  const [manualBarcode, setManualBarcode] = useState('');
+  const [isManualInput, setIsManualInput] = useState(false);
   const html5QrCodeRef = useRef<Html5Qrcode | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const toggleFlash = async () => {
+    if (!html5QrCodeRef.current || !isScanning) return;
+    try {
+      const newState = !isFlashOn;
+      await html5QrCodeRef.current.applyVideoConstraints({
+        // @ts-ignore - Torch is an experimental constraint
+        advanced: [{ torch: newState }]
+      });
+      setIsFlashOn(newState);
+    } catch (err) {
+      console.error("Failed to toggle flash", err);
+    }
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !html5QrCodeRef.current) return;
+
+    setIsInitializing(true);
+    try {
+      const decodedText = await html5QrCodeRef.current.scanFile(file, true);
+      onScan(decodedText);
+      onClose();
+    } catch (err) {
+      console.error("Failed to scan image", err);
+      alert("Could not find a barcode in this image. Please try again or use the live camera.");
+    } finally {
+      setIsInitializing(false);
+    }
+  };
+
+  const handleManualSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (manualBarcode.trim()) {
+      onScan(manualBarcode.trim());
+      onClose();
+    }
+  };
 
   const startScanner = async () => {
     if (!isOpen) return;
     
     setIsInitializing(true);
     setError(null);
+    setHasFlash(false);
+    setIsFlashOn(false);
     
     try {
       // Ensure any existing instance is cleared
@@ -35,20 +81,39 @@ export default function BarcodeScanner({ isOpen, onClose, onScan }: BarcodeScann
       html5QrCodeRef.current = html5QrCode;
 
       const config = {
-        fps: 20, // Higher FPS for better responsiveness
-        qrbox: { width: 280, height: 180 },
+        fps: 30, // Higher FPS for smoother scanning
+        qrbox: (viewfinderWidth: number, viewfinderHeight: number) => {
+          // Responsive qrbox
+          const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+          const qrboxSize = Math.floor(minEdge * 0.7);
+          return {
+            width: qrboxSize,
+            height: Math.floor(qrboxSize * 0.6) // Rectangular for barcodes
+          };
+        },
         aspectRatio: 1.0,
+        experimentalFeatures: {
+          useBarCodeDetectorIfSupported: true
+        },
         formatsToSupport: [
           Html5QrcodeSupportedFormats.EAN_13,
           Html5QrcodeSupportedFormats.EAN_8,
           Html5QrcodeSupportedFormats.UPC_A,
           Html5QrcodeSupportedFormats.UPC_E,
           Html5QrcodeSupportedFormats.CODE_128,
+          Html5QrcodeSupportedFormats.CODE_39,
+          Html5QrcodeSupportedFormats.CODE_93,
+          Html5QrcodeSupportedFormats.ITF,
         ]
       };
 
       await html5QrCode.start(
-        { facingMode: "environment" },
+        { 
+          facingMode: "environment",
+          // Request higher resolution for better barcode clarity
+          width: { min: 640, ideal: 1280, max: 1920 },
+          height: { min: 480, ideal: 720, max: 1080 }
+        },
         config,
         (decodedText) => {
           setIsScanning(false);
@@ -65,6 +130,17 @@ export default function BarcodeScanner({ isOpen, onClose, onScan }: BarcodeScann
           // Ignore common scan errors
         }
       );
+
+      // Check for flash support
+      try {
+        const track = (html5QrCode as any).getRunningTrack();
+        const capabilities = track.getCapabilities();
+        if (capabilities.torch) {
+          setHasFlash(true);
+        }
+      } catch (e) {
+        console.log("Flash support check failed", e);
+      }
 
       setIsInitializing(false);
       setIsScanning(true);
@@ -121,18 +197,85 @@ export default function BarcodeScanner({ isOpen, onClose, onScan }: BarcodeScann
               <div className="relative aspect-square bg-black rounded-[2rem] overflow-hidden shadow-inner ring-1 ring-white/10">
                 <div id="barcode-reader" className="w-full h-full"></div>
                 
-                {isScanning && (
+                {isScanning && !isManualInput && (
                   <>
                     <div className="absolute inset-0 border-[40px] border-black/40 pointer-events-none"></div>
                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[280px] h-[180px] border-2 border-red-500 rounded-lg pointer-events-none shadow-[0_0_20px_rgba(239,68,68,0.5)]">
                       <motion.div 
-                        animate={{ top: ['0%', '100%', '0%'] }}
-                        transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                        className="absolute left-0 right-0 h-0.5 bg-red-500 shadow-[0_0_10px_rgba(239,68,68,1)]"
+                         animate={{ top: ['0%', '100%', '0%'] }}
+                         transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                         className="absolute left-0 right-0 h-0.5 bg-red-500 shadow-[0_0_10px_rgba(239,68,68,1)]"
                       />
+                    </div>
+                    
+                    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-4">
+                      {hasFlash && (
+                        <button
+                          onClick={toggleFlash}
+                          className="p-4 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-2xl transition-all border border-white/10"
+                        >
+                          {isFlashOn ? <ZapOff className="w-6 h-6 text-yellow-400" /> : <Zap className="w-6 h-6 text-white" />}
+                        </button>
+                      )}
+                      <button
+                        onClick={() => fileInputRef.current?.click()}
+                        className="p-4 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-2xl transition-all border border-white/10"
+                      >
+                        <ImageIcon className="w-6 h-6 text-white" />
+                      </button>
+                      <button
+                        onClick={() => setIsManualInput(true)}
+                        className="p-4 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-2xl transition-all border border-white/10"
+                      >
+                        <Keyboard className="w-6 h-6 text-white" />
+                      </button>
                     </div>
                   </>
                 )}
+
+                {isManualInput && (
+                  <div className="absolute inset-0 bg-black/90 backdrop-blur-md flex flex-col items-center justify-center p-8">
+                    <form onSubmit={handleManualSubmit} className="w-full space-y-6">
+                      <div className="text-center space-y-2">
+                        <Keyboard className="w-12 h-12 text-blue-500 mx-auto" />
+                        <h3 className="text-xl font-bold text-white">Manual Entry</h3>
+                        <p className="text-gray-400 text-sm">Enter the barcode number manually</p>
+                      </div>
+                      <input
+                        autoFocus
+                        type="text"
+                        value={manualBarcode}
+                        onChange={(e) => setManualBarcode(e.target.value)}
+                        placeholder="e.g. 8901234567890"
+                        className="cred-input text-center text-2xl font-mono"
+                      />
+                      <div className="flex gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setIsManualInput(false)}
+                          className="flex-1 py-4 bg-white/10 hover:bg-white/20 text-white font-bold rounded-2xl"
+                        >
+                          Back
+                        </button>
+                        <button
+                          type="submit"
+                          disabled={!manualBarcode.trim()}
+                          className="flex-1 py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl disabled:opacity-50"
+                        >
+                          Confirm
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                )}
+
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleImageUpload}
+                  accept="image/*"
+                  className="hidden"
+                />
 
                 {isInitializing && (
                   <div className="absolute inset-0 flex flex-col items-center justify-center bg-black text-white gap-4">

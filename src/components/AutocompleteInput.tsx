@@ -75,7 +75,7 @@ export default function AutocompleteInput({ value, onChange, placeholder, classN
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="absolute z-50 w-full mt-1 bg-white border border-gray-100 rounded-xl shadow-xl overflow-hidden"
+            className="absolute z-50 w-full mt-1 bg-white dark:bg-cred-gray border border-gray-100 dark:border-white/10 rounded-xl shadow-xl overflow-hidden"
           >
             {suggestions.map((suggestion, index) => (
               <button
@@ -85,7 +85,7 @@ export default function AutocompleteInput({ value, onChange, placeholder, classN
                   onChange(suggestion);
                   setShowSuggestions(false);
                 }}
-                className="w-full px-4 py-2 text-left text-sm hover:bg-blue-50 transition-colors flex items-center gap-2"
+                className="w-full px-4 py-2 text-left text-sm hover:bg-blue-50 dark:hover:bg-cred-dark dark:text-white transition-colors flex items-center gap-2"
               >
                 <Search className="w-3 h-3 text-gray-400" />
                 {suggestion}
