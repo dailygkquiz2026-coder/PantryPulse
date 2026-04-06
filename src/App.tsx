@@ -125,6 +125,8 @@ function AppContent({ theme, setTheme }: { theme: 'light' | 'dark', setTheme: (t
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [itemToEdit, setItemToEdit] = useState<GroceryItem | null>(null);
   const [isTroubleshootingOpen, setIsTroubleshootingOpen] = useState(false);
+  const [suppressRestockPopup, setSuppressRestockPopup] = useState(false);
+  const [lastShoppingActivity, setLastShoppingActivity] = useState(Date.now());
 
   // Auth Listener
   useEffect(() => {
@@ -249,6 +251,28 @@ function AppContent({ theme, setTheme }: { theme: 'light' | 'dark', setTheme: (t
     }
   }, [inventory, household]);
 
+  // Auto-reset popup suppression after 10 minutes of inactivity
+  useEffect(() => {
+    if (!suppressRestockPopup) return;
+
+    const interval = setInterval(() => {
+      const now = Date.now();
+      const tenMinutes = 10 * 60 * 1000;
+      if (now - lastShoppingActivity >= tenMinutes) {
+        setSuppressRestockPopup(false);
+      }
+    }, 30000); // Check every 30 seconds
+
+    return () => clearInterval(interval);
+  }, [suppressRestockPopup, lastShoppingActivity]);
+
+  // Suppress popup when entering shopping tab
+  useEffect(() => {
+    if (activeTab === 'shopping') {
+      setSuppressRestockPopup(true);
+    }
+  }, [activeTab]);
+
   const [loginError, setLoginError] = useState<string | null>(null);
 
   const handleLogin = async () => {
@@ -313,6 +337,8 @@ function AppContent({ theme, setTheme }: { theme: 'light' | 'dark', setTheme: (t
 
   const handleAddShoppingItem = async (name: string, details?: Partial<GroceryItem>) => {
     if (!user) return;
+    setLastShoppingActivity(Date.now());
+    setSuppressRestockPopup(true);
     try {
       await addDoc(collection(db, 'shoppingList'), {
         name,
@@ -621,7 +647,7 @@ function AppContent({ theme, setTheme }: { theme: 'light' | 'dark', setTheme: (t
 
       {/* Notification Banner */}
       <AnimatePresence>
-        {lowStockItems.length > 0 && (
+        {lowStockItems.length > 0 && activeTab !== 'shopping' && !suppressRestockPopup && (
           <motion.div
             initial={{ opacity: 0, y: -100 }}
             animate={{ opacity: 1, y: 0 }}
@@ -629,22 +655,41 @@ function AppContent({ theme, setTheme }: { theme: 'light' | 'dark', setTheme: (t
             className="fixed top-20 left-0 right-0 z-30 px-6"
           >
             <div className="max-w-5xl mx-auto">
-              <div className="bg-black dark:bg-white text-white dark:text-black p-4 rounded-2xl shadow-2xl flex items-center justify-between gap-4 border border-white/10 dark:border-black/10">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-red-500 rounded-xl">
-                    <AlertTriangle className="w-5 h-5 text-white" />
+              <div className="bg-black dark:bg-white text-white dark:text-black p-6 rounded-3xl shadow-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6 border border-white/10 dark:border-black/10">
+                <div className="flex items-start gap-4">
+                  <div className="p-3 bg-red-500 rounded-2xl shadow-lg shadow-red-500/20">
+                    <AlertTriangle className="w-6 h-6 text-white" />
                   </div>
                   <div>
-                    <p className="text-sm font-bold">Time to restock!</p>
-                    <p className="text-[10px] uppercase tracking-widest opacity-70">{lowStockItems.length} items are running low</p>
+                    <p className="text-xl font-black tracking-tight">Time to restock!</p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {lowStockItems.slice(0, 3).map(item => (
+                        <span key={item.id} className="px-3 py-1 bg-white/10 dark:bg-black/10 rounded-full text-[10px] font-black uppercase tracking-widest border border-white/5 dark:border-black/5">
+                          {item.name}
+                        </span>
+                      ))}
+                      {lowStockItems.length > 3 && (
+                        <span className="px-3 py-1 bg-white/10 dark:bg-black/10 rounded-full text-[10px] font-black uppercase tracking-widest border border-white/5 dark:border-black/5">
+                          +{lowStockItems.length - 3} more
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
-                <button
-                  onClick={() => setActiveTab('shopping')}
-                  className="px-6 py-2 bg-white dark:bg-black text-black dark:text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all"
-                >
-                  Go to Shopping List
-                </button>
+                <div className="flex items-center gap-3 w-full md:w-auto">
+                  <button
+                    onClick={() => setSuppressRestockPopup(true)}
+                    className="flex-1 md:flex-none px-6 py-3 text-[10px] font-black uppercase tracking-widest opacity-50 hover:opacity-100 transition-all"
+                  >
+                    Dismiss
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('shopping')}
+                    className="flex-1 md:flex-none px-8 py-3 bg-red-500 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-lg shadow-red-500/20"
+                  >
+                    Go to Shopping List
+                  </button>
+                </div>
               </div>
             </div>
           </motion.div>
@@ -682,6 +727,14 @@ function AppContent({ theme, setTheme }: { theme: 'light' | 'dark', setTheme: (t
           label="Settings"
           theme={theme}
         />
+        <div className="w-px h-8 bg-white/10 dark:bg-black/10 mx-1" />
+        <button
+          onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+          className="p-3 text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-cred-gray rounded-2xl transition-all"
+          title="Toggle Theme"
+        >
+          {theme === 'light' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
+        </button>
       </nav>
 
       {/* Main Content */}
@@ -746,6 +799,8 @@ function AppContent({ theme, setTheme }: { theme: 'light' | 'dark', setTheme: (t
                     </p>
                     <button 
                       onClick={() => {
+                        setLastShoppingActivity(Date.now());
+                        setSuppressRestockPopup(true);
                         lowStockItems.forEach(item => {
                           if (!shoppingList.find(s => s.name === item.name)) {
                             handleAddShoppingItem(item.name, item);
@@ -764,9 +819,12 @@ function AppContent({ theme, setTheme }: { theme: 'light' | 'dark', setTheme: (t
               <InventoryList 
                 items={inventory} 
                 onDelete={handleDeleteGrocery} 
-                onAddToShopping={(name) => {
-                  const item = inventory.find(i => i.name === name);
-                  handleAddShoppingItem(name, item);
+                onAddToShopping={(name, details) => {
+                  setLastShoppingActivity(Date.now());
+                  setSuppressRestockPopup(true);
+                  // Use the passed details if available, otherwise find in inventory
+                  const itemDetails = details || inventory.find(i => i.name === name);
+                  handleAddShoppingItem(name, itemDetails);
                   setActiveTab('shopping');
                 }}
                 onUpdateQuantity={(item) => {

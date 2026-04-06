@@ -3,12 +3,12 @@ import { GroceryItem } from '../types';
 import { Trash2, AlertTriangle, CheckCircle2, Clock, ShoppingBag, Edit2 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { formatDistanceToNow } from 'date-fns';
-import { CATEGORY_IMAGES } from '../constants';
+import { CATEGORY_IMAGES, CATEGORY_COLORS } from '../constants';
 
 interface InventoryListProps {
   items: GroceryItem[];
   onDelete: (id: string) => void;
-  onAddToShopping: (name: string) => void;
+  onAddToShopping: (name: string, details?: any) => void;
   onUpdateQuantity: (item: GroceryItem) => void;
   onEdit: (item: GroceryItem) => void;
   predictions: Record<string, number>;
@@ -41,6 +41,20 @@ export default function InventoryList({ items, onDelete, onAddToShopping, onUpda
           const isExpired = expiryDate ? expiryDate.getTime() < new Date().getTime() : false;
 
           const categoryImage = CATEGORY_IMAGES[item.category] || CATEGORY_IMAGES['Other'];
+          const categoryColor = CATEGORY_COLORS[item.category] || CATEGORY_COLORS['Other'];
+
+          const colorMap: Record<string, string> = {
+            emerald: 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400',
+            blue: 'bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400',
+            amber: 'bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400',
+            red: 'bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400',
+            orange: 'bg-orange-100 dark:bg-orange-900/40 text-orange-600 dark:text-orange-400',
+            sky: 'bg-sky-100 dark:bg-sky-900/40 text-sky-600 dark:text-sky-400',
+            indigo: 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400',
+            purple: 'bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400',
+            pink: 'bg-pink-100 dark:bg-pink-900/40 text-pink-600 dark:text-pink-400',
+            gray: 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
+          };
 
           return (
             <motion.div
@@ -48,13 +62,13 @@ export default function InventoryList({ items, onDelete, onAddToShopping, onUpda
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: index * 0.05 }}
-              className={`cred-card p-4 flex items-center justify-between group hover:shadow-lg transition-all ${
+              className={`cred-card p-4 flex items-center justify-between group hover:shadow-lg transition-all gap-4 ${
                 isExpired ? 'border-red-300 dark:border-red-900 bg-red-50/30 dark:bg-red-950/20' : 
                 isExpiringSoon ? 'border-amber-300 dark:border-amber-900 bg-amber-50/30 dark:bg-amber-950/20' : 
                 'border-gray-100 dark:border-cred-gray'
               }`}
             >
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-4 flex-1 min-w-0">
                 <div className="relative w-16 h-16 flex-shrink-0">
                   <img 
                     src={categoryImage} 
@@ -71,12 +85,14 @@ export default function InventoryList({ items, onDelete, onAddToShopping, onUpda
                     {isExpired || isExpiringSoon || isLow ? <AlertTriangle className="w-3 h-3" /> : <CheckCircle2 className="w-3 h-3" />}
                   </div>
                 </div>
-                <div>
-                  <h3 className="font-bold text-lg leading-tight">{item.name}</h3>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-bold text-lg leading-tight break-words">{item.name}</h3>
                   <div className="flex items-center gap-3 text-sm text-gray-500 dark:text-gray-400 font-medium">
                     <span>{item.quantity} {item.unit}</span>
                     <span className="text-gray-300 dark:text-cred-gray">•</span>
-                    <span>{item.category}</span>
+                    <span className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-widest ${colorMap[categoryColor]}`}>
+                      {item.category}
+                    </span>
                   </div>
                   <div className="flex flex-wrap items-center gap-3 mt-1">
                     <div className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-gray-400">
@@ -127,7 +143,7 @@ export default function InventoryList({ items, onDelete, onAddToShopping, onUpda
 
                   {isLow && (
                     <button
-                      onClick={() => onAddToShopping(item.name)}
+                      onClick={() => onAddToShopping(item.name, item)}
                       className="p-2 text-gray-500 hover:text-blue-600 dark:hover:text-cred-accent hover:bg-white dark:hover:bg-cred-dark rounded-lg transition-all"
                       title="Add to Shopping List"
                     >

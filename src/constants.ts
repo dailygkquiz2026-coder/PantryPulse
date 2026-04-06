@@ -12,16 +12,29 @@ export const CATEGORIES = [
 ];
 
 export const CATEGORY_IMAGES: Record<string, string> = {
-  'Produce': 'https://images.unsplash.com/photo-1566385101042-1a000c1267c4?w=100&h=100&fit=crop&q=80', // Vegetables
-  'Dairy': 'https://images.unsplash.com/photo-1550583724-125581cc258b?w=100&h=100&fit=crop&q=80', // Milk bottle
-  'Bakery': 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=100&h=100&fit=crop&q=80',
-  'Meat & Seafood': 'https://images.unsplash.com/photo-1607623814075-e51df1bdc82f?w=100&h=100&fit=crop&q=80',
-  'Pantry': 'https://images.unsplash.com/photo-1584473457406-623048ff43f4?w=100&h=100&fit=crop&q=80',
-  'Beverages': 'https://images.unsplash.com/photo-1544145945-f904253d0c7b?w=100&h=100&fit=crop&q=80',
-  'Frozen Foods': 'https://images.unsplash.com/photo-1585238341267-1cfec2046a55?w=100&h=100&fit=crop&q=80',
-  'Household': 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=100&h=100&fit=crop&q=80',
-  'Personal Care': 'https://images.unsplash.com/photo-1556228578-0d85b1a4d571?w=100&h=100&fit=crop&q=80',
-  'Other': 'https://images.unsplash.com/photo-1534483509719-3feaee7c30da?w=100&h=100&fit=crop&q=80'
+  'Produce': 'https://images.unsplash.com/photo-1610348725531-843dff563e2c?w=200&h=200&fit=crop&q=80', // Fresh vegetables
+  'Dairy': 'https://images.unsplash.com/photo-1628088062854-d1870b4553da?w=200&h=200&fit=crop&q=80', // Milk and cheese
+  'Bakery': 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=200&h=200&fit=crop&q=80', // Bread
+  'Meat & Seafood': 'https://images.unsplash.com/photo-1607623814075-e51df1bdc82f?w=200&h=200&fit=crop&q=80', // Meat
+  'Pantry': 'https://images.unsplash.com/photo-1590779033100-9f60705a2f3b?w=200&h=200&fit=crop&q=80', // Canned goods/Pantry
+  'Beverages': 'https://images.unsplash.com/photo-1527661591475-527312dd65f5?w=200&h=200&fit=crop&q=80', // Drinks/Beverages
+  'Frozen Foods': 'https://images.unsplash.com/photo-1585238341267-1cfec2046a55?w=200&h=200&fit=crop&q=80', // Frozen
+  'Household': 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=200&h=200&fit=crop&q=80', // Cleaning
+  'Personal Care': 'https://images.unsplash.com/photo-1556228578-0d85b1a4d571?w=200&h=200&fit=crop&q=80', // Soap/Shampoo
+  'Other': 'https://images.unsplash.com/photo-1534483509719-3feaee7c30da?w=200&h=200&fit=crop&q=80'
+};
+
+export const CATEGORY_COLORS: Record<string, string> = {
+  'Produce': 'emerald',
+  'Dairy': 'blue',
+  'Bakery': 'amber',
+  'Meat & Seafood': 'red',
+  'Pantry': 'orange',
+  'Beverages': 'sky',
+  'Frozen Foods': 'indigo',
+  'Household': 'purple',
+  'Personal Care': 'pink',
+  'Other': 'gray'
 };
 
 export const UNITS = [

@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { CATEGORIES, UNITS } from '../constants';
+import { CATEGORIES, UNITS, CATEGORY_IMAGES, CATEGORY_COLORS } from '../constants';
 import { Plus, ShoppingCart, Camera, Loader2, FileText, Barcode } from 'lucide-react';
 import { motion } from 'motion/react';
 import AutocompleteInput from './AutocompleteInput';
@@ -327,17 +327,49 @@ export default function GroceryForm({ onAdd, onAddMultiple, inventory, onUpdateQ
             />
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-4 col-span-full">
             <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-2">Category</label>
-            <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className="cred-input appearance-none"
-            >
-              {CATEGORIES.map(cat => (
-                <option key={cat} value={cat}>{cat}</option>
-              ))}
-            </select>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+              {CATEGORIES.map(cat => {
+                const isActive = category === cat;
+                const color = CATEGORY_COLORS[cat] || 'gray';
+                const colorClasses: Record<string, string> = {
+                  emerald: 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400',
+                  blue: 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400',
+                  amber: 'border-amber-500 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400',
+                  red: 'border-red-500 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400',
+                  orange: 'border-orange-500 bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400',
+                  sky: 'border-sky-500 bg-sky-50 dark:bg-sky-900/20 text-sky-600 dark:text-sky-400',
+                  indigo: 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400',
+                  purple: 'border-purple-500 bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400',
+                  pink: 'border-pink-500 bg-pink-50 dark:bg-pink-900/20 text-pink-600 dark:text-pink-400',
+                  gray: 'border-gray-500 bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
+                };
+
+                return (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => setCategory(cat)}
+                    className={`flex flex-col items-center gap-2 p-3 rounded-2xl border-2 transition-all hover:scale-105 ${
+                      isActive 
+                        ? colorClasses[color]
+                        : 'border-gray-100 dark:border-cred-gray bg-white dark:bg-cred-dark text-gray-500 dark:text-gray-400'
+                    }`}
+                  >
+                    <div className="w-10 h-10 rounded-xl overflow-hidden shadow-sm">
+                      <img 
+                        src={CATEGORY_IMAGES[cat]} 
+                        alt="" 
+                        className="w-full h-full object-cover"
+                        referrerPolicy="no-referrer"
+                      />
+                    </div>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-center leading-tight">{cat}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-6">

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ShoppingListItem } from '../types';
+import { CATEGORY_COLORS } from '../constants';
 import { Trash2, CheckCircle2, ShoppingBag, Search, ExternalLink, Plus, Share2, MessageSquare, Mail } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import AutocompleteInput from './AutocompleteInput';
@@ -133,10 +134,10 @@ export default function ShoppingList({ items, onDelete, onToggleStatus, onSearch
                     : 'bg-white dark:bg-cred-gray border-gray-100 dark:border-white/5 hover:shadow-md'
                 }`}
               >
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-4 flex-1 min-w-0">
                   <button
                     onClick={() => onToggleStatus(item.id)}
-                    className={`p-2 rounded-xl transition-all ${
+                    className={`p-2 rounded-xl transition-all flex-shrink-0 ${
                       item.status === 'bought' 
                         ? 'bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-400' 
                         : 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100'
@@ -144,11 +145,32 @@ export default function ShoppingList({ items, onDelete, onToggleStatus, onSearch
                   >
                     <CheckCircle2 className={`w-6 h-6 ${item.status === 'bought' ? 'fill-current' : ''}`} />
                   </button>
-                  <div>
-                    <h3 className={`font-bold ${item.status === 'bought' ? 'line-through' : ''}`}>
-                      {item.name}
+                  <div className="flex-1 min-w-0">
+                    <h3 className={`font-bold text-gray-900 dark:text-white break-words ${item.status === 'bought' ? 'line-through opacity-50' : ''}`}>
+                      {item.name || 'Unnamed Item'}
                     </h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">{item.quantity} {item.unit}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">{item.quantity} {item.unit}</p>
+                      {item.category && (
+                        <>
+                          <span className="text-gray-300 dark:text-cred-gray">•</span>
+                          <span className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-widest ${
+                            CATEGORY_COLORS[item.category] === 'emerald' ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400' :
+                            CATEGORY_COLORS[item.category] === 'blue' ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400' :
+                            CATEGORY_COLORS[item.category] === 'amber' ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400' :
+                            CATEGORY_COLORS[item.category] === 'red' ? 'bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400' :
+                            CATEGORY_COLORS[item.category] === 'orange' ? 'bg-orange-100 dark:bg-orange-900/40 text-orange-600 dark:text-orange-400' :
+                            CATEGORY_COLORS[item.category] === 'sky' ? 'bg-sky-100 dark:bg-sky-900/40 text-sky-600 dark:text-sky-400' :
+                            CATEGORY_COLORS[item.category] === 'indigo' ? 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400' :
+                            CATEGORY_COLORS[item.category] === 'purple' ? 'bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400' :
+                            CATEGORY_COLORS[item.category] === 'pink' ? 'bg-pink-100 dark:bg-pink-900/40 text-pink-600 dark:text-pink-400' :
+                            'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
+                          }`}>
+                            {item.category}
+                          </span>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
 
