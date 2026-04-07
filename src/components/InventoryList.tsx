@@ -62,13 +62,13 @@ export default function InventoryList({ items, onDelete, onAddToShopping, onUpda
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: index * 0.05 }}
-              className={`cred-card p-4 flex items-center justify-between group hover:shadow-lg transition-all gap-4 ${
+              className={`cred-card p-4 flex flex-col sm:flex-row sm:items-center justify-between group hover:shadow-lg transition-all gap-4 ${
                 isExpired ? 'border-red-300 dark:border-red-900 bg-red-50/30 dark:bg-red-950/20' : 
                 isExpiringSoon ? 'border-amber-300 dark:border-amber-900 bg-amber-50/30 dark:bg-amber-950/20' : 
                 'border-gray-100 dark:border-cred-gray'
               }`}
             >
-              <div className="flex items-center gap-4 flex-1 min-w-0">
+              <div className="flex items-center gap-4 flex-1 min-w-0 w-full">
                 <div className="relative w-16 h-16 flex-shrink-0">
                   <img 
                     src={categoryImage} 
@@ -118,8 +118,8 @@ export default function InventoryList({ items, onDelete, onAddToShopping, onUpda
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
-                <div className="text-right hidden md:block mr-4">
+              <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto pt-3 sm:pt-0 border-t sm:border-t-0 border-gray-100 dark:border-white/5">
+                <div className="text-left mr-2 sm:mr-4">
                   <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Usage</p>
                   <p className="text-sm font-bold text-gray-700 dark:text-gray-300">{item.usageFrequency}x / day</p>
                 </div>
@@ -144,10 +144,10 @@ export default function InventoryList({ items, onDelete, onAddToShopping, onUpda
                   {isLow && (
                     <button
                       onClick={() => onAddToShopping(item.name, item)}
-                      className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all shadow-md shadow-blue-200 dark:shadow-none font-bold text-xs"
+                      className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all shadow-md shadow-blue-200 dark:shadow-none font-bold text-xs whitespace-nowrap"
                     >
                       <ShoppingBag className="w-4 h-4" />
-                      Restock
+                      <span className="hidden md:inline">Restock</span>
                     </button>
                   )}
 

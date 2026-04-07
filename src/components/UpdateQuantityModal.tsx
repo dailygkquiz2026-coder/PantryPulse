@@ -27,9 +27,9 @@ export default function UpdateQuantityModal({ isOpen, onClose, item, onConfirm }
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="bg-white dark:bg-cred-black w-full max-w-md rounded-3xl shadow-2xl overflow-hidden border border-white/10"
+            className="bg-white dark:bg-cred-black w-full max-w-md rounded-3xl shadow-2xl overflow-hidden border border-white/10 flex flex-col max-h-[90vh]"
           >
-            <div className="p-6 border-b border-gray-100 dark:border-white/5 flex items-center justify-between bg-amber-50/50 dark:bg-amber-950/20">
+            <div className="p-6 border-b border-gray-100 dark:border-white/5 flex items-center justify-between bg-amber-50/50 dark:bg-amber-950/20 shrink-0">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-amber-100 dark:bg-amber-900/40 rounded-xl">
                   <TrendingDown className="w-6 h-6 text-amber-600 dark:text-amber-400" />
@@ -44,7 +44,7 @@ export default function UpdateQuantityModal({ isOpen, onClose, item, onConfirm }
               </button>
             </div>
 
-            <div className="p-6 space-y-4">
+            <div className="p-6 space-y-4 overflow-y-auto flex-1">
               <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-2xl flex gap-3 items-start border border-amber-100 dark:border-amber-900/40">
                 <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
                 <p className="text-sm text-amber-700 dark:text-amber-300 leading-relaxed font-medium">
@@ -65,7 +65,7 @@ export default function UpdateQuantityModal({ isOpen, onClose, item, onConfirm }
               </div>
             </div>
 
-            <div className="p-6 border-t border-gray-100 dark:border-white/5 bg-gray-50 dark:bg-cred-gray/50 flex gap-3">
+            <div className="p-6 border-t border-gray-100 dark:border-white/5 bg-gray-50 dark:bg-cred-gray/50 flex gap-3 shrink-0">
               <button
                 onClick={onClose}
                 className="flex-1 px-6 py-3 bg-white dark:bg-cred-gray border border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-300 font-bold rounded-xl hover:bg-gray-100 dark:hover:bg-cred-dark transition-all"

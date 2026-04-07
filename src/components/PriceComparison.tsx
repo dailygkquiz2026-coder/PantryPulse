@@ -20,9 +20,9 @@ export default function PriceComparison({ isOpen, onClose, itemName, results, is
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="bg-white dark:bg-cred-black w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[80vh] border border-white/10"
+            className="bg-white dark:bg-cred-black w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] border border-white/10"
           >
-            <div className="p-6 border-b border-gray-100 dark:border-white/5 flex items-center justify-between bg-blue-50/50 dark:bg-blue-950/20">
+            <div className="p-6 border-b border-gray-100 dark:border-white/5 flex items-center justify-between bg-blue-50/50 dark:bg-blue-950/20 shrink-0">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-blue-100 dark:bg-blue-900/40 rounded-xl">
                   <ShoppingCart className="w-6 h-6 text-blue-600 dark:text-blue-400" />
@@ -82,7 +82,7 @@ export default function PriceComparison({ isOpen, onClose, itemName, results, is
               )}
             </div>
 
-            <div className="p-6 border-t border-gray-100 dark:border-white/5 bg-gray-50 dark:bg-cred-gray/50 flex justify-end">
+            <div className="p-6 border-t border-gray-100 dark:border-white/5 bg-gray-50 dark:bg-cred-gray/50 flex justify-end shrink-0">
               <button
                 onClick={onClose}
                 className="px-6 py-2 bg-white dark:bg-cred-gray border border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-300 font-semibold rounded-xl hover:bg-gray-100 dark:hover:bg-cred-dark transition-all"

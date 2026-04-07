@@ -58,16 +58,16 @@ export default function EditItemModal({ isOpen, onClose, item, onUpdate }: EditI
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="bg-white dark:bg-cred-black w-full max-w-md rounded-3xl shadow-2xl overflow-hidden border border-white/10"
+            className="bg-white dark:bg-cred-black w-full max-w-md rounded-3xl shadow-2xl overflow-hidden border border-white/10 flex flex-col max-h-[90vh]"
           >
-            <div className="p-6 border-b border-gray-100 dark:border-cred-gray flex items-center justify-between">
+            <div className="p-6 border-b border-gray-100 dark:border-cred-gray flex items-center justify-between shrink-0">
               <h2 className="text-xl font-bold">Edit Item</h2>
               <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-all">
                 <X className="w-6 h-6 text-gray-400" />
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
+            <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto">
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-2">Item Name</label>
                 <input

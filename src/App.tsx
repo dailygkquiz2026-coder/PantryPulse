@@ -114,7 +114,33 @@ function AppContent({ theme, setTheme }: { theme: 'light' | 'dark', setTheme: (t
   const [searchResults, setSearchResults] = useState<string | null>(null);
   const [isSearching, setIsSearching] = useState(false);
   const [predictions, setPredictions] = useState<Record<string, number>>({});
+  const [notifiedItems, setNotifiedItems] = useState<Set<string>>(new Set());
   const [user, setUser] = useState<User | null>(null);
+
+  // Notification Logic for Low Stock
+  useEffect(() => {
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+
+    const lowStockItems = inventory.filter(item => {
+      const days = predictions[item.id];
+      // Notify if 1 day left or out of stock, and not notified yet
+      return days !== undefined && days <= 1 && !notifiedItems.has(item.id);
+    });
+
+    if (lowStockItems.length > 0) {
+      const itemNames = lowStockItems.map(i => i.name).join(', ');
+      new Notification("Low Stock Alert", {
+        body: `The following items are running out: ${itemNames}. Consider restocking soon!`,
+        icon: "/favicon.ico"
+      });
+
+      setNotifiedItems(prev => {
+        const next = new Set(prev);
+        lowStockItems.forEach(i => next.add(i.id));
+        return next;
+      });
+    }
+  }, [inventory, predictions, notifiedItems]);
   const [isAuthReady, setIsAuthReady] = useState(false);
   const [userLocation, setUserLocation] = useState<string | null>(null);
 

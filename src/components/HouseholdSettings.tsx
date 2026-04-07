@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { HouseholdInfo } from '../types';
-import { Users, Settings, Plus, X } from 'lucide-react';
-import { motion } from 'motion/react';
+import { Users, Settings, Plus, X, CheckCircle2, Bell, BellOff } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 
 interface HouseholdSettingsProps {
   info: HouseholdInfo;
@@ -11,33 +11,94 @@ interface HouseholdSettingsProps {
 export default function HouseholdSettings({ info, onUpdate }: HouseholdSettingsProps) {
   const [members, setMembers] = React.useState(info.members);
   const [newPreference, setNewPreference] = React.useState('');
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>('default');
+
+  useEffect(() => {
+    if ('Notification' in window) {
+      setNotificationPermission(Notification.permission);
+    }
+  }, []);
+
+  const requestNotificationPermission = async () => {
+    if (!('Notification' in window)) return;
+    const permission = await Notification.requestPermission();
+    setNotificationPermission(permission);
+    if (permission === 'granted') {
+      new Notification("PantryPulse", {
+        body: "Notifications enabled! We'll alert you when items are running low.",
+        icon: "/favicon.ico"
+      });
+    }
+  };
+
+  useEffect(() => {
+    if (showSuccess) {
+      const timer = setTimeout(() => setShowSuccess(false), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [showSuccess]);
 
   const handleUpdate = (e: React.FormEvent) => {
     e.preventDefault();
     onUpdate({ ...info, members });
+    setShowSuccess(true);
   };
 
   const addPreference = () => {
     if (!newPreference) return;
     onUpdate({ ...info, preferences: [...info.preferences, newPreference] });
     setNewPreference('');
+    setShowSuccess(true);
   };
 
   const removePreference = (pref: string) => {
     onUpdate({ ...info, preferences: info.preferences.filter(p => p !== pref) });
+    setShowSuccess(true);
   };
 
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="cred-card p-8 space-y-8"
+      className="cred-card p-8 space-y-8 relative"
     >
-      <div className="flex items-center gap-4 mb-8">
-        <div className="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-2xl shadow-lg">
-          <Settings className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+      <AnimatePresence>
+        {showSuccess && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="absolute top-4 right-8 flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-xl shadow-lg z-10"
+          >
+            <CheckCircle2 className="w-4 h-4" />
+            <span className="text-xs font-black uppercase tracking-widest">Settings Updated</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center gap-4">
+          <div className="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-2xl shadow-lg">
+            <Settings className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+          </div>
+          <h2 className="text-3xl font-black tracking-tighter">Household Settings</h2>
         </div>
-        <h2 className="text-3xl font-black tracking-tighter">Household Settings</h2>
+
+        <button
+          onClick={requestNotificationPermission}
+          className={`p-3 rounded-2xl transition-all flex items-center gap-2 ${
+            notificationPermission === 'granted' 
+              ? 'bg-green-50 dark:bg-green-950/20 text-green-600' 
+              : 'bg-gray-50 dark:bg-cred-gray text-gray-400 hover:text-black dark:hover:text-white'
+          }`}
+          title={notificationPermission === 'granted' ? 'Notifications Enabled' : 'Enable Notifications'}
+        >
+          {notificationPermission === 'granted' ? <Bell className="w-5 h-5" /> : <BellOff className="w-5 h-5" />}
+          <span className="text-[10px] font-black uppercase tracking-widest hidden sm:block">
+            {notificationPermission === 'granted' ? 'Alerts On' : 'Enable Alerts'}
+          </span>
+        </button>
       </div>
 
       <div className="space-y-8">

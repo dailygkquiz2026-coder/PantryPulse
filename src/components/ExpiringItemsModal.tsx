@@ -35,10 +35,10 @@ export default function ExpiringItemsModal({
           initial={{ opacity: 0, scale: 0.9, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.9, y: 20 }}
-          className="relative w-full max-w-lg bg-white dark:bg-cred-black rounded-[2.5rem] shadow-2xl overflow-hidden border border-gray-100 dark:border-white/10"
+          className="relative w-full max-w-lg bg-white dark:bg-cred-black rounded-[2.5rem] shadow-2xl overflow-hidden border border-gray-100 dark:border-white/10 flex flex-col max-h-[90vh]"
         >
-          <div className="p-8">
-            <div className="flex items-center justify-between mb-8">
+          <div className="p-8 flex flex-col h-full">
+            <div className="flex items-center justify-between mb-8 shrink-0">
               <div className="flex items-center gap-4">
                 <div className="p-3 bg-amber-100 dark:bg-amber-900/40 rounded-2xl">
                   <AlertTriangle className="w-6 h-6 text-amber-600 dark:text-amber-400" />
@@ -98,7 +98,7 @@ export default function ExpiringItemsModal({
 
             <button
               onClick={onClose}
-              className="w-full mt-8 py-4 bg-black dark:bg-white text-white dark:text-black rounded-2xl font-black uppercase tracking-widest text-sm hover:opacity-90 transition-all"
+              className="w-full mt-8 py-4 bg-black dark:bg-white text-white dark:text-black rounded-2xl font-black uppercase tracking-widest text-sm hover:opacity-90 transition-all shrink-0"
             >
               Got it
             </button>
