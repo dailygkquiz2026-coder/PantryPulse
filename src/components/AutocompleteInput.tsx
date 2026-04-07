@@ -85,7 +85,7 @@ export default function AutocompleteInput({ value, onChange, placeholder, classN
                   onChange(suggestion);
                   setShowSuggestions(false);
                 }}
-                className="w-full px-4 py-2 text-left text-sm hover:bg-blue-50 dark:hover:bg-cred-dark dark:text-white transition-colors flex items-center gap-2"
+                className="w-full px-4 py-2 text-left text-sm text-gray-900 dark:text-white hover:bg-blue-50 dark:hover:bg-cred-dark transition-colors flex items-center gap-2"
               >
                 <Search className="w-3 h-3 text-gray-400" />
                 {suggestion}

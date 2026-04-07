@@ -10,6 +10,7 @@ export interface GroceryItem {
   usageFrequency: number; // times per day
   lastUpdated: string;
   uid: string;
+  restockHistory?: { date: string; quantity: number }[];
 }
 
 export interface HouseholdInfo {

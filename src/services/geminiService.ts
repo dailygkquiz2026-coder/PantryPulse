@@ -33,7 +33,7 @@ function parseGeminiResponse(text: string) {
 }
 
 export async function predictMultipleRestocks(
-  items: { id: string; name: string; quantity: number; unit: string; usageFrequency: number }[],
+  items: { id: string; name: string; quantity: number; unit: string; usageFrequency: number; restockHistory?: { date: string; quantity: number }[] }[],
   members: number
 ) {
   if (items.length === 0) return {};
@@ -42,7 +42,17 @@ export async function predictMultipleRestocks(
   const response = await ai.models.generateContent({
     model: "gemini-3-flash-preview",
     contents: `Predict how many days it will take for a household of ${members} people to consume these grocery items. 
-    Items: ${JSON.stringify(items.map(i => ({ name: i.name, quantity: i.quantity, unit: i.unit, usageFrequency: i.usageFrequency })))}.
+    
+    CRITICAL: Use the 'restockHistory' to identify individual user patterns. If an item is restocked frequently, it means this specific family consumes it faster than average.
+    
+    Items: ${JSON.stringify(items.map(i => ({ 
+      name: i.name, 
+      quantity: i.quantity, 
+      unit: i.unit, 
+      usageFrequency: i.usageFrequency,
+      history: i.restockHistory 
+    })))}.
+    
     Return a JSON object where keys are the item names and values are the predicted days remaining.`,
     config: {
       responseMimeType: "application/json",

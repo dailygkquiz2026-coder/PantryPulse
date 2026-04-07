@@ -229,7 +229,8 @@ function AppContent({ theme, setTheme }: { theme: 'light' | 'dark', setTheme: (t
             name: i.name,
             quantity: i.quantity,
             unit: i.unit,
-            usageFrequency: i.usageFrequency
+            usageFrequency: i.usageFrequency,
+            restockHistory: i.restockHistory
           })),
           household.members
         );
@@ -399,11 +400,15 @@ function AppContent({ theme, setTheme }: { theme: 'light' | 'dark', setTheme: (t
     try {
       // Check if item already exists in inventory
       const existing = inventory.find(i => i.name.toLowerCase() === item.name.toLowerCase());
+      const restockEntry = { date: new Date().toISOString(), quantity: item.quantity };
+      
       if (existing) {
+        const history = existing.restockHistory || [];
         await updateDoc(doc(db, 'inventory', existing.id), {
           quantity: existing.quantity + item.quantity,
           usageFrequency: item.usageFrequency,
-          lastUpdated: new Date().toISOString()
+          lastUpdated: new Date().toISOString(),
+          restockHistory: [...history, restockEntry].slice(-5) // Keep last 5 restocks for context
         });
       } else {
         await addDoc(collection(db, 'inventory'), {
@@ -414,7 +419,8 @@ function AppContent({ theme, setTheme }: { theme: 'light' | 'dark', setTheme: (t
           usageFrequency: item.usageFrequency,
           purchaseDate: new Date().toISOString(),
           lastUpdated: new Date().toISOString(),
-          uid: user.uid
+          uid: user.uid,
+          restockHistory: [restockEntry]
         });
       }
       
@@ -624,8 +630,8 @@ function AppContent({ theme, setTheme }: { theme: 'light' | 'dark', setTheme: (t
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 bg-white/80 dark:bg-cred-black/80 backdrop-blur-md border-b border-gray-100 dark:border-white/5 px-6 py-4 z-40 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-yellow-400 rounded-xl flex items-center justify-center shadow-lg">
-            <ShoppingBag className="text-red-600 w-6 h-6" />
+          <div className="w-10 h-10 bg-red-600 rounded-xl flex items-center justify-center shadow-lg transform rotate-3 hover:rotate-0 transition-transform cursor-default">
+            <span className="text-white font-black text-xl italic tracking-tighter">PP</span>
           </div>
           <h1 className="text-2xl font-black tracking-tighter text-red-600">PantryPulse</h1>
         </div>
