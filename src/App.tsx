@@ -636,27 +636,27 @@ function AppContent({ theme, setTheme }: { theme: 'light' | 'dark', setTheme: (t
           <h1 className="text-2xl font-black tracking-tighter text-red-600">PantryPulse</h1>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 md:gap-4">
           <button
             onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
-            className="p-3 bg-gray-50 dark:bg-cred-gray rounded-2xl hover:bg-gray-100 dark:hover:bg-cred-dark transition-all"
+            className="p-2 md:p-3 bg-gray-50 dark:bg-cred-gray rounded-2xl hover:bg-gray-100 dark:hover:bg-cred-dark transition-all"
             title="Toggle Theme"
           >
-            {theme === 'light' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
+            {theme === 'light' ? <Moon className="w-4 h-4 md:w-5 md:h-5" /> : <Sun className="w-4 h-4 md:w-5 md:h-5" />}
           </button>
           
-          <div className="hidden md:flex items-center gap-3 pl-4 border-l border-gray-100 dark:border-cred-gray">
+          <div className="flex items-center gap-2 md:gap-3 pl-2 md:pl-4 border-l border-gray-100 dark:border-cred-gray">
             <div className="text-right">
-              <p className="text-xs font-black uppercase tracking-widest text-gray-400">{user.displayName}</p>
+              <p className="hidden sm:block text-[10px] md:text-xs font-black uppercase tracking-widest text-gray-400">{user.displayName}</p>
               <button onClick={handleLogout} className="text-[10px] font-black uppercase tracking-widest text-red-500 hover:text-red-600">Sign Out</button>
             </div>
-            <img src={user.photoURL || ''} alt="" className="w-10 h-10 rounded-full border-2 border-white dark:border-cred-dark shadow-sm" />
+            <img src={user.photoURL || ''} alt="" className="w-8 h-8 md:w-10 md:h-10 rounded-full border-2 border-white dark:border-cred-dark shadow-sm" />
           </div>
         </div>
       </header>
 
       {/* Navigation */}
-      <nav className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-black/90 dark:bg-white/90 backdrop-blur-xl px-4 py-3 rounded-[2.5rem] z-50 flex items-center gap-2 shadow-2xl border border-white/10 dark:border-black/10">
+      <nav className="fixed bottom-6 md:bottom-8 left-1/2 -translate-x-1/2 bg-black/90 dark:bg-white/90 backdrop-blur-xl px-2 py-2 md:px-4 md:py-3 rounded-[2rem] md:rounded-[2.5rem] z-50 flex items-center gap-1 md:gap-2 shadow-2xl border border-white/10 dark:border-black/10 w-[90%] max-w-fit overflow-x-auto no-scrollbar">
         <NavButton 
           active={activeTab === 'inventory'} 
           onClick={() => setActiveTab('inventory')}
@@ -898,16 +898,16 @@ function NavButton({ active, onClick, icon, label, badge, theme }: { active: boo
   return (
     <button
       onClick={onClick}
-      className={`relative flex flex-col md:flex-row items-center gap-3 px-6 py-4 rounded-2xl transition-all duration-300 ${
+      className={`relative flex flex-col md:flex-row items-center gap-1 md:gap-3 px-3 py-2 md:px-6 md:py-4 rounded-xl md:rounded-2xl transition-all duration-300 ${
         active 
           ? 'bg-black text-white dark:bg-white dark:text-black shadow-xl' 
           : 'text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-cred-gray'
       }`}
     >
       {icon}
-      <span className="text-[10px] md:text-base font-black uppercase md:capitalize tracking-widest md:tracking-tight">{label}</span>
+      <span className="text-[9px] md:text-base font-black uppercase md:capitalize tracking-widest md:tracking-tight">{label}</span>
       {badge !== undefined && badge > 0 && (
-        <span className="absolute top-2 right-2 md:static md:ml-auto w-5 h-5 bg-red-500 text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white dark:border-cred-dark">
+        <span className="absolute top-1 right-1 md:static md:ml-auto w-4 h-4 md:w-5 md:h-5 bg-red-500 text-white text-[8px] md:text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white dark:border-cred-dark">
           {badge}
         </span>
       )}

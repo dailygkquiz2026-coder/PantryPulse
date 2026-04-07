@@ -81,5 +81,13 @@
   .dark .cred-button-primary {
     @apply bg-white text-black hover:bg-gray-100;
   }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
 }
 
