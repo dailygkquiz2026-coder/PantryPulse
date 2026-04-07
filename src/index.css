@@ -6,23 +6,16 @@
   --color-cred-gray: #1a1a1a;
   --color-cred-light: #f5f5f5;
   --color-cred-accent: #00e5ff;
+  --animate-spin-slow: spin 3s linear infinite;
 }
 
 @layer base {
   body {
-    @apply bg-white text-gray-900 antialiased transition-colors duration-300;
+    @apply bg-cred-black text-white antialiased transition-colors duration-300;
+    color-scheme: dark;
   }
   
-  .dark body {
-    @apply bg-cred-black text-white;
-  }
-
-  .dark {
-    color-scheme: dark;
-    @apply text-white;
-  }
-
-  .dark * {
+  * {
     @apply border-white/5;
   }
   
@@ -35,51 +28,33 @@
     @apply bg-transparent;
   }
   ::-webkit-scrollbar-thumb {
-    @apply bg-gray-200 rounded-full hover:bg-gray-300 transition-colors;
-  }
-  .dark ::-webkit-scrollbar-thumb {
-    @apply bg-cred-gray hover:bg-cred-dark;
+    @apply bg-cred-gray rounded-full hover:bg-cred-dark transition-colors;
   }
 
   .markdown-body {
-    @apply text-gray-700 leading-relaxed;
-  }
-  .dark .markdown-body {
-    @apply text-gray-300;
+    @apply text-gray-300 leading-relaxed;
   }
   .markdown-body h1 {
-    @apply text-2xl font-bold mb-4 mt-6 text-gray-900;
-  }
-  .dark .markdown-body h1 {
-    @apply text-white;
+    @apply text-2xl font-bold mb-4 mt-6 text-white;
   }
   /* ... other markdown styles ... */
 }
 
 @layer components {
   .cred-card {
-    @apply bg-white border border-gray-100 rounded-[32px] shadow-sm transition-all duration-300;
-  }
-  .dark .cred-card {
-    @apply bg-cred-dark border-cred-gray shadow-none text-white;
+    @apply bg-cred-dark border border-cred-gray rounded-[32px] shadow-none text-white transition-all duration-300;
   }
   
   .cred-input {
-    @apply w-full px-6 py-4 rounded-2xl border border-gray-100 focus:ring-2 focus:ring-blue-500 outline-none transition-all text-gray-900;
-  }
-  .dark .cred-input {
-    @apply bg-cred-gray border-white/5 text-white focus:ring-cred-accent;
+    @apply w-full px-6 py-4 rounded-2xl bg-cred-gray border border-white/5 focus:ring-2 focus:ring-cred-accent outline-none transition-all text-white;
   }
   
-  .dark select.cred-input option {
+  select.cred-input option {
     @apply bg-cred-gray text-white;
   }
 
   .cred-button-primary {
-    @apply px-8 py-4 bg-black text-white font-bold rounded-2xl hover:bg-gray-900 transition-all active:scale-95 disabled:opacity-50;
-  }
-  .dark .cred-button-primary {
-    @apply bg-white text-black hover:bg-gray-100;
+    @apply px-8 py-4 bg-white text-black font-bold rounded-2xl hover:bg-gray-100 transition-all active:scale-95 disabled:opacity-50;
   }
 
   .no-scrollbar::-webkit-scrollbar {

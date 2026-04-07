@@ -21,8 +21,7 @@ import {
   LogOut,
   Camera,
   X,
-  Sun,
-  Moon
+  RefreshCw
 } from 'lucide-react';
 import { 
   onAuthStateChanged, 
@@ -104,7 +103,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
   }
 }
 
-function AppContent({ theme, setTheme }: { theme: 'light' | 'dark', setTheme: (t: 'light' | 'dark') => void }) {
+function AppContent() {
   const [activeTab, setActiveTab] = useState<'inventory' | 'add' | 'shopping' | 'settings'>('inventory');
   const [inventory, setInventory] = useState<GroceryItem[]>([]);
   const [shoppingList, setShoppingList] = useState<ShoppingListItem[]>([]);
@@ -115,6 +114,7 @@ function AppContent({ theme, setTheme }: { theme: 'light' | 'dark', setTheme: (t
   const [isSearching, setIsSearching] = useState(false);
   const [predictions, setPredictions] = useState<Record<string, number>>({});
   const [notifiedItems, setNotifiedItems] = useState<Set<string>>(new Set());
+  const [hasChanges, setHasChanges] = useState(false);
   const [user, setUser] = useState<User | null>(null);
 
   // Notification Logic for Low Stock
@@ -234,16 +234,34 @@ function AppContent({ theme, setTheme }: { theme: 'light' | 'dark', setTheme: (t
   // Run predictions
   useEffect(() => {
     const runPredictions = async () => {
+      if (inventory.length === 0) {
+        setPredictions({});
+        return;
+      }
+
       const newPredictions: Record<string, number> = {};
       
       // Local fallback calculation to avoid unnecessary API calls
       inventory.forEach(item => {
+        // Ensure values are numbers and not NaN
+        const qty = Number(item.quantity) || 0;
+        const usage = Number(item.usageFrequency) || 0;
+        const members = Number(household.members) || 1;
+
         // Simple heuristic: quantity / (usageFrequency * members)
         // usageFrequency is times per day. members is number of people.
         // We assume 1 unit per usage per member as a baseline.
-        const dailyUsage = item.usageFrequency * household.members;
-        const localPrediction = dailyUsage > 0 ? Math.ceil(item.quantity / dailyUsage) : 30;
-        newPredictions[item.id] = localPrediction;
+        const dailyUsage = usage * members;
+        
+        let localPrediction = 30; // Default fallback
+        if (dailyUsage > 0) {
+          localPrediction = Math.ceil(qty / dailyUsage);
+        }
+
+        // Sanity cap: No item should realistically last more than 90 days 
+        // in a household inventory without being considered "long-term storage"
+        // which isn't the focus of this app's restock alerts.
+        newPredictions[item.id] = Math.min(Math.max(0, localPrediction), 90);
       });
 
       // Only use AI for items that might need smarter prediction (e.g., complex units or names)
@@ -261,8 +279,12 @@ function AppContent({ theme, setTheme }: { theme: 'light' | 'dark', setTheme: (t
           household.members
         );
         
-        // Merge AI predictions over local ones
-        Object.assign(newPredictions, aiPredictions);
+        // Merge AI predictions over local ones, ensuring they are also capped
+        Object.entries(aiPredictions).forEach(([id, days]) => {
+          if (typeof days === 'number' && !isNaN(days)) {
+            newPredictions[id] = Math.min(Math.max(0, Math.ceil(days)), 90);
+          }
+        });
       } catch (error) {
         console.warn("AI Prediction failed, using local fallback:", error);
       }
@@ -332,6 +354,10 @@ function AppContent({ theme, setTheme }: { theme: 'light' | 'dark', setTheme: (t
 
   const handleLogout = () => signOut(auth);
 
+  const handleRefresh = () => {
+    window.location.reload();
+  };
+
   const handleAddGrocery = async (item: Omit<GroceryItem, 'id'>) => {
     if (!user) {
       console.error("No user found in handleAddGrocery");
@@ -341,6 +367,7 @@ function AppContent({ theme, setTheme }: { theme: 'light' | 'dark', setTheme: (t
       console.log("Adding grocery item:", item);
       await addDoc(collection(db, 'inventory'), { ...item, uid: user.uid });
       console.log("Successfully added item to inventory");
+      setHasChanges(true);
       setActiveTab('inventory');
     } catch (error) {
       console.error("Error in handleAddGrocery:", error);
@@ -355,6 +382,7 @@ function AppContent({ theme, setTheme }: { theme: 'light' | 'dark', setTheme: (t
         addDoc(collection(db, 'inventory'), { ...item, uid: user.uid })
       );
       await Promise.all(batch);
+      setHasChanges(true);
       setActiveTab('inventory');
     } catch (error) {
       handleFirestoreError(error, OperationType.CREATE, 'inventory');
@@ -364,6 +392,7 @@ function AppContent({ theme, setTheme }: { theme: 'light' | 'dark', setTheme: (t
   const handleDeleteGrocery = async (id: string) => {
     try {
       await deleteDoc(doc(db, 'inventory', id));
+      setHasChanges(true);
     } catch (error) {
       handleFirestoreError(error, OperationType.DELETE, `inventory/${id}`);
     }
@@ -382,6 +411,7 @@ function AppContent({ theme, setTheme }: { theme: 'light' | 'dark', setTheme: (t
         status: 'to-buy',
         uid: user.uid
       });
+      setHasChanges(true);
       setActiveTab('shopping');
     } catch (error) {
       handleFirestoreError(error, OperationType.CREATE, 'shoppingList');
@@ -391,6 +421,7 @@ function AppContent({ theme, setTheme }: { theme: 'light' | 'dark', setTheme: (t
   const handleDeleteShoppingItem = async (id: string) => {
     try {
       await deleteDoc(doc(db, 'shoppingList', id));
+      setHasChanges(true);
     } catch (error) {
       handleFirestoreError(error, OperationType.DELETE, `shoppingList/${id}`);
     }
@@ -399,6 +430,7 @@ function AppContent({ theme, setTheme }: { theme: 'light' | 'dark', setTheme: (t
   const handleUpdateShoppingItem = async (id: string, updates: Partial<ShoppingListItem>) => {
     try {
       await updateDoc(doc(db, 'shoppingList', id), updates);
+      setHasChanges(true);
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, `shoppingList/${id}`);
     }
@@ -412,6 +444,7 @@ function AppContent({ theme, setTheme }: { theme: 'light' | 'dark', setTheme: (t
       await updateDoc(doc(db, 'shoppingList', id), {
         status: newStatus
       });
+      setHasChanges(true);
       if (newStatus === 'bought') {
         setRestockItem(item);
         setIsRestockModalOpen(true);
@@ -453,6 +486,7 @@ function AppContent({ theme, setTheme }: { theme: 'light' | 'dark', setTheme: (t
       // Remove from shopping list
       await deleteDoc(doc(db, 'shoppingList', item.id));
       
+      setHasChanges(true);
       setIsRestockModalOpen(false);
       setActiveTab('inventory');
     } catch (error) {
@@ -463,6 +497,7 @@ function AppContent({ theme, setTheme }: { theme: 'light' | 'dark', setTheme: (t
   const handleSkipRestock = async (item: ShoppingListItem) => {
     try {
       await deleteDoc(doc(db, 'shoppingList', item.id));
+      setHasChanges(true);
       setIsRestockModalOpen(false);
     } catch (error) {
       handleFirestoreError(error, OperationType.DELETE, `shoppingList/${item.id}`);
@@ -475,6 +510,7 @@ function AppContent({ theme, setTheme }: { theme: 'light' | 'dark', setTheme: (t
         quantity: newQuantity,
         lastUpdated: new Date().toISOString()
       });
+      setHasChanges(true);
       setIsUpdateQuantityModalOpen(false);
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, `inventory/${id}`);
@@ -484,6 +520,7 @@ function AppContent({ theme, setTheme }: { theme: 'light' | 'dark', setTheme: (t
   const handleEditInventory = async (id: string, updates: Partial<GroceryItem>) => {
     try {
       await updateDoc(doc(db, 'inventory', id), updates);
+      setHasChanges(true);
       setIsEditModalOpen(false);
       setItemToEdit(null);
     } catch (error) {
@@ -495,6 +532,7 @@ function AppContent({ theme, setTheme }: { theme: 'light' | 'dark', setTheme: (t
     if (!user) return;
     try {
       await setDoc(doc(db, 'households', user.uid), { ...info, uid: user.uid });
+      setHasChanges(true);
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, `households/${user.uid}`);
     }
@@ -652,9 +690,9 @@ function AppContent({ theme, setTheme }: { theme: 'light' | 'dark', setTheme: (t
   const lowStockItems = inventory.filter(item => (predictions[item.id] || 10) < 3);
 
   return (
-    <div className="min-h-screen bg-white dark:bg-cred-black font-sans transition-colors duration-500">
+    <div className="min-h-screen bg-cred-black font-sans transition-colors duration-500">
       {/* Header */}
-      <header className="fixed top-0 left-0 right-0 bg-white/80 dark:bg-cred-black/80 backdrop-blur-md border-b border-gray-100 dark:border-white/5 px-6 py-4 z-40 flex items-center justify-between">
+      <header className="fixed top-0 left-0 right-0 bg-cred-black/80 backdrop-blur-md border-b border-white/5 px-6 py-4 z-40 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-red-600 rounded-xl flex items-center justify-center shadow-lg transform rotate-3 hover:rotate-0 transition-transform cursor-default">
             <span className="text-white font-black text-xl italic tracking-tighter">PP</span>
@@ -663,39 +701,44 @@ function AppContent({ theme, setTheme }: { theme: 'light' | 'dark', setTheme: (t
         </div>
 
         <div className="flex items-center gap-2 md:gap-4">
-          <button
-            onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
-            className="p-2 md:p-3 bg-gray-50 dark:bg-cred-gray rounded-2xl hover:bg-gray-100 dark:hover:bg-cred-dark transition-all"
-            title="Toggle Theme"
-          >
-            {theme === 'light' ? <Moon className="w-4 h-4 md:w-5 md:h-5" /> : <Sun className="w-4 h-4 md:w-5 md:h-5" />}
-          </button>
+          <AnimatePresence>
+            {hasChanges && (
+              <motion.button
+                initial={{ opacity: 0, scale: 0.8, x: 20 }}
+                animate={{ opacity: 1, scale: 1, x: 0 }}
+                exit={{ opacity: 0, scale: 0.8, x: 20 }}
+                onClick={handleRefresh}
+                className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-lg hover:bg-red-700 transition-all"
+              >
+                <RefreshCw className="w-4 h-4 animate-spin-slow" />
+                <span>Refresh</span>
+              </motion.button>
+            )}
+          </AnimatePresence>
           
-          <div className="flex items-center gap-2 md:gap-3 pl-2 md:pl-4 border-l border-gray-100 dark:border-cred-gray">
+          <div className="flex items-center gap-2 md:gap-3 pl-2 md:pl-4 border-l border-cred-gray">
             <div className="text-right">
               <p className="hidden sm:block text-[10px] md:text-xs font-black uppercase tracking-widest text-gray-400">{user.displayName}</p>
               <button onClick={handleLogout} className="text-[10px] font-black uppercase tracking-widest text-red-500 hover:text-red-600">Sign Out</button>
             </div>
-            <img src={user.photoURL || ''} alt="" className="w-8 h-8 md:w-10 md:h-10 rounded-full border-2 border-white dark:border-cred-dark shadow-sm" />
+            <img src={user.photoURL || ''} alt="" className="w-8 h-8 md:w-10 md:h-10 rounded-full border-2 border-cred-dark shadow-sm" />
           </div>
         </div>
       </header>
 
       {/* Navigation */}
-      <nav className="fixed bottom-6 md:bottom-8 left-1/2 -translate-x-1/2 bg-black/90 dark:bg-white/90 backdrop-blur-xl px-2 py-2 md:px-4 md:py-3 rounded-[2rem] md:rounded-[2.5rem] z-50 flex items-center gap-1 md:gap-2 shadow-2xl border border-white/10 dark:border-black/10 w-[90%] max-w-fit overflow-x-auto no-scrollbar">
+      <nav className="fixed bottom-6 md:bottom-8 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur-xl px-2 py-2 md:px-4 md:py-3 rounded-[2rem] md:rounded-[2.5rem] z-50 flex items-center gap-1 md:gap-2 shadow-2xl border border-black/10 w-[90%] max-w-fit overflow-x-auto no-scrollbar">
         <NavButton 
           active={activeTab === 'inventory'} 
           onClick={() => setActiveTab('inventory')}
           icon={<LayoutDashboard className="w-5 h-5" />}
           label="Inventory"
-          theme={theme}
         />
         <NavButton 
           active={activeTab === 'add'} 
           onClick={() => setActiveTab('add')}
           icon={<PlusCircle className="w-5 h-5" />}
           label="Log"
-          theme={theme}
         />
         <NavButton 
           active={activeTab === 'shopping'} 
@@ -703,23 +746,13 @@ function AppContent({ theme, setTheme }: { theme: 'light' | 'dark', setTheme: (t
           icon={<ShoppingBag className="w-5 h-5" />}
           label="Shop"
           badge={shoppingList.filter(i => i.status === 'to-buy').length}
-          theme={theme}
         />
         <NavButton 
           active={activeTab === 'settings'} 
           onClick={() => setActiveTab('settings')}
           icon={<Settings className="w-5 h-5" />}
           label="Settings"
-          theme={theme}
         />
-        <div className="w-px h-8 bg-white/10 dark:bg-black/10 mx-1" />
-        <button
-          onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
-          className="p-3 text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-cred-gray rounded-2xl transition-all"
-          title="Toggle Theme"
-        >
-          {theme === 'light' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
-        </button>
       </nav>
 
       {/* Main Content */}
@@ -903,31 +936,25 @@ function AppContent({ theme, setTheme }: { theme: 'light' | 'dark', setTheme: (t
 }
 
 export default function App() {
-  const [theme, setTheme] = useState<'light' | 'dark'>('dark');
-
   useEffect(() => {
-    if (theme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [theme]);
+    document.documentElement.classList.add('dark');
+  }, []);
 
   return (
     <ErrorBoundary>
-      <AppContent theme={theme} setTheme={setTheme} />
+      <AppContent />
     </ErrorBoundary>
   );
 }
 
-function NavButton({ active, onClick, icon, label, badge, theme }: { active: boolean, onClick: () => void, icon: React.ReactNode, label: string, badge?: number, theme: 'light' | 'dark' }) {
+function NavButton({ active, onClick, icon, label, badge }: { active: boolean, onClick: () => void, icon: React.ReactNode, label: string, badge?: number }) {
   return (
     <button
       onClick={onClick}
       className={`relative flex flex-col md:flex-row items-center gap-1 md:gap-3 px-3 py-2 md:px-6 md:py-4 rounded-xl md:rounded-2xl transition-all duration-300 ${
         active 
-          ? 'bg-black text-white dark:bg-white dark:text-black shadow-xl' 
-          : 'text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-cred-gray'
+          ? 'bg-white text-black shadow-xl' 
+          : 'text-gray-400 hover:text-white hover:bg-cred-gray'
       }`}
     >
       {icon}

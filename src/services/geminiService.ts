@@ -43,7 +43,10 @@ export async function predictMultipleRestocks(
     model: "gemini-3-flash-preview",
     contents: `Predict how many days it will take for a household of ${members} people to consume these grocery items. 
     
-    CRITICAL: Use the 'restockHistory' to identify individual user patterns. If an item is restocked frequently, it means this specific family consumes it faster than average.
+    CRITICAL: 
+    1. Use the 'restockHistory' to identify individual user patterns. If an item is restocked frequently, it means this specific family consumes it faster than average.
+    2. Use the EXACT item names provided in the 'Items' list as keys in your response.
+    3. Provide realistic predictions. Most household grocery items last between 1 and 30 days. Do not exceed 90 days for any item.
     
     Items: ${JSON.stringify(items.map(i => ({ 
       name: i.name, 
@@ -53,7 +56,7 @@ export async function predictMultipleRestocks(
       history: i.restockHistory 
     })))}.
     
-    Return a JSON object where keys are the item names and values are the predicted days remaining.`,
+    Return a JSON object where keys are the EXACT item names from the list above and values are the predicted days remaining.`,
     config: {
       responseMimeType: "application/json",
       responseSchema: {
