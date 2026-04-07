@@ -175,37 +175,6 @@ export async function analyzeInvoiceImage(base64Image: string) {
   return parseGeminiResponse(response.text);
 }
 
-export async function identifyProductByBarcode(barcode: string) {
-  const ai = getAI();
-  const response = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
-    contents: `Identify this grocery product from its barcode (EAN/GTIN/UPC): ${barcode}. 
-    
-    CRITICAL INSTRUCTIONS:
-    1. Search for the product using the barcode number.
-    2. Identify the brand name, product name, and standard unit (e.g., g, ml, kg, pcs, pack).
-    3. Determine the most appropriate category from: Dairy, Bakery, Produce, Meat, Pantry, Beverages, Snacks, Household, Personal Care.
-    4. If the product is not found, use your knowledge of barcode prefixes (e.g., 890 for India) to guess the likely origin or type.
-    5. Format the output as JSON.`,
-    config: {
-      responseMimeType: "application/json",
-      responseSchema: {
-        type: Type.OBJECT,
-        properties: {
-          brand: { type: Type.STRING },
-          productName: { type: Type.STRING },
-          unit: { type: Type.STRING },
-          category: { type: Type.STRING },
-          suggestedQuantity: { type: Type.NUMBER }
-        },
-        required: ["brand", "productName", "unit", "category", "suggestedQuantity"]
-      },
-      tools: [{ googleSearch: {} }]
-    }
-  });
-  return parseGeminiResponse(response.text);
-}
-
 export async function fetchProductImage(itemName: string) {
   const ai = getAI();
   const response = await ai.models.generateContent({

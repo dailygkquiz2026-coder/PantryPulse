@@ -52,6 +52,7 @@ import PriceComparison from './components/PriceComparison';
 import RestockModal from './components/RestockModal';
 import UpdateQuantityModal from './components/UpdateQuantityModal';
 import EditItemModal from './components/EditItemModal';
+import ExpiringItemsModal from './components/ExpiringItemsModal';
 import { GroceryItem, HouseholdInfo, ShoppingListItem } from './types';
 import { predictMultipleRestocks, searchCheapestSource } from './services/geminiService';
 
@@ -125,7 +126,7 @@ function AppContent({ theme, setTheme }: { theme: 'light' | 'dark', setTheme: (t
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [itemToEdit, setItemToEdit] = useState<GroceryItem | null>(null);
   const [isTroubleshootingOpen, setIsTroubleshootingOpen] = useState(false);
-  const [suppressRestockPopup, setSuppressRestockPopup] = useState(false);
+  const [isExpiryModalOpen, setIsExpiryModalOpen] = useState(false);
   const [lastShoppingActivity, setLastShoppingActivity] = useState(Date.now());
 
   // Auth Listener
@@ -251,27 +252,33 @@ function AppContent({ theme, setTheme }: { theme: 'light' | 'dark', setTheme: (t
     }
   }, [inventory, household]);
 
-  // Auto-reset popup suppression after 10 minutes of inactivity
+  // Expiry Warning Logic
   useEffect(() => {
-    if (!suppressRestockPopup) return;
+    if (inventory.length === 0 || !isAuthReady) return;
 
-    const interval = setInterval(() => {
-      const now = Date.now();
-      const tenMinutes = 10 * 60 * 1000;
-      if (now - lastShoppingActivity >= tenMinutes) {
-        setSuppressRestockPopup(false);
+    const today = new Date().toDateString();
+    const lastShown = localStorage.getItem('lastExpiryWarningShown');
+
+    if (lastShown !== today) {
+      const expiring = inventory.filter(item => {
+        if (!item.expiryDate) return false;
+        const expiryDate = new Date(item.expiryDate);
+        const diff = (expiryDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24);
+        return diff >= 0 && diff < 3;
+      });
+
+      const expired = inventory.filter(item => {
+        if (!item.expiryDate) return false;
+        const expiryDate = new Date(item.expiryDate);
+        return expiryDate.getTime() < new Date().getTime();
+      });
+
+      if (expiring.length > 0 || expired.length > 0) {
+        setIsExpiryModalOpen(true);
+        localStorage.setItem('lastExpiryWarningShown', today);
       }
-    }, 30000); // Check every 30 seconds
-
-    return () => clearInterval(interval);
-  }, [suppressRestockPopup, lastShoppingActivity]);
-
-  // Suppress popup when entering shopping tab
-  useEffect(() => {
-    if (activeTab === 'shopping') {
-      setSuppressRestockPopup(true);
     }
-  }, [activeTab]);
+  }, [inventory, isAuthReady]);
 
   const [loginError, setLoginError] = useState<string | null>(null);
 
@@ -338,7 +345,6 @@ function AppContent({ theme, setTheme }: { theme: 'light' | 'dark', setTheme: (t
   const handleAddShoppingItem = async (name: string, details?: Partial<GroceryItem>) => {
     if (!user) return;
     setLastShoppingActivity(Date.now());
-    setSuppressRestockPopup(true);
     try {
       await addDoc(collection(db, 'shoppingList'), {
         name,
@@ -349,6 +355,7 @@ function AppContent({ theme, setTheme }: { theme: 'light' | 'dark', setTheme: (t
         status: 'to-buy',
         uid: user.uid
       });
+      setActiveTab('shopping');
     } catch (error) {
       handleFirestoreError(error, OperationType.CREATE, 'shoppingList');
     }
@@ -359,6 +366,14 @@ function AppContent({ theme, setTheme }: { theme: 'light' | 'dark', setTheme: (t
       await deleteDoc(doc(db, 'shoppingList', id));
     } catch (error) {
       handleFirestoreError(error, OperationType.DELETE, `shoppingList/${id}`);
+    }
+  };
+
+  const handleUpdateShoppingItem = async (id: string, updates: Partial<ShoppingListItem>) => {
+    try {
+      await updateDoc(doc(db, 'shoppingList', id), updates);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `shoppingList/${id}`);
     }
   };
 
@@ -616,17 +631,6 @@ function AppContent({ theme, setTheme }: { theme: 'light' | 'dark', setTheme: (t
         </div>
 
         <div className="flex items-center gap-4">
-          {lowStockItems.length > 0 && (
-            <motion.button
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              onClick={() => setActiveTab('shopping')}
-              className="hidden lg:flex items-center gap-2 px-4 py-2 bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400 rounded-xl border border-red-100 dark:border-red-900/40 hover:scale-105 transition-all shadow-sm"
-            >
-              <AlertTriangle className="w-4 h-4" />
-              <span className="text-[10px] font-black uppercase tracking-widest">Restock Needed</span>
-            </motion.button>
-          )}
           <button
             onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
             className="p-3 bg-gray-50 dark:bg-cred-gray rounded-2xl hover:bg-gray-100 dark:hover:bg-cred-dark transition-all"
@@ -644,57 +648,6 @@ function AppContent({ theme, setTheme }: { theme: 'light' | 'dark', setTheme: (t
           </div>
         </div>
       </header>
-
-      {/* Notification Banner */}
-      <AnimatePresence>
-        {lowStockItems.length > 0 && activeTab !== 'shopping' && !suppressRestockPopup && (
-          <motion.div
-            initial={{ opacity: 0, y: -100 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -100 }}
-            className="fixed top-20 left-0 right-0 z-30 px-6"
-          >
-            <div className="max-w-5xl mx-auto">
-              <div className="bg-black dark:bg-white text-white dark:text-black p-6 rounded-3xl shadow-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6 border border-white/10 dark:border-black/10">
-                <div className="flex items-start gap-4">
-                  <div className="p-3 bg-red-500 rounded-2xl shadow-lg shadow-red-500/20">
-                    <AlertTriangle className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <p className="text-xl font-black tracking-tight">Time to restock!</p>
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {lowStockItems.slice(0, 3).map(item => (
-                        <span key={item.id} className="px-3 py-1 bg-white/10 dark:bg-black/10 rounded-full text-[10px] font-black uppercase tracking-widest border border-white/5 dark:border-black/5">
-                          {item.name}
-                        </span>
-                      ))}
-                      {lowStockItems.length > 3 && (
-                        <span className="px-3 py-1 bg-white/10 dark:bg-black/10 rounded-full text-[10px] font-black uppercase tracking-widest border border-white/5 dark:border-black/5">
-                          +{lowStockItems.length - 3} more
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 w-full md:w-auto">
-                  <button
-                    onClick={() => setSuppressRestockPopup(true)}
-                    className="flex-1 md:flex-none px-6 py-3 text-[10px] font-black uppercase tracking-widest opacity-50 hover:opacity-100 transition-all"
-                  >
-                    Dismiss
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('shopping')}
-                    className="flex-1 md:flex-none px-8 py-3 bg-red-500 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-lg shadow-red-500/20"
-                  >
-                    Go to Shopping List
-                  </button>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {/* Navigation */}
       <nav className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-black/90 dark:bg-white/90 backdrop-blur-xl px-4 py-3 rounded-[2.5rem] z-50 flex items-center gap-2 shadow-2xl border border-white/10 dark:border-black/10">
@@ -786,46 +739,14 @@ function AppContent({ theme, setTheme }: { theme: 'light' | 'dark', setTheme: (t
                 </button>
               </div>
 
-
-              {lowStockItems.length > 0 && (
-                <div className="bg-amber-50 border border-amber-100 p-4 rounded-2xl flex items-start gap-4">
-                  <div className="p-2 bg-amber-100 rounded-xl">
-                    <AlertCircle className="w-6 h-6 text-amber-600" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-amber-900">Restock Soon</h3>
-                    <p className="text-amber-700 text-sm">
-                      {lowStockItems.map(i => i.name).join(', ')} might run out in the next 3 days.
-                    </p>
-                    <button 
-                      onClick={() => {
-                        setLastShoppingActivity(Date.now());
-                        setSuppressRestockPopup(true);
-                        lowStockItems.forEach(item => {
-                          if (!shoppingList.find(s => s.name === item.name)) {
-                            handleAddShoppingItem(item.name, item);
-                          }
-                        });
-                        setActiveTab('shopping');
-                      }}
-                      className="mt-2 text-sm font-bold text-amber-900 hover:underline"
-                    >
-                      Add all to shopping list →
-                    </button>
-                  </div>
-                </div>
-              )}
-
               <InventoryList 
                 items={inventory} 
                 onDelete={handleDeleteGrocery} 
                 onAddToShopping={(name, details) => {
                   setLastShoppingActivity(Date.now());
-                  setSuppressRestockPopup(true);
                   // Use the passed details if available, otherwise find in inventory
                   const itemDetails = details || inventory.find(i => i.name === name);
                   handleAddShoppingItem(name, itemDetails);
-                  setActiveTab('shopping');
                 }}
                 onUpdateQuantity={(item) => {
                   setItemToUpdate(item);
@@ -875,6 +796,7 @@ function AppContent({ theme, setTheme }: { theme: 'light' | 'dark', setTheme: (t
                 onToggleStatus={handleToggleShoppingStatus}
                 onSearchPrice={handleSearchPrice}
                 onAddItem={handleAddShoppingItem}
+                onUpdateItem={handleUpdateShoppingItem}
               />
             </motion.div>
           )}
@@ -919,6 +841,23 @@ function AppContent({ theme, setTheme }: { theme: 'light' | 'dark', setTheme: (t
         item={restockItem}
         onConfirm={handleConfirmRestock}
         onSkip={handleSkipRestock}
+      />
+
+      <ExpiringItemsModal
+        isOpen={isExpiryModalOpen}
+        onClose={() => setIsExpiryModalOpen(false)}
+        expiringItems={inventory.filter(item => {
+          if (!item.expiryDate) return false;
+          const expiryDate = new Date(item.expiryDate);
+          const diff = (expiryDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24);
+          return diff >= 0 && diff < 3;
+        })}
+        expiredItems={inventory.filter(item => {
+          if (!item.expiryDate) return false;
+          const expiryDate = new Date(item.expiryDate);
+          return expiryDate.getTime() < new Date().getTime();
+        })}
+        onRemoveItem={handleDeleteGrocery}
       />
 
       <UpdateQuantityModal

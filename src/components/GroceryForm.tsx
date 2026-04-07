@@ -1,11 +1,10 @@
 import React, { useState, useRef } from 'react';
 import { CATEGORIES, UNITS, CATEGORY_IMAGES, CATEGORY_COLORS } from '../constants';
-import { Plus, ShoppingCart, Camera, Loader2, FileText, Barcode } from 'lucide-react';
+import { Plus, ShoppingCart, Camera, Loader2, FileText, Upload } from 'lucide-react';
 import { motion } from 'motion/react';
 import AutocompleteInput from './AutocompleteInput';
-import { analyzeProductImage, analyzeInvoiceImage, identifyProductByBarcode, fetchProductImage } from '../services/geminiService';
+import { analyzeProductImage, analyzeInvoiceImage, fetchProductImage } from '../services/geminiService';
 import InvoiceReviewModal from './InvoiceReviewModal';
-import BarcodeScanner from './BarcodeScanner';
 import DuplicateCheckModal from './DuplicateCheckModal';
 import { GroceryItem } from '../types';
 
@@ -26,8 +25,6 @@ export default function GroceryForm({ onAdd, onAddMultiple, inventory, onUpdateQ
   const [expiryDate, setExpiryDate] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isScanningInvoice, setIsScanningInvoice] = useState(false);
-  const [isScanningBarcode, setIsScanningBarcode] = useState(false);
-  const [isIdentifyingBarcode, setIsIdentifyingBarcode] = useState(false);
   const [isFetchingImage, setIsFetchingImage] = useState(false);
   
   // Duplicate Check State
@@ -40,7 +37,9 @@ export default function GroceryForm({ onAdd, onAddMultiple, inventory, onUpdateQ
   const [scannedInvoiceData, setScannedInvoiceData] = useState<{ purchaseDate: string | null, items: any[] } | null>(null);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const fileUploadRef = useRef<HTMLInputElement>(null);
   const invoiceInputRef = useRef<HTMLInputElement>(null);
+  const invoiceUploadRef = useRef<HTMLInputElement>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -129,49 +128,6 @@ export default function GroceryForm({ onAdd, onAddMultiple, inventory, onUpdateQ
     reader.readAsDataURL(file);
   };
 
-  const handleBarcodeScan = async (barcode: string) => {
-    setIsIdentifyingBarcode(true);
-    try {
-      console.log("Identifying product by barcode:", barcode);
-      const details = await identifyProductByBarcode(barcode);
-      
-      const fullName = `${details.brand} ${details.productName}`;
-      setName(fullName);
-      setCategory(details.category);
-      setUnit(details.unit);
-      setQuantity(details.suggestedQuantity || 1);
-
-      // Fetch image from web
-      setIsFetchingImage(true);
-      const imageUrl = await fetchProductImage(fullName);
-      setIsFetchingImage(false);
-
-      const newItem = {
-        name: fullName,
-        category: details.category,
-        unit: details.unit,
-        quantity: details.suggestedQuantity || 1,
-        imageUrl,
-        purchaseDate: new Date().toISOString(),
-        lastUpdated: new Date().toISOString()
-      };
-
-      // Check for duplicates
-      const existing = inventory.find(i => i.name.toLowerCase() === fullName.toLowerCase());
-      if (existing) {
-        setDuplicateItem(existing);
-        setPendingItem(newItem);
-        setIsDuplicateModalOpen(true);
-      }
-    } catch (error: any) {
-      console.error("Barcode identification failed:", error);
-      alert(`Barcode identification failed: ${error.message || 'Unknown error'}`);
-    } finally {
-      setIsIdentifyingBarcode(false);
-      setIsFetchingImage(false);
-    }
-  };
-
   const handleInvoiceCapture = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -215,37 +171,33 @@ export default function GroceryForm({ onAdd, onAddMultiple, inventory, onUpdateQ
         <div className="flex flex-wrap items-center gap-3">
           <button
             type="button"
-            onClick={() => setIsScanningBarcode(true)}
-            disabled={isIdentifyingBarcode}
-            className="flex items-center gap-2 px-6 py-3 bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 rounded-2xl hover:bg-purple-100 transition-all font-black uppercase tracking-widest text-[10px] disabled:opacity-50"
-          >
-            {isIdentifyingBarcode ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Barcode className="w-4 h-4" />
-            )}
-            {isIdentifyingBarcode ? 'Identifying...' : 'Scan Barcode'}
-          </button>
-
-          <button
-            type="button"
             onClick={() => invoiceInputRef.current?.click()}
             disabled={isScanningInvoice}
-            className="flex items-center gap-2 px-6 py-3 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 rounded-2xl hover:bg-amber-100 transition-all font-black uppercase tracking-widest text-[10px] disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-3 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 rounded-2xl hover:bg-amber-100 transition-all font-black uppercase tracking-widest text-[10px] disabled:opacity-50"
           >
             {isScanningInvoice ? (
               <Loader2 className="w-4 h-4 animate-spin" />
             ) : (
-              <FileText className="w-4 h-4" />
+              <Camera className="w-4 h-4" />
             )}
             {isScanningInvoice ? 'Scanning...' : 'Scan Invoice'}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => invoiceUploadRef.current?.click()}
+            disabled={isScanningInvoice}
+            className="flex items-center gap-2 px-4 py-3 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 rounded-2xl hover:bg-amber-100 transition-all font-black uppercase tracking-widest text-[10px] disabled:opacity-50"
+          >
+            <Upload className="w-4 h-4" />
+            Upload Invoice
           </button>
           
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={isAnalyzing}
-            className="flex items-center gap-2 px-6 py-3 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-2xl hover:bg-blue-100 transition-all font-black uppercase tracking-widest text-[10px] disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-3 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-2xl hover:bg-blue-100 transition-all font-black uppercase tracking-widest text-[10px] disabled:opacity-50"
           >
             {isAnalyzing ? (
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -253,6 +205,16 @@ export default function GroceryForm({ onAdd, onAddMultiple, inventory, onUpdateQ
               <Camera className="w-4 h-4" />
             )}
             {isAnalyzing ? 'Analyzing...' : 'Scan Product'}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => fileUploadRef.current?.click()}
+            disabled={isAnalyzing}
+            className="flex items-center gap-2 px-4 py-3 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-2xl hover:bg-blue-100 transition-all font-black uppercase tracking-widest text-[10px] disabled:opacity-50"
+          >
+            <Upload className="w-4 h-4" />
+            Upload Product
           </button>
         </div>
 
@@ -266,10 +228,24 @@ export default function GroceryForm({ onAdd, onAddMultiple, inventory, onUpdateQ
         />
         <input
           type="file"
+          ref={fileUploadRef}
+          onChange={handleImageCapture}
+          accept="image/*"
+          className="hidden"
+        />
+        <input
+          type="file"
           ref={invoiceInputRef}
           onChange={handleInvoiceCapture}
           accept="image/*"
           capture="environment"
+          className="hidden"
+        />
+        <input
+          type="file"
+          ref={invoiceUploadRef}
+          onChange={handleInvoiceCapture}
+          accept="image/*"
           className="hidden"
         />
       </div>
@@ -280,12 +256,6 @@ export default function GroceryForm({ onAdd, onAddMultiple, inventory, onUpdateQ
         purchaseDate={scannedInvoiceData?.purchaseDate || null}
         items={scannedInvoiceData?.items || []}
         onConfirm={onAddMultiple}
-      />
-
-      <BarcodeScanner
-        isOpen={isScanningBarcode}
-        onClose={() => setIsScanningBarcode(false)}
-        onScan={handleBarcodeScan}
       />
 
       <DuplicateCheckModal

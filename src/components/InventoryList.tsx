@@ -144,10 +144,10 @@ export default function InventoryList({ items, onDelete, onAddToShopping, onUpda
                   {isLow && (
                     <button
                       onClick={() => onAddToShopping(item.name, item)}
-                      className="p-2 text-gray-500 hover:text-blue-600 dark:hover:text-cred-accent hover:bg-white dark:hover:bg-cred-dark rounded-lg transition-all"
-                      title="Add to Shopping List"
+                      className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all shadow-md shadow-blue-200 dark:shadow-none font-bold text-xs"
                     >
                       <ShoppingBag className="w-4 h-4" />
+                      Restock
                     </button>
                   )}
 
