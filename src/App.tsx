@@ -899,6 +899,9 @@ function AppContent() {
         itemName={searchItem}
         results={searchResults}
         isLoading={isSearching}
+        userLocation={userLocation}
+        onLocationUpdate={(loc) => setUserLocation(loc)}
+        onRetry={() => handleSearchPrice(searchItem)}
       />
 
       <RestockModal

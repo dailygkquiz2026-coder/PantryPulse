@@ -278,36 +278,41 @@ export async function predictExpiryDate(itemName: string, category: string) {
 
 export async function searchCheapestSource(itemName: string, location?: string, previousPurchase?: string) {
   const ai = getAI();
-  const locationContext = location ? ` near ${location}` : "";
+  const locationContext = location ? ` for the location/pincode associated with coordinates: ${location}` : " (if location is not provided, assume a general search in India)";
   const purchaseContext = previousPurchase ? `The user previously bought "${previousPurchase}".` : "";
   
   const response = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
+    model: "gemini-3.1-pro-preview",
     contents: `You are a smart shopping assistant. Find and compare all possible variants of ${itemName}${locationContext}. 
     ${purchaseContext}
     
     Your task:
-    1. Identify common variants (e.g., if it's Milk, look for 500ml, 1L, Full Cream, Toned, etc.).
-    2. Search across quick commerce (Blinkit, Zepto, BigBasket, Swiggy Instamart) and e-commerce (Amazon Fresh, Flipkart Grocery).
-    3. Compare prices per unit (e.g., price per liter) to find the best value.
-    4. List the exact product name, store, price, and a direct hyperlink.
+    1. Search across quick commerce (Blinkit, Zepto, BigBasket, Swiggy Instamart) and e-marketplaces (Amazon Fresh, Flipkart Grocery).
+    2. Rank the outcomes based on the LOWEST PRICE first.
+    3. For each result, provide:
+       - Exact Product Name
+       - Store Name
+       - Price (in INR)
+       - A direct Hyperlink (use stable search URLs as defined below).
+    4. If a product is NOT available on a specific seller site for the given location, explicitly write "Not available for your pincode now" for that seller.
     
     CRITICAL INSTRUCTIONS FOR LINKS:
-    - DO NOT hallucinate direct product URLs with internal IDs (e.g., /product/123). These often break.
-    - INSTEAD, use stable SEARCH URLs for each platform. This ensures the user sees available items for their specific location.
-    - Format examples:
+    - DO NOT hallucinate direct product URLs with internal IDs.
+    - USE these stable SEARCH URLs:
       - Zepto: https://www.zepto.com/search?query=[Product+Name]
       - Blinkit: https://blinkit.com/s/?q=[Product+Name]
       - BigBasket: https://www.bigbasket.com/ps/?q=[Product+Name]
       - Swiggy Instamart: https://www.swiggy.com/instamart/search?query=[Product+Name]
       - Amazon Fresh: https://www.amazon.in/s?k=[Product+Name]&i=nowstore
+      - Flipkart Grocery: https://www.flipkart.com/search?q=[Product+Name]&otracker=AS_Query_HistoryAutoSuggest_1_0&otracker1=AS_Query_HistoryAutoSuggest_1_0&marketplace=GROCERY
     
-    Format the output in clear Markdown with these sections:
-    - **Recommended for You**: (Prioritize the EXACT brand and product if provided in the previous purchase context)
-    - **All Available Variants**: (Grouped by brand or size, ensuring the requested brand is listed first)
-    - **Best Value (Price per Unit)**: (Highlight the cheapest option per unit)
+    Format the output as a short, crisp, and actionable Markdown table:
+    | Rank | Product | Store | Price | Action |
+    |------|---------|-------|-------|--------|
+    | 1 | [Name] | [Store] | ₹[Price] | [Link] |
     
-    Ensure all links are full absolute URLs and open in a new tab.`,
+    If no results are found at all, state "No variants found for your location."
+    Keep it extremely concise. No conversational filler.`,
     config: {
       tools: [{ googleSearch: {} }]
     }
