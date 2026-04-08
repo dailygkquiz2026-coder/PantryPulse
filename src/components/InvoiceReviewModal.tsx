@@ -31,6 +31,20 @@ export default function InvoiceReviewModal({ isOpen, onClose, purchaseDate, item
   const [isPredictingAll, setIsPredictingAll] = useState(false);
   const [predictingIndices, setPredictingIndices] = useState<Set<number>>(new Set());
 
+  // Sync state with props when modal opens or items change
+  React.useEffect(() => {
+    if (isOpen) {
+      setItems(initialItems);
+      setConfirmedIndices(new Set());
+      setSkippedIndices(new Set());
+      if (purchaseDate) {
+        setDate(new Date(purchaseDate).toISOString().split('T')[0]);
+      } else {
+        setDate(new Date().toISOString().split('T')[0]);
+      }
+    }
+  }, [isOpen, initialItems, purchaseDate]);
+
   const handleUpdateItem = (index: number, updates: Partial<InvoiceItem>) => {
     const newItems = [...items];
     newItems[index] = { ...newItems[index], ...updates };

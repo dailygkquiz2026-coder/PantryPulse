@@ -142,7 +142,7 @@ export async function analyzeProductImage(base64Image: string) {
 export async function analyzeInvoice(base64Data: string, mimeType: string) {
   const ai = getAI();
   const response = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
+    model: "gemini-3.1-pro-preview",
     contents: [
       {
         inlineData: {
@@ -153,21 +153,23 @@ export async function analyzeInvoice(base64Data: string, mimeType: string) {
       {
         text: `Analyze this grocery invoice/receipt (image or PDF). 
         
-        SPECIAL INSTRUCTION: If this is a Dmart (Avenue Supermarts) invoice, pay close attention to the tabular format. Dmart invoices often have columns for 'Product Name', 'MRP', 'Quantity', and 'Total'. Ensure you extract the correct product names and quantities even if they are abbreviated.
+        CRITICAL INSTRUCTIONS:
+        1. This is likely an invoice from an Indian quick-commerce store (Zepto, Blinkit, Swiggy Instamart) or a retailer (Dmart, BigBasket).
+        2. These invoices use a tabular format. You MUST find the table and extract EVERY row that represents a product.
+        3. Look for columns like 'SR No', 'Item & Description', 'Qty', 'MRP', 'Product Rate', and 'Total Amt'.
+        4. If the document has multiple pages, you MUST extract items from ALL pages. Do not stop after the first page.
+        5. For each item:
+           - 'name': Extract the full product name (e.g., "Amul Gold Full Cream Fresh Milk").
+           - 'quantity': The number of units purchased (e.g., 1, 2).
+           - 'unit': The pack size or unit (e.g., "500 ml", "1 pack", "3 L", "pcs").
+           - 'price': The final amount paid for that line item (e.g., 33.00, 288.00).
+           - 'category': Predict the food category (Dairy, Produce, Bakery, Snacks, Household, etc.).
+           - 'isGrocery': True for food/grocery, False for non-food household items (cleaners, detergents, etc.).
+           - 'isUnclear': True if the text is hard to read or abbreviated.
         
-        Extract:
-        1. Date of purchase (if visible, else null).
-        2. List of items, each with: 
-           - name: The product name.
-           - quantity: The number of units.
-           - unit: The unit of measurement (e.g., pcs, kg, g, ml, pack).
-           - price: The unit price or total price for the line item.
-           - category: The food category (e.g., Dairy, Produce, Bakery).
-           - isGrocery: Boolean. True if it's a food/grocery item, False if it's a household item (like a toothbrush, cleaner, etc.).
-           - isUnclear: Boolean. True if the item name or quantity is blurry, abbreviated, or difficult to identify with 100% certainty.
+        6. For 'purchaseDate', extract the date of the invoice (e.g., "27-03-2026").
         
-        If item names are unclear, use your knowledge to predict the most likely grocery item name but set isUnclear to true.
-        Format the output as JSON.`
+        Output the result as a JSON object.`
       }
     ],
     config: {
@@ -175,7 +177,7 @@ export async function analyzeInvoice(base64Data: string, mimeType: string) {
       responseSchema: {
         type: Type.OBJECT,
         properties: {
-          purchaseDate: { type: Type.STRING, description: "ISO date string or null" },
+          purchaseDate: { type: Type.STRING, description: "ISO date string or empty string" },
           items: {
             type: Type.ARRAY,
             items: {
