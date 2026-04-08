@@ -41,6 +41,20 @@
         "uid": { "type": "string" }
       },
       "required": ["members", "uid"]
+    },
+    "ScanFailure": {
+      "title": "Scan Failure",
+      "description": "Log of a failed invoice scan for debugging",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "error": { "type": "string" },
+        "mimeType": { "type": "string" },
+        "uid": { "type": "string" },
+        "userEmail": { "type": "string" }
+      },
+      "required": ["id", "timestamp", "error", "uid"]
     }
   },
   "firestore": {
@@ -55,6 +69,10 @@
     "/households/{userId}": {
       "schema": "HouseholdInfo",
       "description": "User's household settings"
+    },
+    "/scanFailures/{failureId}": {
+      "schema": "ScanFailure",
+      "description": "Logs of failed scans for developers"
     }
   }
 }

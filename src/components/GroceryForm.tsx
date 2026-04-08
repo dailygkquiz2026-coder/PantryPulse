@@ -3,10 +3,12 @@ import { CATEGORIES, UNITS, CATEGORY_IMAGES, CATEGORY_COLORS } from '../constant
 import { Plus, ShoppingCart, Camera, Loader2, FileText, Upload } from 'lucide-react';
 import { motion } from 'motion/react';
 import AutocompleteInput from './AutocompleteInput';
-import { analyzeProductImage, analyzeInvoiceImage, fetchProductImage } from '../services/geminiService';
+import { analyzeProductImage, analyzeInvoice, fetchProductImage, predictExpiryDate } from '../services/geminiService';
 import InvoiceReviewModal from './InvoiceReviewModal';
 import DuplicateCheckModal from './DuplicateCheckModal';
 import { GroceryItem } from '../types';
+import { db, auth } from '../firebase';
+import { collection, addDoc } from 'firebase/firestore';
 
 interface GroceryFormProps {
   onAdd: (item: any) => void;
@@ -26,6 +28,7 @@ export default function GroceryForm({ onAdd, onAddMultiple, inventory, onUpdateQ
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isScanningInvoice, setIsScanningInvoice] = useState(false);
   const [isFetchingImage, setIsFetchingImage] = useState(false);
+  const [isPredictingExpiry, setIsPredictingExpiry] = useState(false);
   
   // Duplicate Check State
   const [isDuplicateModalOpen, setIsDuplicateModalOpen] = useState(false);
@@ -41,14 +44,28 @@ export default function GroceryForm({ onAdd, onAddMultiple, inventory, onUpdateQ
   const invoiceInputRef = useRef<HTMLInputElement>(null);
   const invoiceUploadRef = useRef<HTMLInputElement>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name) {
       alert("Please enter a product name");
       return;
     }
     
-    console.log("Submitting manual input:", { name, category, quantity, unit, price, usageFrequency });
+    let finalExpiryDate = expiryDate;
+
+    // Auto-predict expiry if not provided
+    if (!finalExpiryDate) {
+      try {
+        setIsPredictingExpiry(true);
+        const prediction = await predictExpiryDate(name, category);
+        finalExpiryDate = prediction.predictedExpiryDate;
+        console.log("Predicted expiry date:", prediction);
+      } catch (error) {
+        console.error("Expiry prediction failed:", error);
+      } finally {
+        setIsPredictingExpiry(false);
+      }
+    }
 
     const newItem: any = {
       name,
@@ -61,8 +78,8 @@ export default function GroceryForm({ onAdd, onAddMultiple, inventory, onUpdateQ
       lastUpdated: new Date().toISOString()
     };
 
-    if (expiryDate) {
-      newItem.expiryDate = expiryDate;
+    if (finalExpiryDate) {
+      newItem.expiryDate = finalExpiryDate;
     }
 
     onAdd(newItem);
@@ -137,11 +154,28 @@ export default function GroceryForm({ onAdd, onAddMultiple, inventory, onUpdateQ
     reader.onloadend = async () => {
       try {
         const base64 = (reader.result as string).split(',')[1];
-        const data = await analyzeInvoiceImage(base64);
+        const mimeType = file.type;
+        const data = await analyzeInvoice(base64, mimeType);
         setScannedInvoiceData(data);
         setIsInvoiceModalOpen(true);
       } catch (error: any) {
         console.error("Invoice analysis failed:", error);
+        
+        // Log failure to database for developers
+        try {
+          if (auth.currentUser) {
+            await addDoc(collection(db, 'scanFailures'), {
+              timestamp: new Date().toISOString(),
+              error: error.message || 'Unknown error during scan',
+              mimeType: file.type,
+              uid: auth.currentUser.uid,
+              userEmail: auth.currentUser.email
+            });
+          }
+        } catch (logError) {
+          console.error("Failed to log scan failure:", logError);
+        }
+
         alert(`Invoice analysis failed: ${error.message || 'Unknown error'}`);
       } finally {
         setIsScanningInvoice(false);
@@ -190,7 +224,7 @@ export default function GroceryForm({ onAdd, onAddMultiple, inventory, onUpdateQ
             className="flex items-center gap-2 px-4 py-3 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 rounded-2xl hover:bg-amber-100 transition-all font-black uppercase tracking-widest text-[10px] disabled:opacity-50"
           >
             <Upload className="w-4 h-4" />
-            Upload Invoice
+            Upload Invoice (PDF/Image)
           </button>
           
           <button
@@ -237,7 +271,7 @@ export default function GroceryForm({ onAdd, onAddMultiple, inventory, onUpdateQ
           type="file"
           ref={invoiceInputRef}
           onChange={handleInvoiceCapture}
-          accept="image/*"
+          accept="image/*,application/pdf"
           capture="environment"
           className="hidden"
         />
@@ -245,7 +279,7 @@ export default function GroceryForm({ onAdd, onAddMultiple, inventory, onUpdateQ
           type="file"
           ref={invoiceUploadRef}
           onChange={handleInvoiceCapture}
-          accept="image/*"
+          accept="image/*,application/pdf"
           className="hidden"
         />
       </div>
@@ -396,21 +430,51 @@ export default function GroceryForm({ onAdd, onAddMultiple, inventory, onUpdateQ
 
           <div className="space-y-2">
             <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-2">Expiry Date (Optional)</label>
-            <input
-              type="date"
-              value={expiryDate}
-              onChange={(e) => setExpiryDate(e.target.value)}
-              className="cred-input"
-            />
+            <div className="flex gap-2">
+              <input
+                type="date"
+                value={expiryDate}
+                onChange={(e) => setExpiryDate(e.target.value)}
+                className="cred-input flex-1"
+              />
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!name) {
+                    alert("Please enter an item name first");
+                    return;
+                  }
+                  setIsPredictingExpiry(true);
+                  try {
+                    const prediction = await predictExpiryDate(name, category);
+                    setExpiryDate(prediction.predictedExpiryDate);
+                  } catch (error) {
+                    console.error("Prediction failed:", error);
+                    alert("Could not predict expiry date. Please enter manually.");
+                  } finally {
+                    setIsPredictingExpiry(false);
+                  }
+                }}
+                disabled={isPredictingExpiry}
+                className="px-4 bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 rounded-2xl hover:bg-purple-100 transition-all font-black uppercase tracking-widest text-[10px] disabled:opacity-50"
+              >
+                {isPredictingExpiry ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Predict'}
+              </button>
+            </div>
           </div>
         </div>
 
         <button
           type="submit"
-          className="cred-button-primary w-full flex items-center justify-center gap-3 mt-4"
+          disabled={isPredictingExpiry}
+          className="cred-button-primary w-full flex items-center justify-center gap-3 mt-4 disabled:opacity-50"
         >
-          <ShoppingCart className="w-6 h-6" />
-          Add to Inventory
+          {isPredictingExpiry ? (
+            <Loader2 className="w-6 h-6 animate-spin" />
+          ) : (
+            <ShoppingCart className="w-6 h-6" />
+          )}
+          {isPredictingExpiry ? 'Predicting Expiry...' : 'Add to Inventory'}
         </button>
       </form>
     </motion.div>

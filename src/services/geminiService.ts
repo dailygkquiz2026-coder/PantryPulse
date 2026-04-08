@@ -139,24 +139,34 @@ export async function analyzeProductImage(base64Image: string) {
   return parseGeminiResponse(response.text);
 }
 
-export async function analyzeInvoiceImage(base64Image: string) {
+export async function analyzeInvoice(base64Data: string, mimeType: string) {
   const ai = getAI();
   const response = await ai.models.generateContent({
     model: "gemini-3-flash-preview",
     contents: [
       {
         inlineData: {
-          data: base64Image,
-          mimeType: "image/jpeg"
+          data: base64Data,
+          mimeType: mimeType
         }
       },
       {
-        text: `Analyze this grocery invoice/receipt. 
+        text: `Analyze this grocery invoice/receipt (image or PDF). 
+        
+        SPECIAL INSTRUCTION: If this is a Dmart (Avenue Supermarts) invoice, pay close attention to the tabular format. Dmart invoices often have columns for 'Product Name', 'MRP', 'Quantity', and 'Total'. Ensure you extract the correct product names and quantities even if they are abbreviated.
+        
         Extract:
         1. Date of purchase (if visible, else null).
-        2. List of items, each with: name, quantity, unit (guess if not clear, e.g., pcs, kg, g), price, and category.
+        2. List of items, each with: 
+           - name: The product name.
+           - quantity: The number of units.
+           - unit: The unit of measurement (e.g., pcs, kg, g, ml, pack).
+           - price: The unit price or total price for the line item.
+           - category: The food category (e.g., Dairy, Produce, Bakery).
+           - isGrocery: Boolean. True if it's a food/grocery item, False if it's a household item (like a toothbrush, cleaner, etc.).
+           - isUnclear: Boolean. True if the item name or quantity is blurry, abbreviated, or difficult to identify with 100% certainty.
         
-        If item names are unclear, use your knowledge to predict the most likely grocery item name.
+        If item names are unclear, use your knowledge to predict the most likely grocery item name but set isUnclear to true.
         Format the output as JSON.`
       }
     ],
@@ -175,9 +185,11 @@ export async function analyzeInvoiceImage(base64Image: string) {
                 quantity: { type: Type.NUMBER },
                 unit: { type: Type.STRING },
                 price: { type: Type.NUMBER },
-                category: { type: Type.STRING }
+                category: { type: Type.STRING },
+                isGrocery: { type: Type.BOOLEAN },
+                isUnclear: { type: Type.BOOLEAN }
               },
-              required: ["name", "quantity", "unit", "price", "category"]
+              required: ["name", "quantity", "unit", "price", "category", "isGrocery", "isUnclear"]
             }
           }
         },
@@ -226,6 +238,40 @@ export async function getItemSuggestions(prefix: string) {
     }
   });
   return JSON.parse(response.text);
+}
+
+export async function predictExpiryDate(itemName: string, category: string) {
+  const ai = getAI();
+  const response = await ai.models.generateContent({
+    model: "gemini-3-flash-preview",
+    contents: `Research the typical shelf life and expiry duration for the grocery item: "${itemName}" in the category: "${category}". 
+    
+    Consider factors like:
+    - Packaging (e.g., Tetra pack vs. Pouch, Canned vs. Fresh).
+    - Storage conditions (assume refrigerated for dairy/meat, room temperature for others unless specified).
+    - Brand specific information if the brand is mentioned in the name (e.g., Amul Taaza Tetra Pack vs regular pouch milk).
+    
+    Calculate a probable expiry date starting from TODAY (${new Date().toISOString().split('T')[0]}).
+    
+    Return a JSON object with:
+    - predictedExpiryDate: ISO date string (YYYY-MM-DD).
+    - typicalShelfLifeDays: Number of days.
+    - reasoning: A brief explanation of why this date was chosen (e.g., "Tetra pack milk typically lasts 6 months unopened").`,
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: Type.OBJECT,
+        properties: {
+          predictedExpiryDate: { type: Type.STRING },
+          typicalShelfLifeDays: { type: Type.NUMBER },
+          reasoning: { type: Type.STRING }
+        },
+        required: ["predictedExpiryDate", "typicalShelfLifeDays", "reasoning"]
+      },
+      tools: [{ googleSearch: {} }]
+    }
+  });
+  return parseGeminiResponse(response.text);
 }
 
 export async function searchCheapestSource(itemName: string, location?: string, previousPurchase?: string) {

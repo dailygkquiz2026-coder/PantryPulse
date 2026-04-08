@@ -22,6 +22,10 @@ service cloud.firestore {
     function hasOnlyAllowedFields(fields) {
       return request.resource.data.keys().hasOnly(fields);
     }
+    function isAdmin() {
+      return isAuthenticated() && 
+        (request.auth.token.email == "dailygkquiz2026@gmail.com" && request.auth.token.email_verified == true);
+    }
 
     // ===============================================================
     // Domain Validators
@@ -69,6 +73,12 @@ service cloud.firestore {
       allow create: if isOwner(userId) && isValidHousehold(request.resource.data);
       allow update: if isOwner(userId) && isValidHousehold(request.resource.data);
       allow delete: if isOwner(userId);
+    }
+
+    match /scanFailures/{failureId} {
+      allow read: if isAdmin();
+      allow create: if isAuthenticated();
+      allow update, delete: if isAdmin();
     }
   }
 }

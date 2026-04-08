@@ -27,12 +27,12 @@ export default function RestockModal({ isOpen, onClose, item, onConfirm, onSkip 
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center sm:p-4 bg-black/40 backdrop-blur-sm">
           <motion.div
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="bg-white dark:bg-cred-black w-full max-w-md rounded-3xl shadow-2xl overflow-hidden border border-white/10 flex flex-col max-h-[90vh]"
+            className="bg-white dark:bg-cred-black w-full h-full sm:h-auto sm:max-w-md sm:rounded-3xl shadow-2xl overflow-hidden border border-white/10 flex flex-col sm:max-h-[90vh]"
           >
             <div className="p-6 border-b border-gray-100 dark:border-white/5 flex items-center justify-between bg-green-50/50 dark:bg-green-950/20 shrink-0">
               <div className="flex items-center gap-3">
@@ -79,16 +79,16 @@ export default function RestockModal({ isOpen, onClose, item, onConfirm, onSkip 
               </div>
             </div>
 
-            <div className="p-6 border-t border-gray-100 dark:border-white/5 bg-gray-50 dark:bg-cred-gray/50 flex gap-3 shrink-0">
+            <div className="p-6 border-t border-gray-100 dark:border-white/5 bg-gray-50 dark:bg-cred-gray/50 flex flex-col sm:flex-row gap-3 shrink-0 mt-auto sm:mt-0">
               <button
                 onClick={() => onSkip(item)}
-                className="flex-1 px-6 py-3 bg-white dark:bg-cred-gray border border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-300 font-bold rounded-xl hover:bg-gray-100 dark:hover:bg-cred-dark transition-all"
+                className="w-full sm:flex-1 px-6 py-3 bg-white dark:bg-cred-gray border border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-300 font-bold rounded-xl hover:bg-gray-100 dark:hover:bg-cred-dark transition-all"
               >
                 Skip
               </button>
               <button
                 onClick={() => onConfirm({ ...item, quantity, usageFrequency })}
-                className="flex-1 px-6 py-3 bg-green-600 text-white font-bold rounded-xl hover:bg-green-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-green-200 dark:shadow-none"
+                className="w-full sm:flex-1 px-6 py-3 bg-green-600 text-white font-bold rounded-xl hover:bg-green-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-green-200 dark:shadow-none"
               >
                 <CheckCircle2 className="w-5 h-5" />
                 Add to Pantry

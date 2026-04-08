@@ -53,12 +53,12 @@ export default function EditItemModal({ isOpen, onClose, item, onUpdate }: EditI
   return (
     <AnimatePresence>
       {isOpen && item && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center sm:p-4 bg-black/40 backdrop-blur-sm">
           <motion.div
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="bg-white dark:bg-cred-black w-full max-w-md rounded-3xl shadow-2xl overflow-hidden border border-white/10 flex flex-col max-h-[90vh]"
+            className="bg-white dark:bg-cred-black w-full h-full sm:h-auto sm:max-w-md sm:rounded-3xl shadow-2xl overflow-hidden border border-white/10 flex flex-col sm:max-h-[90vh]"
           >
             <div className="p-6 border-b border-gray-100 dark:border-cred-gray flex items-center justify-between shrink-0">
               <h2 className="text-xl font-bold">Edit Item</h2>
@@ -67,7 +67,7 @@ export default function EditItemModal({ isOpen, onClose, item, onUpdate }: EditI
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto">
+            <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto flex-1">
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-2">Item Name</label>
                 <input
@@ -142,13 +142,15 @@ export default function EditItemModal({ isOpen, onClose, item, onUpdate }: EditI
                 />
               </div>
 
-              <button
-                type="submit"
-                className="cred-button-primary w-full flex items-center justify-center gap-2 mt-4"
-              >
-                <Save className="w-5 h-5" />
-                Save Changes
-              </button>
+              <div className="pt-4 sm:pt-0">
+                <button
+                  type="submit"
+                  className="cred-button-primary w-full flex items-center justify-center gap-2"
+                >
+                  <Save className="w-5 h-5" />
+                  Save Changes
+                </button>
+              </div>
             </form>
           </motion.div>
         </div>

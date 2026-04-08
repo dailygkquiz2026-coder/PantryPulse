@@ -26,7 +26,7 @@ PantryPulse is a full-stack, AI-powered grocery management application built wit
 - **firebase.ts**: Initializes Firebase SDK and exports Firestore/Auth instances.
 - **geminiService.ts**: Encapsulates all calls to the Gemini API, including:
     - `analyzeProductImage`: Identifies single products from photos.
-    - `analyzeInvoiceImage`: Extracts structured data (items, prices, dates) from receipts.
+    - `analyzeInvoice`: Extracts structured data (items, prices, dates, categories, grocery/clarity flags) from receipts (Images or PDFs).
     - `getRestockPredictions`: (Conceptual) Uses AI to suggest items based on household size and preferences.
 
 ### 3. Data Layer (Firestore)
@@ -36,7 +36,7 @@ PantryPulse is a full-stack, AI-powered grocery management application built wit
 
 ## Data Flow: Invoice Scanning
 1. User captures/uploads an invoice image in `GroceryForm`.
-2. `analyzeInvoiceImage` sends the base64 image to Gemini 3 Flash.
+2. `analyzeInvoice` sends the base64 data to Gemini 3 Flash.
 3. Gemini returns a structured JSON object containing extracted items and purchase date.
 4. `InvoiceReviewModal` displays this data for user verification.
 5. Upon confirmation, `App.tsx` performs a batch write to the `inventory` collection.

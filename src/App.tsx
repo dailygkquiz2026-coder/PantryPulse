@@ -48,6 +48,7 @@ import InventoryList from './components/InventoryList';
 import ShoppingList from './components/ShoppingList';
 import HouseholdSettings from './components/HouseholdSettings';
 import PriceComparison from './components/PriceComparison';
+import AdminDashboard from './components/AdminDashboard';
 import RestockModal from './components/RestockModal';
 import UpdateQuantityModal from './components/UpdateQuantityModal';
 import EditItemModal from './components/EditItemModal';
@@ -931,6 +932,8 @@ function AppContent() {
         item={itemToUpdate}
         onConfirm={handleUpdateInventoryQuantity}
       />
+
+      <AdminDashboard />
     </div>
   );
 }

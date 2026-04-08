@@ -22,12 +22,12 @@ export default function UpdateQuantityModal({ isOpen, onClose, item, onConfirm }
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center sm:p-4 bg-black/40 backdrop-blur-sm">
           <motion.div
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="bg-white dark:bg-cred-black w-full max-w-md rounded-3xl shadow-2xl overflow-hidden border border-white/10 flex flex-col max-h-[90vh]"
+            className="bg-white dark:bg-cred-black w-full h-full sm:h-auto sm:max-w-md sm:rounded-3xl shadow-2xl overflow-hidden border border-white/10 flex flex-col sm:max-h-[90vh]"
           >
             <div className="p-6 border-b border-gray-100 dark:border-white/5 flex items-center justify-between bg-amber-50/50 dark:bg-amber-950/20 shrink-0">
               <div className="flex items-center gap-3">
@@ -39,7 +39,7 @@ export default function UpdateQuantityModal({ isOpen, onClose, item, onConfirm }
                   <p className="text-sm text-gray-500 dark:text-gray-400">Correcting inventory for <span className="font-semibold text-amber-600 dark:text-amber-400">{item.name}</span></p>
                 </div>
               </div>
-              <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-cred-gray rounded-full transition-all">
+              <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-cred-gray rounded-xl transition-all">
                 <X className="w-6 h-6 text-gray-400" />
               </button>
             </div>
@@ -65,16 +65,16 @@ export default function UpdateQuantityModal({ isOpen, onClose, item, onConfirm }
               </div>
             </div>
 
-            <div className="p-6 border-t border-gray-100 dark:border-white/5 bg-gray-50 dark:bg-cred-gray/50 flex gap-3 shrink-0">
+            <div className="p-6 border-t border-gray-100 dark:border-white/5 bg-gray-50 dark:bg-cred-gray/50 flex flex-col sm:flex-row gap-3 shrink-0 mt-auto sm:mt-0">
               <button
                 onClick={onClose}
-                className="flex-1 px-6 py-3 bg-white dark:bg-cred-gray border border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-300 font-bold rounded-xl hover:bg-gray-100 dark:hover:bg-cred-dark transition-all"
+                className="w-full sm:flex-1 px-6 py-3 bg-white dark:bg-cred-gray border border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-300 font-bold rounded-xl hover:bg-gray-100 dark:hover:bg-cred-dark transition-all"
               >
                 Cancel
               </button>
               <button
                 onClick={() => onConfirm(item.id, quantity)}
-                className="flex-1 px-6 py-3 bg-amber-600 text-white font-bold rounded-xl hover:bg-amber-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-amber-200 dark:shadow-none"
+                className="w-full sm:flex-1 px-6 py-3 bg-amber-600 text-white font-bold rounded-xl hover:bg-amber-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-amber-200 dark:shadow-none"
               >
                 <CheckCircle2 className="w-5 h-5" />
                 Update Stock

@@ -20,14 +20,14 @@ export default function DuplicateCheckModal({
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center sm:p-4 bg-black/60 backdrop-blur-sm">
           <motion.div
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="bg-white dark:bg-cred-black w-full max-w-md rounded-3xl shadow-2xl overflow-hidden border border-white/10"
+            className="bg-white dark:bg-cred-black w-full h-full sm:h-auto sm:max-w-md sm:rounded-3xl shadow-2xl overflow-hidden border border-white/10 flex flex-col"
           >
-            <div className="p-6 border-b border-gray-100 dark:border-white/5 flex items-center justify-between bg-amber-50/50 dark:bg-amber-950/20">
+            <div className="p-6 border-b border-gray-100 dark:border-white/5 flex items-center justify-between bg-amber-50/50 dark:bg-amber-950/20 shrink-0">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-amber-100 dark:bg-amber-900/40 rounded-xl">
                   <AlertCircle className="w-6 h-6 text-amber-600 dark:text-amber-400" />
@@ -74,10 +74,10 @@ export default function DuplicateCheckModal({
               </button>
             </div>
 
-            <div className="p-6 bg-gray-50 dark:bg-cred-dark/50 flex gap-3">
+            <div className="p-6 bg-gray-50 dark:bg-cred-dark/50 flex flex-col sm:flex-row gap-3 mt-auto sm:mt-0">
               <button
                 onClick={onClose}
-                className="flex-1 py-4 bg-white dark:bg-cred-gray font-black uppercase tracking-widest text-[10px] rounded-2xl border border-gray-100 dark:border-white/5 hover:bg-gray-50 transition-all"
+                className="w-full sm:flex-1 py-4 bg-white dark:bg-cred-gray font-black uppercase tracking-widest text-[10px] rounded-2xl border border-gray-100 dark:border-white/5 hover:bg-gray-50 transition-all"
               >
                 Cancel
               </button>
