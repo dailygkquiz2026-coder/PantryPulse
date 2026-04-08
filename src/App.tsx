@@ -43,6 +43,7 @@ import {
   getDocFromServer
 } from 'firebase/firestore';
 import { db, auth, handleFirestoreError, OperationType } from './firebase';
+import { Analytics } from '@vercel/analytics/react';
 import GroceryForm from './components/GroceryForm';
 import InventoryList from './components/InventoryList';
 import ShoppingList from './components/ShoppingList';
@@ -946,6 +947,7 @@ export default function App() {
   return (
     <ErrorBoundary>
       <AppContent />
+      <Analytics />
     </ErrorBoundary>
   );
 }
@@ -970,4 +972,3 @@ function NavButton({ active, onClick, icon, label, badge }: { active: boolean, o
     </button>
   );
 }
-
