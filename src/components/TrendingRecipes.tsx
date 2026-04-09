@@ -225,12 +225,16 @@ export default function TrendingRecipes({
             transition={{ delay: index * 0.1 }}
             className="cred-card overflow-hidden flex flex-col group hover:shadow-2xl transition-all border-gray-100 dark:border-cred-gray"
           >
-            <div className="relative h-48 overflow-hidden">
+            <div className="relative h-48 overflow-hidden bg-gray-100 dark:bg-cred-gray flex items-center justify-center">
               <img 
                 src={recipe.imageUrl} 
                 alt={recipe.title}
                 className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                 referrerPolicy="no-referrer"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.src = `https://picsum.photos/seed/${encodeURIComponent(recipe.title)}/800/600`;
+                }}
               />
               <div className="absolute top-4 left-4 px-3 py-1 bg-white/90 dark:bg-black/80 backdrop-blur-md rounded-full flex items-center gap-2 text-[10px] font-black uppercase tracking-widest shadow-lg">
                 {getSourceIcon(recipe.source)}

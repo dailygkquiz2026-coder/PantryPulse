@@ -340,7 +340,7 @@ export async function getTrendingRecipes(location?: string) {
     - title: The name of the dish.
     - description: A short, catchy description of why it's trending.
     - source: Where it's trending (e.g., TikTok, Instagram, Pinterest).
-    - imageUrl: A high-quality image URL of the dish.
+    - imageUrl: A high-quality, publicly accessible, and hotlink-friendly image URL of the dish. Prefer URLs from reliable recipe blogs or CDNs.
     - link: A VALID, DIRECT link to the recipe instructions.
     - ingredients: A list of objects containing 'name' and 'typicalQuantityPerPerson' (e.g., {name: "Milk", typicalQuantityPerPerson: "200ml"}).
     
