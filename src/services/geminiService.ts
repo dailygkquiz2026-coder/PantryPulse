@@ -330,18 +330,24 @@ export async function getTrendingRecipes(location?: string) {
     contents: `Search the internet and social media for the top 5 trending recipes that people are making right now${locationContext}. 
     
     CRITICAL INSTRUCTIONS FOR LINKS:
-    1. The 'link' MUST be a direct, permanent URL to the specific recipe post (e.g., https://hebbarskitchen.com/paneer-butter-masala-recipe/ or https://www.archanaskitchen.com/dal-tadka-recipe).
-    2. DO NOT provide search result URLs, category pages, or homepages.
-    3. DO NOT hallucinate URLs. Use Google Search to find the ACTUAL live URL for the trending dish.
-    4. Prefer stable, high-authority recipe blogs like Hebbars Kitchen, Archana's Kitchen, Veg Recipes of India, or similar reputable sources.
-    5. Ensure the URL does not end in a search query or a generic path that might lead to a 404.
+    1. The 'link' MUST be a direct, permanent URL to a specific video or post.
+    2. PRIORITIZE links to social media platforms: YouTube Shorts, YouTube Videos, Instagram Reels, or Facebook Reels.
+    3. DO NOT provide search result URLs like 'youtube.com/search?q=...'. 
+    4. If you must provide a search-based fallback for YouTube, use EXACTLY this format: 'https://www.youtube.com/results?search_query=[dish+name+recipe]'.
+    5. DO NOT hallucinate URLs. Use Google Search to find the ACTUAL live URL for the trending dish.
+    6. Ensure the URL is a direct link to the content (e.g., https://www.youtube.com/shorts/..., https://www.youtube.com/watch?v=..., https://www.instagram.com/reels/...).
     
     For each recipe, provide:
     - title: The name of the dish.
     - description: A short, catchy description of why it's trending.
-    - source: Where it's trending (e.g., TikTok, Instagram, Pinterest).
-    - imageUrl: A high-quality, publicly accessible, and hotlink-friendly image URL of the dish. Prefer URLs from reliable recipe blogs or CDNs.
-    - link: A VALID, DIRECT link to the recipe instructions.
+    - source: The platform name (e.g., "YouTube Shorts", "Instagram Reels", "Facebook Reels", "YouTube").
+    - imageUrl: A high-quality, direct image URL of the ACTUAL dish. 
+      CRITICAL: 
+      1. Use Google Search to find the most visually appealing, high-resolution image of this specific dish.
+      2. PRIORITIZE images from stock photo sites like Unsplash, Pexels, or Pixabay, or high-authority food blogs (e.g., Serious Eats, Bon Appétit, Food52).
+      3. The URL MUST be a direct link ending in .jpg, .jpeg, .png, or .webp.
+      4. DO NOT use social media thumbnails (Instagram/YouTube) as they are often low-res or blocked.
+    - link: A VALID, DIRECT link to the social media video or post.
     - ingredients: A list of objects containing 'name' and 'typicalQuantityPerPerson' (e.g., {name: "Milk", typicalQuantityPerPerson: "200ml"}).
     
     Return the result as a JSON array of objects.`,

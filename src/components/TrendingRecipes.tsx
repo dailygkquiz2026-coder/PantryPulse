@@ -9,6 +9,8 @@ import {
   Instagram, 
   Music, 
   Pin, 
+  Youtube,
+  Facebook,
   Users, 
   ShoppingCart, 
   CheckCircle2, 
@@ -81,6 +83,8 @@ export default function TrendingRecipes({
 
   const getSourceIcon = (source: string) => {
     const s = source.toLowerCase();
+    if (s.includes('youtube')) return <Youtube className="w-4 h-4" />;
+    if (s.includes('facebook')) return <Facebook className="w-4 h-4" />;
     if (s.includes('tiktok')) return <Music className="w-4 h-4" />;
     if (s.includes('instagram')) return <Instagram className="w-4 h-4" />;
     if (s.includes('pinterest')) return <Pin className="w-4 h-4" />;
@@ -113,6 +117,18 @@ export default function TrendingRecipes({
       </div>
     );
   }
+
+  const cleanUrl = (url: string) => {
+    try {
+      // Fix common malformed YouTube search URLs
+      if (url.includes('youtube.com/search?q=')) {
+        return url.replace('youtube.com/search?q=', 'youtube.com/results?search_query=');
+      }
+      return url;
+    } catch (e) {
+      return url;
+    }
+  };
 
   return (
     <div className="space-y-8 pb-20">
@@ -225,15 +241,19 @@ export default function TrendingRecipes({
             transition={{ delay: index * 0.1 }}
             className="cred-card overflow-hidden flex flex-col group hover:shadow-2xl transition-all border-gray-100 dark:border-cred-gray"
           >
-            <div className="relative h-48 overflow-hidden bg-gray-100 dark:bg-cred-gray flex items-center justify-center">
+            <div className="relative h-56 overflow-hidden bg-gray-100 dark:bg-cred-gray flex items-center justify-center">
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-amber-500/5 animate-pulse" />
+              <ChefHat className="w-12 h-12 text-gray-200 dark:text-cred-gray absolute" />
               <img 
                 src={recipe.imageUrl} 
                 alt={recipe.title}
-                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 relative z-10"
                 referrerPolicy="no-referrer"
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
-                  target.src = `https://picsum.photos/seed/${encodeURIComponent(recipe.title)}/800/600`;
+                  // Use LoremFlickr with more specific keywords for better fallback relevance
+                  const keywords = encodeURIComponent(`${recipe.title},cooked,food,dish`);
+                  target.src = `https://loremflickr.com/800/600/${keywords}`;
                 }}
               />
               <div className="absolute top-4 left-4 px-3 py-1 bg-white/90 dark:bg-black/80 backdrop-blur-md rounded-full flex items-center gap-2 text-[10px] font-black uppercase tracking-widest shadow-lg">
@@ -328,12 +348,16 @@ export default function TrendingRecipes({
               </div>
 
               <a 
-                href={recipe.link}
+                href={cleanUrl(recipe.link)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full cred-button-primary flex items-center justify-center gap-2 py-3 mt-auto"
               >
-                View Full Recipe
+                {recipe.source.toLowerCase().includes('youtube') || 
+                 recipe.source.toLowerCase().includes('reels') || 
+                 recipe.source.toLowerCase().includes('tiktok') 
+                  ? 'Watch Video' 
+                  : 'View Full Recipe'}
                 <ExternalLink className="w-4 h-4" />
               </a>
             </div>
