@@ -34,7 +34,8 @@ export default function InventoryList({ items, onDelete, onAddToShopping, onUpda
       ) : (
         items.map((item, index) => {
           const daysRemaining = predictions[item.id];
-          const isLow = daysRemaining !== undefined && daysRemaining < 3;
+          const isStockout = daysRemaining !== undefined && daysRemaining <= 0;
+          const isLow = daysRemaining !== undefined && daysRemaining > 0 && daysRemaining < 3;
           
           const expiryDate = item.expiryDate ? new Date(item.expiryDate) : null;
           const isExpiringSoon = expiryDate ? (expiryDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24) < 3 : false;
@@ -63,8 +64,8 @@ export default function InventoryList({ items, onDelete, onAddToShopping, onUpda
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: index * 0.05 }}
               className={`cred-card p-4 flex flex-col sm:flex-row sm:items-center justify-between group hover:shadow-lg transition-all gap-4 ${
-                isExpired ? 'border-red-300 dark:border-red-900 bg-red-50/30 dark:bg-red-950/20' : 
-                isExpiringSoon ? 'border-amber-300 dark:border-amber-900 bg-amber-50/30 dark:bg-amber-950/20' : 
+                isExpired || isStockout ? 'border-red-300 dark:border-red-900 bg-red-50/30 dark:bg-red-950/20' : 
+                isExpiringSoon || isLow ? 'border-amber-300 dark:border-amber-900 bg-amber-50/30 dark:bg-amber-950/20' : 
                 'border-gray-100 dark:border-cred-gray'
               }`}
             >
@@ -77,12 +78,11 @@ export default function InventoryList({ items, onDelete, onAddToShopping, onUpda
                     referrerPolicy="no-referrer"
                   />
                   <div className={`absolute -top-2 -right-2 p-1.5 rounded-lg shadow-sm ${
-                    isExpired ? 'bg-red-500 text-white' : 
-                    isExpiringSoon ? 'bg-amber-500 text-white' : 
-                    isLow ? 'bg-red-500 text-white' : 
+                    isExpired || isStockout ? 'bg-red-500 text-white' : 
+                    isExpiringSoon || isLow ? 'bg-amber-500 text-white' : 
                     'bg-green-500 text-white'
                   }`}>
-                    {isExpired || isExpiringSoon || isLow ? <AlertTriangle className="w-3 h-3" /> : <CheckCircle2 className="w-3 h-3" />}
+                    {isExpired || isExpiringSoon || isLow || isStockout ? <AlertTriangle className="w-3 h-3" /> : <CheckCircle2 className="w-3 h-3" />}
                   </div>
                 </div>
                 <div className="flex-1 min-w-0">
@@ -109,9 +109,10 @@ export default function InventoryList({ items, onDelete, onAddToShopping, onUpda
                     )}
                     {daysRemaining !== undefined && (
                       <div className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-tighter ${
+                        isStockout ? 'bg-red-600 text-white' :
                         isLow ? 'bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400' : 'bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400'
                       }`}>
-                        {daysRemaining} days left
+                        {isStockout ? 'FINISHED / STOCKOUT' : `${daysRemaining} days left`}
                       </div>
                     )}
                   </div>
@@ -141,10 +142,12 @@ export default function InventoryList({ items, onDelete, onAddToShopping, onUpda
                     <Clock className="w-4 h-4" />
                   </button>
 
-                  {isLow && (
+                  {(isLow || isStockout) && (
                     <button
                       onClick={() => onAddToShopping(item.name, item)}
-                      className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all shadow-md shadow-blue-200 dark:shadow-none font-bold text-xs whitespace-nowrap"
+                      className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl transition-all shadow-md dark:shadow-none font-bold text-xs whitespace-nowrap ${
+                        isStockout ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-200'
+                      }`}
                     >
                       <ShoppingBag className="w-4 h-4" />
                       <span className="hidden md:inline">Restock</span>
@@ -154,6 +157,7 @@ export default function InventoryList({ items, onDelete, onAddToShopping, onUpda
                   <button
                     onClick={() => onDelete(item.id)}
                     className="p-2 text-gray-400 hover:text-red-600 hover:bg-white dark:hover:bg-cred-dark rounded-lg transition-all"
+                    title="Delete Item"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>

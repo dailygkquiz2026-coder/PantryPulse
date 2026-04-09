@@ -55,6 +55,23 @@
         "userEmail": { "type": "string" }
       },
       "required": ["id", "timestamp", "error", "uid"]
+    },
+    "SavedRecipe": {
+      "title": "Saved Recipe",
+      "description": "A recipe saved by the user",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "source": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "link": { "type": "string" },
+        "ingredients": { "type": "array" },
+        "uid": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "description", "source", "imageUrl", "link", "ingredients", "uid", "createdAt"]
     }
   },
   "firestore": {
@@ -73,6 +90,10 @@
     "/scanFailures/{failureId}": {
       "schema": "ScanFailure",
       "description": "Logs of failed scans for developers"
+    },
+    "/savedRecipes/{recipeId}": {
+      "schema": "SavedRecipe",
+      "description": "Recipes saved by the user"
     }
   }
 }

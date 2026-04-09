@@ -51,6 +51,16 @@ service cloud.firestore {
              data.uid == request.auth.uid;
     }
 
+    function isValidSavedRecipe(data) {
+      return data.title is string && data.title.size() > 0 && data.title.size() < 200 &&
+             data.description is string &&
+             data.source is string &&
+             data.imageUrl is string &&
+             data.link is string &&
+             data.ingredients is list &&
+             data.uid == request.auth.uid;
+    }
+
     // ===============================================================
     // Rules
     // ===============================================================
@@ -73,6 +83,13 @@ service cloud.firestore {
       allow create: if isOwner(userId) && isValidHousehold(request.resource.data);
       allow update: if isOwner(userId) && isValidHousehold(request.resource.data);
       allow delete: if isOwner(userId);
+    }
+
+    match /savedRecipes/{recipeId} {
+      allow read: if isAuthenticated() && (resource == null || resource.data.uid == request.auth.uid);
+      allow create: if isAuthenticated() && request.resource.data.uid == request.auth.uid;
+      allow update: if isAuthenticated() && resource.data.uid == request.auth.uid && request.resource.data.uid == request.auth.uid;
+      allow delete: if isAuthenticated() && resource.data.uid == request.auth.uid;
     }
 
     match /scanFailures/{failureId} {

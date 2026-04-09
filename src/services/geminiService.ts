@@ -289,12 +289,13 @@ export async function searchCheapestSource(itemName: string, location?: string, 
     Your task:
     1. Search across quick commerce (Blinkit, Zepto, BigBasket, Swiggy Instamart) and e-marketplaces (Amazon Fresh, Flipkart Grocery).
     2. Rank the outcomes based on the LOWEST PRICE first.
-    3. For each result, provide:
+    3. Provide EXACTLY 5-6 results. Do not provide more.
+    4. For each result, provide:
        - Exact Product Name
        - Store Name
        - Price (in INR)
        - A direct Hyperlink (use stable search URLs as defined below).
-    4. If a product is NOT available on a specific seller site for the given location, explicitly write "Not available for your pincode now" for that seller.
+    5. If a product is NOT available on a specific seller site for the given location, explicitly write "Not available for your pincode now" for that seller.
     
     CRITICAL INSTRUCTIONS FOR LINKS:
     - DO NOT hallucinate direct product URLs with internal IDs.
@@ -304,7 +305,7 @@ export async function searchCheapestSource(itemName: string, location?: string, 
       - BigBasket: https://www.bigbasket.com/ps/?q=[Product+Name]
       - Swiggy Instamart: https://www.swiggy.com/instamart/search?query=[Product+Name]
       - Amazon Fresh: https://www.amazon.in/s?k=[Product+Name]&i=nowstore
-      - Flipkart Grocery: https://www.flipkart.com/search?q=[Product+Name]&otracker=AS_Query_HistoryAutoSuggest_1_0&otracker1=AS_Query_HistoryAutoSuggest_1_0&marketplace=GROCERY
+      - Flipkart Grocery: https://www.flipkart.com/search?q=[Product+Name]&marketplace=GROCERY
     
     Format the output as a short, crisp, and actionable Markdown table:
     | Rank | Product | Store | Price | Action |
@@ -318,4 +319,61 @@ export async function searchCheapestSource(itemName: string, location?: string, 
     }
   });
   return response.text;
+}
+
+export async function getTrendingRecipes(location?: string) {
+  const ai = getAI();
+  const locationContext = location ? ` for the location: ${location}` : " (assume a general search in India)";
+  
+  const response = await ai.models.generateContent({
+    model: "gemini-3-flash-preview",
+    contents: `Search the internet and social media for the top 5 trending recipes that people are making right now${locationContext}. 
+    
+    CRITICAL INSTRUCTIONS FOR LINKS:
+    1. The 'link' MUST be a direct, permanent URL to the specific recipe post (e.g., https://hebbarskitchen.com/paneer-butter-masala-recipe/ or https://www.archanaskitchen.com/dal-tadka-recipe).
+    2. DO NOT provide search result URLs, category pages, or homepages.
+    3. DO NOT hallucinate URLs. Use Google Search to find the ACTUAL live URL for the trending dish.
+    4. Prefer stable, high-authority recipe blogs like Hebbars Kitchen, Archana's Kitchen, Veg Recipes of India, or similar reputable sources.
+    5. Ensure the URL does not end in a search query or a generic path that might lead to a 404.
+    
+    For each recipe, provide:
+    - title: The name of the dish.
+    - description: A short, catchy description of why it's trending.
+    - source: Where it's trending (e.g., TikTok, Instagram, Pinterest).
+    - imageUrl: A high-quality image URL of the dish.
+    - link: A VALID, DIRECT link to the recipe instructions.
+    - ingredients: A list of objects containing 'name' and 'typicalQuantityPerPerson' (e.g., {name: "Milk", typicalQuantityPerPerson: "200ml"}).
+    
+    Return the result as a JSON array of objects.`,
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: Type.ARRAY,
+        items: {
+          type: Type.OBJECT,
+          properties: {
+            title: { type: Type.STRING },
+            description: { type: Type.STRING },
+            source: { type: Type.STRING },
+            imageUrl: { type: Type.STRING },
+            link: { type: Type.STRING },
+            ingredients: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  name: { type: Type.STRING },
+                  typicalQuantityPerPerson: { type: Type.STRING }
+                },
+                required: ["name", "typicalQuantityPerPerson"]
+              }
+            }
+          },
+          required: ["title", "description", "source", "imageUrl", "link", "ingredients"]
+        }
+      },
+      tools: [{ googleSearch: {} }]
+    }
+  });
+  return parseGeminiResponse(response.text);
 }

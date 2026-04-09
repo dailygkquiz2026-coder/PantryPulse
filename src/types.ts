@@ -31,3 +31,18 @@ export interface ShoppingListItem {
   price?: number;
   uid: string;
 }
+
+export interface SavedRecipe {
+  id: string;
+  title: string;
+  description: string;
+  source: string;
+  imageUrl: string;
+  link: string;
+  ingredients: {
+    name: string;
+    typicalQuantityPerPerson: string;
+  }[];
+  uid: string;
+  createdAt: string;
+}

@@ -1,0 +1,341 @@
+import React, { useEffect, useState } from 'react';
+import { getTrendingRecipes } from '../services/geminiService';
+import { GroceryItem, SavedRecipe } from '../types';
+import { 
+  ChefHat, 
+  ExternalLink, 
+  Loader2, 
+  Sparkles, 
+  Instagram, 
+  Music, 
+  Pin, 
+  Users, 
+  ShoppingCart, 
+  CheckCircle2, 
+  Plus,
+  ArrowRight,
+  Info,
+  Bookmark,
+  BookmarkCheck,
+  Trash2,
+  History
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+
+interface Ingredient {
+  name: string;
+  typicalQuantityPerPerson: string;
+}
+
+interface Recipe {
+  title: string;
+  description: string;
+  source: string;
+  imageUrl: string;
+  link: string;
+  ingredients: Ingredient[];
+}
+
+interface TrendingRecipesProps {
+  inventory: GroceryItem[];
+  userLocation: string | null;
+  onAddToShopping: (name: string, details?: any) => void;
+  defaultMembers: number;
+  savedRecipes: SavedRecipe[];
+  onSaveRecipe: (recipe: Omit<SavedRecipe, 'id' | 'uid' | 'createdAt'>) => void;
+  onDeleteRecipe: (id: string) => void;
+}
+
+export default function TrendingRecipes({ 
+  inventory, 
+  userLocation, 
+  onAddToShopping, 
+  defaultMembers,
+  savedRecipes,
+  onSaveRecipe,
+  onDeleteRecipe
+}: TrendingRecipesProps) {
+  const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [servingSize, setServingSize] = useState(defaultMembers);
+  const [view, setView] = useState<'trending' | 'saved'>('trending');
+  const [addedItems, setAddedItems] = useState<Set<string>>(new Set());
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  useEffect(() => {
+    async function fetchRecipes() {
+      try {
+        setIsLoading(true);
+        const data = await getTrendingRecipes(userLocation || undefined);
+        setRecipes(data);
+      } catch (err: any) {
+        console.error('Failed to fetch recipes:', err);
+        setError(err.message || 'Failed to load trending recipes');
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchRecipes();
+  }, [userLocation, refreshKey]);
+
+  const getSourceIcon = (source: string) => {
+    const s = source.toLowerCase();
+    if (s.includes('tiktok')) return <Music className="w-4 h-4" />;
+    if (s.includes('instagram')) return <Instagram className="w-4 h-4" />;
+    if (s.includes('pinterest')) return <Pin className="w-4 h-4" />;
+    return <Sparkles className="w-4 h-4" />;
+  };
+
+  const checkInventory = (ingredientName: string) => {
+    return inventory.find(item => 
+      item.name.toLowerCase().includes(ingredientName.toLowerCase()) ||
+      ingredientName.toLowerCase().includes(item.name.toLowerCase())
+    );
+  };
+
+  const handleAdd = (ingName: string, servingSize: number, typicalQty: string, recipeTitle: string) => {
+    onAddToShopping(ingName, { quantity: servingSize, unit: typicalQty });
+    setAddedItems(prev => new Set(prev).add(`${recipeTitle}-${ingName}`));
+  };
+
+  const isRecipeSaved = (title: string) => {
+    return savedRecipes.some(r => r.title === title);
+  };
+
+  const displayRecipes = view === 'trending' ? recipes : savedRecipes;
+
+  if (isLoading && view === 'trending') {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 gap-4">
+        <Loader2 className="w-10 h-10 text-blue-600 animate-spin" />
+        <p className="text-gray-500 dark:text-gray-400 font-medium animate-pulse">Searching for trending recipes in your area...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-8 pb-20">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-2">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-amber-100 dark:bg-amber-900/40 rounded-xl">
+            <ChefHat className="w-6 h-6 text-amber-600 dark:text-amber-400" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">
+                {view === 'trending' ? 'Trending Now' : 'Saved Recipes'}
+              </h2>
+              {view === 'trending' && (
+                <button 
+                  onClick={() => setRefreshKey(prev => prev + 1)}
+                  className="p-1.5 hover:bg-gray-100 dark:hover:bg-cred-gray rounded-lg transition-colors text-gray-400 hover:text-blue-600"
+                  title="Refresh trends"
+                >
+                  <History className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+                </button>
+              )}
+            </div>
+            <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">
+              {view === 'trending' 
+                ? (userLocation ? 'Popular in your region' : 'Global food trends')
+                : `${savedRecipes.length}/5 recipes saved`}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-4">
+          <div className="flex bg-gray-100 dark:bg-cred-gray p-1 rounded-xl">
+            <button
+              onClick={() => setView('trending')}
+              className={`px-4 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${
+                view === 'trending' 
+                  ? 'bg-white dark:bg-cred-dark text-blue-600 dark:text-cred-accent shadow-sm' 
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-3 h-3" />
+                Trending
+              </div>
+            </button>
+            <button
+              onClick={() => setView('saved')}
+              className={`px-4 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${
+                view === 'saved' 
+                  ? 'bg-white dark:bg-cred-dark text-blue-600 dark:text-cred-accent shadow-sm' 
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <Bookmark className="w-3 h-3" />
+                Saved
+              </div>
+            </button>
+          </div>
+
+          <div className="flex items-center gap-4 bg-gray-50 dark:bg-cred-gray p-2 rounded-2xl border border-gray-100 dark:border-white/5">
+            <div className="flex items-center gap-2 px-3">
+              <Users className="w-4 h-4 text-gray-400" />
+              <span className="text-xs font-black uppercase tracking-widest text-gray-500">Servings</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <button 
+                onClick={() => setServingSize(Math.max(1, servingSize - 1))}
+                className="w-8 h-8 flex items-center justify-center bg-white dark:bg-cred-dark rounded-lg hover:bg-gray-100 transition-all font-bold"
+              >
+                -
+              </button>
+              <span className="w-8 text-center font-black text-lg">{servingSize}</span>
+              <button 
+                onClick={() => setServingSize(servingSize + 1)}
+                className="w-8 h-8 flex items-center justify-center bg-white dark:bg-cred-dark rounded-lg hover:bg-gray-100 transition-all font-bold"
+              >
+                +
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {error && view === 'trending' && (
+        <div className="p-8 text-center cred-card border-red-100 dark:border-red-900 bg-red-50/30 dark:bg-red-950/20">
+          <p className="text-red-600 dark:text-red-400 font-bold mb-4">{error}</p>
+          <button onClick={() => window.location.reload()} className="cred-button-primary">Try Again</button>
+        </div>
+      )}
+
+      {view === 'saved' && savedRecipes.length === 0 && (
+        <div className="text-center py-20 cred-card border-2 border-dashed border-gray-100 dark:border-white/5 flex flex-col items-center justify-center gap-4">
+          <div className="w-16 h-16 bg-gray-50 dark:bg-cred-gray rounded-2xl flex items-center justify-center">
+            <Bookmark className="w-8 h-8 text-gray-300" />
+          </div>
+          <h3 className="text-lg font-bold">No saved recipes yet</h3>
+          <p className="text-sm text-gray-500 max-w-xs">Save trending recipes to view them later and check your pantry stock.</p>
+          <button onClick={() => setView('trending')} className="cred-button-primary">Explore Trending</button>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {displayRecipes.map((recipe, index) => (
+          <motion.div
+            key={recipe.title}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: index * 0.1 }}
+            className="cred-card overflow-hidden flex flex-col group hover:shadow-2xl transition-all border-gray-100 dark:border-cred-gray"
+          >
+            <div className="relative h-48 overflow-hidden">
+              <img 
+                src={recipe.imageUrl} 
+                alt={recipe.title}
+                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                referrerPolicy="no-referrer"
+              />
+              <div className="absolute top-4 left-4 px-3 py-1 bg-white/90 dark:bg-black/80 backdrop-blur-md rounded-full flex items-center gap-2 text-[10px] font-black uppercase tracking-widest shadow-lg">
+                {getSourceIcon(recipe.source)}
+                {recipe.source}
+              </div>
+              
+              <div className="absolute top-4 right-4 flex gap-2">
+                {view === 'saved' ? (
+                  <button
+                    onClick={() => {
+                      const saved = savedRecipes.find(r => r.title === recipe.title);
+                      if (saved) onDeleteRecipe(saved.id);
+                    }}
+                    className="p-2 bg-red-500 text-white rounded-full shadow-lg hover:bg-red-600 transition-all"
+                    title="Remove from saved"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => {
+                      if (isRecipeSaved(recipe.title)) {
+                        const saved = savedRecipes.find(r => r.title === recipe.title);
+                        if (saved) onDeleteRecipe(saved.id);
+                      } else {
+                        onSaveRecipe(recipe);
+                      }
+                    }}
+                    className={`p-2 rounded-full shadow-lg transition-all ${
+                      isRecipeSaved(recipe.title) 
+                        ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                        : 'bg-white/90 dark:bg-black/80 text-gray-600 dark:text-gray-300 hover:bg-white'
+                    }`}
+                  >
+                    {isRecipeSaved(recipe.title) ? <BookmarkCheck className="w-4 h-4" /> : <Bookmark className="w-4 h-4" />}
+                  </button>
+                )}
+              </div>
+            </div>
+            
+            <div className="p-6 flex-1 flex flex-col">
+              <h3 className="text-xl font-bold mb-2 group-hover:text-blue-600 dark:group-hover:text-cred-accent transition-colors">{recipe.title}</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 line-clamp-2">{recipe.description}</p>
+              
+              <div className="space-y-4 mb-8">
+                <div className="flex items-center justify-between">
+                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Ingredients Check</p>
+                  <div className="flex items-center gap-1 text-[10px] font-bold text-blue-600 dark:text-cred-accent">
+                    <Info className="w-3 h-3" />
+                    <span>For {servingSize} people</span>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-1 gap-2">
+                  {recipe.ingredients.map((ing, i) => {
+                    const inInventory = checkInventory(ing.name);
+                    const isAdded = addedItems.has(`${recipe.title}-${ing.name}`);
+                    return (
+                      <div key={i} className="flex items-center justify-between p-2 rounded-xl bg-gray-50/50 dark:bg-cred-gray/30 border border-gray-100 dark:border-white/5">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-2 h-2 rounded-full ${inInventory ? 'bg-green-500' : 'bg-amber-500'}`} />
+                          <div>
+                            <p className="text-xs font-bold">{ing.name}</p>
+                            <p className="text-[10px] text-gray-400">Need: {ing.typicalQuantityPerPerson} x {servingSize}</p>
+                          </div>
+                        </div>
+                        
+                        {inInventory ? (
+                          <div className="flex items-center gap-1 text-green-600 dark:text-green-400 text-[10px] font-black uppercase tracking-widest">
+                            <CheckCircle2 className="w-3 h-3" />
+                            <span>In Pantry</span>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => handleAdd(ing.name, servingSize, ing.typicalQuantityPerPerson, recipe.title)}
+                            disabled={isAdded}
+                            className={`flex items-center gap-1 px-2 py-1 rounded-lg transition-all text-[10px] font-black uppercase tracking-widest ${
+                              isAdded 
+                                ? 'bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-400' 
+                                : 'bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400 hover:bg-amber-200'
+                            }`}
+                          >
+                            {isAdded ? <CheckCircle2 className="w-3 h-3" /> : <Plus className="w-3 h-3" />}
+                            {isAdded ? 'Added' : 'Buy'}
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <a 
+                href={recipe.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full cred-button-primary flex items-center justify-center gap-2 py-3 mt-auto"
+              >
+                View Full Recipe
+                <ExternalLink className="w-4 h-4" />
+              </a>
+            </div>
+          </motion.div>
+        ))}
+      </div>
+    </div>
+  );
+}

@@ -12,6 +12,7 @@ import {
   Settings, 
   Search, 
   TrendingUp,
+  ChefHat,
   AlertCircle,
   AlertTriangle,
   CheckCircle2,
@@ -48,12 +49,14 @@ import InventoryList from './components/InventoryList';
 import ShoppingList from './components/ShoppingList';
 import HouseholdSettings from './components/HouseholdSettings';
 import PriceComparison from './components/PriceComparison';
+import TrendingRecipes from './components/TrendingRecipes';
+import MarketingIntro from './components/MarketingIntro';
 import AdminDashboard from './components/AdminDashboard';
 import RestockModal from './components/RestockModal';
 import UpdateQuantityModal from './components/UpdateQuantityModal';
 import EditItemModal from './components/EditItemModal';
 import ExpiringItemsModal from './components/ExpiringItemsModal';
-import { GroceryItem, HouseholdInfo, ShoppingListItem } from './types';
+import { GroceryItem, HouseholdInfo, ShoppingListItem, SavedRecipe } from './types';
 import { predictMultipleRestocks, searchCheapestSource } from './services/geminiService';
 
 // Error Boundary Component
@@ -105,7 +108,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
 }
 
 function AppContent() {
-  const [activeTab, setActiveTab] = useState<'inventory' | 'add' | 'shopping' | 'settings'>('inventory');
+  const [activeTab, setActiveTab] = useState<'inventory' | 'add' | 'shopping' | 'recipes' | 'settings'>('inventory');
   const [inventory, setInventory] = useState<GroceryItem[]>([]);
   const [shoppingList, setShoppingList] = useState<ShoppingListItem[]>([]);
   const [household, setHousehold] = useState<HouseholdInfo>({ members: 2, preferences: [], uid: '' });
@@ -117,6 +120,7 @@ function AppContent() {
   const [notifiedItems, setNotifiedItems] = useState<Set<string>>(new Set());
   const [hasChanges, setHasChanges] = useState(false);
   const [user, setUser] = useState<User | null>(null);
+  const [savedRecipes, setSavedRecipes] = useState<SavedRecipe[]>([]);
 
   // Notification Logic for Low Stock
   useEffect(() => {
@@ -155,6 +159,7 @@ function AppContent() {
   const [isTroubleshootingOpen, setIsTroubleshootingOpen] = useState(false);
   const [isExpiryModalOpen, setIsExpiryModalOpen] = useState(false);
   const [lastShoppingActivity, setLastShoppingActivity] = useState(Date.now());
+  const [isPromoMode, setIsPromoMode] = useState(false);
 
   // Auth Listener
   useEffect(() => {
@@ -202,6 +207,17 @@ function AppContent() {
       const items = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as GroceryItem));
       setInventory(items);
     }, (error) => handleFirestoreError(error, OperationType.GET, 'inventory'));
+    return () => unsubscribe();
+  }, [user, isAuthReady]);
+
+  // Real-time Saved Recipes
+  useEffect(() => {
+    if (!user || !isAuthReady) return;
+    const q = query(collection(db, 'savedRecipes'), where('uid', '==', user.uid));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const items = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as SavedRecipe));
+      setSavedRecipes(items);
+    }, (error) => handleFirestoreError(error, OperationType.GET, 'savedRecipes'));
     return () => unsubscribe();
   }, [user, isAuthReady]);
 
@@ -399,7 +415,7 @@ function AppContent() {
     }
   };
 
-  const handleAddShoppingItem = async (name: string, details?: Partial<GroceryItem>) => {
+  const handleAddShoppingItem = async (name: string, details?: Partial<GroceryItem>, preventTabSwitch = false) => {
     if (!user) return;
     setLastShoppingActivity(Date.now());
     try {
@@ -413,9 +429,36 @@ function AppContent() {
         uid: user.uid
       });
       setHasChanges(true);
-      setActiveTab('shopping');
+      if (!preventTabSwitch) {
+        setActiveTab('shopping');
+      }
     } catch (error) {
       handleFirestoreError(error, OperationType.CREATE, 'shoppingList');
+    }
+  };
+
+  const handleSaveRecipe = async (recipe: Omit<SavedRecipe, 'id' | 'uid' | 'createdAt'>) => {
+    if (!user) return;
+    if (savedRecipes.length >= 5) {
+      alert("You can only save up to 5 recipes. Please delete one to save a new one.");
+      return;
+    }
+    try {
+      await addDoc(collection(db, 'savedRecipes'), {
+        ...recipe,
+        uid: user.uid,
+        createdAt: new Date().toISOString()
+      });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.CREATE, 'savedRecipes');
+    }
+  };
+
+  const handleDeleteRecipe = async (id: string) => {
+    try {
+      await deleteDoc(doc(db, 'savedRecipes', id));
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, `savedRecipes/${id}`);
     }
   };
 
@@ -542,6 +585,13 @@ function AppContent() {
   const handleSearchPrice = async (name: string) => {
     setSearchItem(name);
     setIsPriceModalOpen(true);
+    
+    if (!userLocation) {
+      setIsSearching(false);
+      setSearchResults(null);
+      return;
+    }
+
     setIsSearching(true);
     setSearchResults(null);
     try {
@@ -720,12 +770,23 @@ function AppContent() {
           <div className="flex items-center gap-2 md:gap-3 pl-2 md:pl-4 border-l border-cred-gray">
             <div className="text-right">
               <p className="hidden sm:block text-[10px] md:text-xs font-black uppercase tracking-widest text-gray-400">{user.displayName}</p>
-              <button onClick={handleLogout} className="text-[10px] font-black uppercase tracking-widest text-red-500 hover:text-red-600">Sign Out</button>
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={() => setIsPromoMode(true)}
+                  className="text-[10px] font-black uppercase tracking-widest text-amber-500 hover:text-amber-600"
+                >
+                  Promo Mode
+                </button>
+                <span className="text-gray-700">•</span>
+                <button onClick={handleLogout} className="text-[10px] font-black uppercase tracking-widest text-red-500 hover:text-red-600">Sign Out</button>
+              </div>
             </div>
             <img src={user.photoURL || ''} alt="" className="w-8 h-8 md:w-10 md:h-10 rounded-full border-2 border-cred-dark shadow-sm" />
           </div>
         </div>
       </header>
+
+      {isPromoMode && <MarketingIntro onClose={() => setIsPromoMode(false)} />}
 
       {/* Navigation */}
       <nav className="fixed bottom-6 md:bottom-8 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur-xl px-2 py-2 md:px-4 md:py-3 rounded-[2rem] md:rounded-[2.5rem] z-50 flex items-center gap-1 md:gap-2 shadow-2xl border border-black/10 w-[90%] max-w-fit overflow-x-auto no-scrollbar">
@@ -747,6 +808,12 @@ function AppContent() {
           icon={<ShoppingBag className="w-5 h-5" />}
           label="Shop"
           badge={shoppingList.filter(i => i.status === 'to-buy').length}
+        />
+        <NavButton 
+          active={activeTab === 'recipes'} 
+          onClick={() => setActiveTab('recipes')}
+          icon={<ChefHat className="w-5 h-5" />}
+          label="Recipes"
         />
         <NavButton 
           active={activeTab === 'settings'} 
@@ -866,6 +933,25 @@ function AppContent() {
               />
             </motion.div>
           )}
+
+                {activeTab === 'recipes' && (
+                  <motion.div
+                    key="recipes"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                  >
+                    <TrendingRecipes 
+                      inventory={inventory}
+                      userLocation={userLocation}
+                      onAddToShopping={(name, details) => handleAddShoppingItem(name, details, true)}
+                      defaultMembers={household.members}
+                      savedRecipes={savedRecipes}
+                      onSaveRecipe={handleSaveRecipe}
+                      onDeleteRecipe={handleDeleteRecipe}
+                    />
+                  </motion.div>
+                )}
 
           {activeTab === 'settings' && (
             <motion.div
