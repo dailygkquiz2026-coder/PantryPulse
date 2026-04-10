@@ -52,6 +52,7 @@ import PriceComparison from './components/PriceComparison';
 import TrendingRecipes from './components/TrendingRecipes';
 import MarketingIntro from './components/MarketingIntro';
 import AdminDashboard from './components/AdminDashboard';
+import StockoutConfirmationModal from './components/StockoutConfirmationModal';
 import RestockModal from './components/RestockModal';
 import UpdateQuantityModal from './components/UpdateQuantityModal';
 import EditItemModal from './components/EditItemModal';
@@ -158,6 +159,8 @@ function AppContent() {
   const [itemToEdit, setItemToEdit] = useState<GroceryItem | null>(null);
   const [isTroubleshootingOpen, setIsTroubleshootingOpen] = useState(false);
   const [isExpiryModalOpen, setIsExpiryModalOpen] = useState(false);
+  const [isStockoutModalOpen, setIsStockoutModalOpen] = useState(false);
+  const [stockoutItems, setStockoutItems] = useState<GroceryItem[]>([]);
   const [lastShoppingActivity, setLastShoppingActivity] = useState(Date.now());
   const [isPromoMode, setIsPromoMode] = useState(false);
 
@@ -257,32 +260,29 @@ function AppContent() {
       }
 
       const newPredictions: Record<string, number> = {};
+      const now = Date.now();
       
-      // Local fallback calculation to avoid unnecessary API calls
+      // Local fallback calculation
       inventory.forEach(item => {
-        // Ensure values are numbers and not NaN
         const qty = Number(item.quantity) || 0;
         const usage = Number(item.usageFrequency) || 0;
         const members = Number(household.members) || 1;
-
-        // Simple heuristic: quantity / (usageFrequency * members)
-        // usageFrequency is times per day. members is number of people.
-        // We assume 1 unit per usage per member as a baseline.
         const dailyUsage = usage * members;
         
-        let localPrediction = 30; // Default fallback
+        // Calculate days passed since last update
+        const lastUpdated = new Date(item.lastUpdated || item.purchaseDate).getTime();
+        const daysPassed = (now - lastUpdated) / (1000 * 60 * 60 * 24);
+        
+        let localPrediction = 30;
         if (dailyUsage > 0) {
-          localPrediction = Math.ceil(qty / dailyUsage);
+          // Total days it would last - days already passed
+          localPrediction = (qty / dailyUsage) - daysPassed;
         }
 
-        // Sanity cap: No item should realistically last more than 90 days 
-        // in a household inventory without being considered "long-term storage"
-        // which isn't the focus of this app's restock alerts.
-        newPredictions[item.id] = Math.min(Math.max(0, localPrediction), 90);
+        newPredictions[item.id] = Math.max(-10, Math.ceil(localPrediction));
       });
 
-      // Only use AI for items that might need smarter prediction (e.g., complex units or names)
-      // For now, we'll batch all items to get a single AI refinement if possible
+      // AI refinement
       try {
         const aiPredictions = await predictMultipleRestocks(
           inventory.map(i => ({
@@ -296,10 +296,9 @@ function AppContent() {
           household.members
         );
         
-        // Merge AI predictions over local ones, ensuring they are also capped
         Object.entries(aiPredictions).forEach(([id, days]) => {
           if (typeof days === 'number' && !isNaN(days)) {
-            newPredictions[id] = Math.min(Math.max(0, Math.ceil(days)), 90);
+            newPredictions[id] = Math.max(-10, Math.ceil(days));
           }
         });
       } catch (error) {
@@ -307,6 +306,31 @@ function AppContent() {
       }
       
       setPredictions(newPredictions);
+
+      // Check for new stockouts to show modal
+      const potentialStockouts = inventory.filter(item => {
+        const days = newPredictions[item.id];
+        if (days !== undefined && days <= 0) {
+          // Check if already in shopping list to avoid duplicates
+          const inShoppingList = shoppingList.some(si => si.name.toLowerCase() === item.name.toLowerCase());
+          // Check if we already asked about this item in this session
+          const alreadyAsked = notifiedItems.has(`stockout-${item.id}`);
+          return !inShoppingList && !alreadyAsked;
+        }
+        return false;
+      });
+
+      if (potentialStockouts.length > 0) {
+        setStockoutItems(potentialStockouts);
+        setIsStockoutModalOpen(true);
+        
+        // Mark as notified so we don't show it again immediately
+        setNotifiedItems(prev => {
+          const next = new Set(prev);
+          potentialStockouts.forEach(i => next.add(`stockout-${i.id}`));
+          return next;
+        });
+      }
     };
 
     if (inventory.length > 0) {
@@ -316,7 +340,7 @@ function AppContent() {
       }, 1000);
       return () => clearTimeout(timer);
     }
-  }, [inventory, household]);
+  }, [inventory, household, shoppingList, notifiedItems]);
 
   // Expiry Warning Logic
   useEffect(() => {
@@ -582,6 +606,28 @@ function AppContent() {
     }
   };
 
+  const handleConfirmStockouts = async (items: GroceryItem[]) => {
+    if (!user) return;
+    try {
+      const promises = items.map(item => 
+        addDoc(collection(db, 'shoppingList'), {
+          name: item.name,
+          quantity: 1, // Default to 1 unit for restock
+          unit: item.unit,
+          category: item.category,
+          usageFrequency: item.usageFrequency,
+          status: 'to-buy',
+          uid: user.uid
+        })
+      );
+      await Promise.all(promises);
+      setIsStockoutModalOpen(false);
+      setActiveTab('shopping');
+    } catch (error) {
+      handleFirestoreError(error, OperationType.CREATE, 'shoppingList');
+    }
+  };
+
   const handleSearchPrice = async (name: string) => {
     setSearchItem(name);
     setIsPriceModalOpen(true);
@@ -787,6 +833,13 @@ function AppContent() {
       </header>
 
       {isPromoMode && <MarketingIntro onClose={() => setIsPromoMode(false)} />}
+
+      <StockoutConfirmationModal 
+        isOpen={isStockoutModalOpen}
+        onClose={() => setIsStockoutModalOpen(false)}
+        items={stockoutItems}
+        onConfirm={handleConfirmStockouts}
+      />
 
       {/* Navigation */}
       <nav className="fixed bottom-6 md:bottom-8 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur-xl px-2 py-2 md:px-4 md:py-3 rounded-[2rem] md:rounded-[2.5rem] z-50 flex items-center gap-1 md:gap-2 shadow-2xl border border-black/10 w-[90%] max-w-fit overflow-x-auto no-scrollbar">

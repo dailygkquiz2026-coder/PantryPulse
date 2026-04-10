@@ -336,6 +336,7 @@ export async function getTrendingRecipes(location?: string) {
     4. If you must provide a search-based fallback for YouTube, use EXACTLY this format: 'https://www.youtube.com/results?search_query=[dish+name+recipe]'.
     5. DO NOT hallucinate URLs. Use Google Search to find the ACTUAL live URL for the trending dish.
     6. Ensure the URL is a direct link to the content (e.g., https://www.youtube.com/shorts/..., https://www.youtube.com/watch?v=..., https://www.instagram.com/reels/...).
+    7. VERIFY that the link is not a broken redirect or a homepage.
     
     For each recipe, provide:
     - title: The name of the dish.
@@ -349,6 +350,61 @@ export async function getTrendingRecipes(location?: string) {
       4. DO NOT use social media thumbnails (Instagram/YouTube) as they are often low-res or blocked.
     - link: A VALID, DIRECT link to the social media video or post.
     - ingredients: A list of objects containing 'name' and 'typicalQuantityPerPerson' (e.g., {name: "Milk", typicalQuantityPerPerson: "200ml"}).
+    
+    Return the result as a JSON array of objects.`,
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: Type.ARRAY,
+        items: {
+          type: Type.OBJECT,
+          properties: {
+            title: { type: Type.STRING },
+            description: { type: Type.STRING },
+            source: { type: Type.STRING },
+            imageUrl: { type: Type.STRING },
+            link: { type: Type.STRING },
+            ingredients: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  name: { type: Type.STRING },
+                  typicalQuantityPerPerson: { type: Type.STRING }
+                },
+                required: ["name", "typicalQuantityPerPerson"]
+              }
+            }
+          },
+          required: ["title", "description", "source", "imageUrl", "link", "ingredients"]
+        }
+      },
+      tools: [{ googleSearch: {} }]
+    }
+  });
+  return parseGeminiResponse(response.text);
+}
+
+export async function searchRecipes(query: string) {
+  const ai = getAI();
+  
+  const response = await ai.models.generateContent({
+    model: "gemini-3-flash-preview",
+    contents: `Search for the top 3 best recipes for: "${query}". 
+    
+    CRITICAL INSTRUCTIONS FOR LINKS:
+    1. The 'link' MUST be a direct, permanent URL to a specific video or post.
+    2. PRIORITIZE social media (YouTube, Instagram Reels) or high-authority food blogs.
+    3. DO NOT hallucinate URLs. Use Google Search to find the ACTUAL live URL.
+    4. Ensure the URL is a direct link to the content.
+    
+    For each recipe, provide:
+    - title: The name of the dish.
+    - description: A short description of this specific version/recipe.
+    - source: The platform name.
+    - imageUrl: A high-quality, direct image URL of the dish.
+    - link: A VALID, DIRECT link to the content.
+    - ingredients: A list of objects containing 'name' and 'typicalQuantityPerPerson'.
     
     Return the result as a JSON array of objects.`,
     config: {
