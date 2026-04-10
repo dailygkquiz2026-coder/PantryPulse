@@ -327,29 +327,23 @@ export async function getTrendingRecipes(location?: string) {
   
   const response = await ai.models.generateContent({
     model: "gemini-3-flash-preview",
-    contents: `Search the internet and social media for the top 5 trending recipes that people are making right now${locationContext}. 
-    
-    CRITICAL INSTRUCTIONS FOR LINKS:
-    1. The 'link' MUST be a direct, permanent URL to a specific video or post.
-    2. PRIORITIZE links to social media platforms: YouTube Shorts, YouTube Videos, Instagram Reels, or Facebook Reels.
-    3. DO NOT provide search result URLs like 'youtube.com/search?q=...'. 
-    4. If you must provide a search-based fallback for YouTube, use EXACTLY this format: 'https://www.youtube.com/results?search_query=[dish+name+recipe]'.
-    5. DO NOT hallucinate URLs. Use Google Search to find the ACTUAL live URL for the trending dish.
-    6. Ensure the URL is a direct link to the content (e.g., https://www.youtube.com/shorts/..., https://www.youtube.com/watch?v=..., https://www.instagram.com/reels/...).
-    7. VERIFY that the link is not a broken redirect or a homepage.
+    contents: `Search the internet for the top 4 trending recipes that people are making right now${locationContext}. 
     
     For each recipe, provide:
     - title: The name of the dish.
     - description: A short, catchy description of why it's trending.
-    - source: The platform name (e.g., "YouTube Shorts", "Instagram Reels", "Facebook Reels", "YouTube").
+    - source: The platform or website name.
     - imageUrl: A high-quality, direct image URL of the ACTUAL dish. 
       CRITICAL: 
       1. Use Google Search to find the most visually appealing, high-resolution image of this specific dish.
       2. PRIORITIZE images from stock photo sites like Unsplash, Pexels, or Pixabay, or high-authority food blogs (e.g., Serious Eats, Bon Appétit, Food52).
       3. The URL MUST be a direct link ending in .jpg, .jpeg, .png, or .webp.
-      4. DO NOT use social media thumbnails (Instagram/YouTube) as they are often low-res or blocked.
-    - link: A VALID, DIRECT link to the social media video or post.
     - ingredients: A list of objects containing 'name' and 'typicalQuantityPerPerson' (e.g., {name: "Milk", typicalQuantityPerPerson: "200ml"}).
+    - instructions: A detailed, step-by-step list of cooking instructions (array of strings).
+    - prepTime: Estimated preparation time (e.g., "15 mins").
+    - cookTime: Estimated cooking time (e.g., "30 mins").
+    - difficulty: One of "Easy", "Medium", "Hard".
+    - tips: A few pro-tips or variations for the dish (array of strings).
     
     Return the result as a JSON array of objects.`,
     config: {
@@ -363,7 +357,6 @@ export async function getTrendingRecipes(location?: string) {
             description: { type: Type.STRING },
             source: { type: Type.STRING },
             imageUrl: { type: Type.STRING },
-            link: { type: Type.STRING },
             ingredients: {
               type: Type.ARRAY,
               items: {
@@ -374,9 +367,20 @@ export async function getTrendingRecipes(location?: string) {
                 },
                 required: ["name", "typicalQuantityPerPerson"]
               }
+            },
+            instructions: {
+              type: Type.ARRAY,
+              items: { type: Type.STRING }
+            },
+            prepTime: { type: Type.STRING },
+            cookTime: { type: Type.STRING },
+            difficulty: { type: Type.STRING, enum: ["Easy", "Medium", "Hard"] },
+            tips: {
+              type: Type.ARRAY,
+              items: { type: Type.STRING }
             }
           },
-          required: ["title", "description", "source", "imageUrl", "link", "ingredients"]
+          required: ["title", "description", "source", "imageUrl", "ingredients", "instructions", "prepTime", "cookTime", "difficulty", "tips"]
         }
       },
       tools: [{ googleSearch: {} }]
@@ -392,19 +396,17 @@ export async function searchRecipes(query: string) {
     model: "gemini-3-flash-preview",
     contents: `Search for the top 3 best recipes for: "${query}". 
     
-    CRITICAL INSTRUCTIONS FOR LINKS:
-    1. The 'link' MUST be a direct, permanent URL to a specific video or post.
-    2. PRIORITIZE social media (YouTube, Instagram Reels) or high-authority food blogs.
-    3. DO NOT hallucinate URLs. Use Google Search to find the ACTUAL live URL.
-    4. Ensure the URL is a direct link to the content.
-    
     For each recipe, provide:
     - title: The name of the dish.
     - description: A short description of this specific version/recipe.
-    - source: The platform name.
+    - source: The platform or website name.
     - imageUrl: A high-quality, direct image URL of the dish.
-    - link: A VALID, DIRECT link to the content.
     - ingredients: A list of objects containing 'name' and 'typicalQuantityPerPerson'.
+    - instructions: A detailed, step-by-step list of cooking instructions (array of strings).
+    - prepTime: Estimated preparation time (e.g., "15 mins").
+    - cookTime: Estimated cooking time (e.g., "30 mins").
+    - difficulty: One of "Easy", "Medium", "Hard".
+    - tips: A few pro-tips or variations for the dish (array of strings).
     
     Return the result as a JSON array of objects.`,
     config: {
@@ -418,7 +420,6 @@ export async function searchRecipes(query: string) {
             description: { type: Type.STRING },
             source: { type: Type.STRING },
             imageUrl: { type: Type.STRING },
-            link: { type: Type.STRING },
             ingredients: {
               type: Type.ARRAY,
               items: {
@@ -429,9 +430,20 @@ export async function searchRecipes(query: string) {
                 },
                 required: ["name", "typicalQuantityPerPerson"]
               }
+            },
+            instructions: {
+              type: Type.ARRAY,
+              items: { type: Type.STRING }
+            },
+            prepTime: { type: Type.STRING },
+            cookTime: { type: Type.STRING },
+            difficulty: { type: Type.STRING, enum: ["Easy", "Medium", "Hard"] },
+            tips: {
+              type: Type.ARRAY,
+              items: { type: Type.STRING }
             }
           },
-          required: ["title", "description", "source", "imageUrl", "link", "ingredients"]
+          required: ["title", "description", "source", "imageUrl", "ingredients", "instructions", "prepTime", "cookTime", "difficulty", "tips"]
         }
       },
       tools: [{ googleSearch: {} }]

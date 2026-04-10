@@ -33,7 +33,7 @@ export default function StockoutConfirmationModal({ isOpen, onClose, items, onCo
                   <AlertTriangle className="w-6 h-6" />
                 </div>
                 <div>
-                  <h2 className="text-2xl font-black tracking-tight">Stockout Alert</h2>
+                  <h2 className="text-2xl font-black tracking-tight text-gray-900 dark:text-white">Stockout Alert</h2>
                   <p className="text-sm text-gray-500 font-medium">Predicted to be out of stock</p>
                 </div>
               </div>
@@ -60,8 +60,8 @@ export default function StockoutConfirmationModal({ isOpen, onClose, items, onCo
                     <div className="flex items-center gap-3">
                       <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse" />
                       <div>
-                        <p className="font-bold text-sm">{item.name}</p>
-                        <p className="text-[10px] text-gray-400 uppercase tracking-widest font-black">
+                        <p className="font-bold text-sm text-black dark:text-white">{item.name}</p>
+                        <p className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-widest font-black">
                           {item.quantity} {item.unit} • {item.usageFrequency}x/day
                         </p>
                       </div>

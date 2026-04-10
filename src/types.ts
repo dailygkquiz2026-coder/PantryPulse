@@ -38,11 +38,16 @@ export interface SavedRecipe {
   description: string;
   source: string;
   imageUrl: string;
-  link: string;
+  link?: string;
   ingredients: {
     name: string;
     typicalQuantityPerPerson: string;
   }[];
+  instructions: string[];
+  prepTime?: string;
+  cookTime?: string;
+  difficulty?: 'Easy' | 'Medium' | 'Hard';
+  tips?: string[];
   uid: string;
   createdAt: string;
 }

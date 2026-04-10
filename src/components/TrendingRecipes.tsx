@@ -22,7 +22,10 @@ import {
   Trash2,
   History,
   Search,
-  X
+  X,
+  Clock,
+  BarChart,
+  Lightbulb
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -36,8 +39,13 @@ interface Recipe {
   description: string;
   source: string;
   imageUrl: string;
-  link: string;
+  link?: string;
   ingredients: Ingredient[];
+  instructions: string[];
+  prepTime?: string;
+  cookTime?: string;
+  difficulty?: 'Easy' | 'Medium' | 'Hard';
+  tips?: string[];
 }
 
 interface TrendingRecipesProps {
@@ -69,6 +77,7 @@ export default function TrendingRecipes({
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Recipe[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [expandedRecipe, setExpandedRecipe] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchRecipes() {
@@ -163,7 +172,7 @@ export default function TrendingRecipes({
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search for any recipe (e.g., 'Authentic Butter Chicken', 'Healthy Smoothie')..."
-            className="w-full pl-14 pr-32 py-5 bg-white dark:bg-cred-gray/30 border-2 border-gray-100 dark:border-white/5 rounded-[2rem] text-lg font-medium focus:border-blue-500 dark:focus:border-cred-accent outline-none transition-all shadow-xl shadow-blue-500/5"
+            className="w-full pl-14 pr-32 py-5 bg-white dark:bg-white border-2 border-gray-100 dark:border-white/5 rounded-[2rem] text-lg font-medium text-black focus:border-blue-500 outline-none transition-all shadow-xl shadow-blue-500/5"
           />
           <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-6 h-6 text-gray-400 group-focus-within:text-blue-600 transition-colors" />
           <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
@@ -375,6 +384,30 @@ export default function TrendingRecipes({
                 <h3 className="text-xl font-bold mb-2 group-hover:text-blue-600 dark:group-hover:text-cred-accent transition-colors">{recipe.title}</h3>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 line-clamp-2">{recipe.description}</p>
                 
+                {/* Quick Info Bar */}
+                <div className="flex items-center gap-4 mb-6 p-3 bg-gray-50 dark:bg-cred-gray/20 rounded-2xl border border-gray-100 dark:border-white/5">
+                  <div className="flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5 text-blue-500" />
+                    <span className="text-[10px] font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                      {recipe.prepTime || '15m'} Prep
+                    </span>
+                  </div>
+                  <div className="w-1 h-1 rounded-full bg-gray-300 dark:bg-cred-gray" />
+                  <div className="flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5 text-amber-500" />
+                    <span className="text-[10px] font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                      {recipe.cookTime || '30m'} Cook
+                    </span>
+                  </div>
+                  <div className="w-1 h-1 rounded-full bg-gray-300 dark:bg-cred-gray" />
+                  <div className="flex items-center gap-1.5">
+                    <BarChart className="w-3.5 h-3.5 text-green-500" />
+                    <span className="text-[10px] font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                      {recipe.difficulty || 'Easy'}
+                    </span>
+                  </div>
+                </div>
+
                 <div className="space-y-4 mb-8">
                   <div className="flex items-center justify-between">
                     <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Ingredients Check</p>
@@ -423,19 +456,56 @@ export default function TrendingRecipes({
                   </div>
                 </div>
 
-                <a 
-                  href={cleanUrl(recipe.link)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full cred-button-primary flex items-center justify-center gap-2 py-3 mt-auto"
-                >
-                  {recipe.source.toLowerCase().includes('youtube') || 
-                   recipe.source.toLowerCase().includes('reels') || 
-                   recipe.source.toLowerCase().includes('tiktok') 
-                    ? 'Watch Video' 
-                    : 'View Full Recipe'}
-                  <ExternalLink className="w-4 h-4" />
-                </a>
+                {recipe.instructions && recipe.instructions.length > 0 && (
+                  <div className="mb-6">
+                    <button 
+                      onClick={() => setExpandedRecipe(expandedRecipe === recipe.title ? null : recipe.title)}
+                      className="flex items-center justify-between w-full p-3 bg-gray-50 dark:bg-cred-gray/30 rounded-xl hover:bg-gray-100 transition-all"
+                    >
+                      <span className="text-xs font-black uppercase tracking-widest text-gray-600 dark:text-gray-300">Cooking Steps</span>
+                      <ArrowRight className={`w-4 h-4 transition-transform ${expandedRecipe === recipe.title ? 'rotate-90' : ''}`} />
+                    </button>
+                    
+                    <AnimatePresence>
+                      {expandedRecipe === recipe.title && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="pt-4 space-y-3">
+                            {recipe.instructions.map((step, i) => (
+                              <div key={i} className="flex gap-3">
+                                <span className="flex-shrink-0 w-6 h-6 bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-lg flex items-center justify-center text-[10px] font-black">
+                                  {i + 1}
+                                </span>
+                                <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">{step}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                )}
+
+                {recipe.tips && recipe.tips.length > 0 && (
+                  <div className="mb-8 p-4 bg-blue-50/50 dark:bg-blue-900/10 rounded-2xl border border-blue-100/50 dark:border-blue-900/20">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Lightbulb className="w-4 h-4 text-amber-500" />
+                      <span className="text-[10px] font-black uppercase tracking-widest text-blue-600 dark:text-blue-400">Pro Tips</span>
+                    </div>
+                    <ul className="space-y-2">
+                      {recipe.tips.map((tip, i) => (
+                        <li key={i} className="text-[11px] text-gray-600 dark:text-gray-300 leading-relaxed flex gap-2">
+                          <span className="text-blue-400">•</span>
+                          {tip}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
             </motion.div>
           ))}
