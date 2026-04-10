@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ShoppingListItem } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import { ShoppingBag, CheckCircle2, X, Info } from 'lucide-react';
+import { UNITS, CATEGORIES } from '../constants';
 
 interface RestockModalProps {
   isOpen: boolean;
@@ -13,11 +14,15 @@ interface RestockModalProps {
 
 export default function RestockModal({ isOpen, onClose, item, onConfirm, onSkip }: RestockModalProps) {
   const [quantity, setQuantity] = useState(item?.quantity || 1);
+  const [unit, setUnit] = useState(item?.unit || 'pcs');
+  const [category, setCategory] = useState(item?.category || 'Other');
   const [usageFrequency, setUsageFrequency] = useState(item?.usageFrequency || 1);
 
   React.useEffect(() => {
     if (item) {
       setQuantity(item.quantity);
+      setUnit(item.unit);
+      setCategory(item.category);
       setUsageFrequency(item.usageFrequency);
     }
   }, [item]);
@@ -68,6 +73,30 @@ export default function RestockModal({ isOpen, onClose, item, onConfirm, onSkip 
                   />
                 </div>
                 <div className="space-y-1">
+                  <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-2">Unit</label>
+                  <select
+                    value={unit}
+                    onChange={(e) => setUnit(e.target.value)}
+                    className="cred-input appearance-none"
+                  >
+                    {UNITS.map(u => (
+                      <option key={u} value={u}>{u}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-1 col-span-2">
+                  <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-2">Category</label>
+                  <select
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    className="cred-input appearance-none"
+                  >
+                    {CATEGORIES.map(cat => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-1 col-span-2">
                   <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-2">Usage (x/day)</label>
                   <input
                     type="number"
@@ -87,7 +116,7 @@ export default function RestockModal({ isOpen, onClose, item, onConfirm, onSkip 
                 Skip
               </button>
               <button
-                onClick={() => onConfirm({ ...item, quantity, usageFrequency })}
+                onClick={() => onConfirm({ ...item, quantity, unit, category, usageFrequency })}
                 className="w-full sm:flex-1 px-6 py-3 bg-green-600 text-white font-bold rounded-xl hover:bg-green-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-green-200 dark:shadow-none"
               >
                 <CheckCircle2 className="w-5 h-5" />

@@ -56,6 +56,17 @@ interface TrendingRecipesProps {
   savedRecipes: SavedRecipe[];
   onSaveRecipe: (recipe: Omit<SavedRecipe, 'id' | 'uid' | 'createdAt'>) => void;
   onDeleteRecipe: (id: string) => void;
+  // Persisted State Props
+  cachedRecipes: Recipe[];
+  setCachedRecipes: (recipes: Recipe[]) => void;
+  cachedSearchResults: Recipe[];
+  setCachedSearchResults: (recipes: Recipe[]) => void;
+  lastRecipeFetch: number;
+  setLastRecipeFetch: (timestamp: number) => void;
+  recipeView: 'trending' | 'saved' | 'search';
+  setRecipeView: (view: 'trending' | 'saved' | 'search') => void;
+  isRecipeLoading: boolean;
+  setIsRecipeLoading: (isLoading: boolean) => void;
 }
 
 export default function TrendingRecipes({ 
@@ -65,35 +76,50 @@ export default function TrendingRecipes({
   defaultMembers,
   savedRecipes,
   onSaveRecipe,
-  onDeleteRecipe
+  onDeleteRecipe,
+  cachedRecipes,
+  setCachedRecipes,
+  cachedSearchResults,
+  setCachedSearchResults,
+  lastRecipeFetch,
+  setLastRecipeFetch,
+  recipeView,
+  setRecipeView,
+  isRecipeLoading,
+  setIsRecipeLoading
 }: TrendingRecipesProps) {
-  const [recipes, setRecipes] = useState<Recipe[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [servingSize, setServingSize] = useState(defaultMembers);
-  const [view, setView] = useState<'trending' | 'saved' | 'search'>('trending');
   const [addedItems, setAddedItems] = useState<Set<string>>(new Set());
-  const [refreshKey, setRefreshKey] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<Recipe[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [expandedRecipe, setExpandedRecipe] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchRecipes() {
+      // Only fetch if we don't have cached recipes OR if lastRecipeFetch was reset to 0 (auto-refresh)
+      if (cachedRecipes.length > 0 && lastRecipeFetch !== 0) {
+        return;
+      }
+
       try {
-        setIsLoading(true);
+        setIsRecipeLoading(true);
         const data = await getTrendingRecipes(userLocation || undefined);
-        setRecipes(data);
+        setCachedRecipes(data);
+        setLastRecipeFetch(Date.now());
       } catch (err: any) {
         console.error('Failed to fetch recipes:', err);
         setError(err.message || 'Failed to load trending recipes');
       } finally {
-        setIsLoading(false);
+        setIsRecipeLoading(false);
       }
     }
     fetchRecipes();
-  }, [userLocation, refreshKey]);
+  }, [userLocation, lastRecipeFetch]); // lastRecipeFetch reset to 0 triggers re-fetch
+
+  const handleRefresh = () => {
+    setLastRecipeFetch(0);
+  };
 
   const getSourceIcon = (source: string) => {
     const s = source.toLowerCase();
@@ -113,7 +139,9 @@ export default function TrendingRecipes({
   };
 
   const handleAdd = (ingName: string, servingSize: number, typicalQty: string, recipeTitle: string) => {
-    onAddToShopping(ingName, { quantity: servingSize, unit: typicalQty });
+    // User requested to keep quantity/unit blank/default so they can edit it in shopping list
+    // Recipe quantities like '1 cup' are not standard for shopping
+    onAddToShopping(ingName, { quantity: 1, unit: 'pcs' });
     setAddedItems(prev => new Set(prev).add(`${recipeTitle}-${ingName}`));
   };
 
@@ -126,11 +154,11 @@ export default function TrendingRecipes({
     if (!searchQuery.trim()) return;
 
     setIsSearching(true);
-    setView('search');
+    setRecipeView('search');
     setError(null);
     try {
       const results = await searchRecipes(searchQuery);
-      setSearchResults(results);
+      setCachedSearchResults(results);
     } catch (err: any) {
       console.error('Search failed:', err);
       setError(err.message || 'Failed to find recipes');
@@ -139,9 +167,9 @@ export default function TrendingRecipes({
     }
   };
 
-  const displayRecipes = view === 'trending' ? recipes : (view === 'saved' ? savedRecipes : searchResults);
+  const displayRecipes = recipeView === 'trending' ? cachedRecipes : (recipeView === 'saved' ? savedRecipes : cachedSearchResults);
 
-  if (isLoading && view === 'trending') {
+  if (isRecipeLoading && cachedRecipes.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-20 gap-4">
         <Loader2 className="w-10 h-10 text-blue-600 animate-spin" />
@@ -181,7 +209,7 @@ export default function TrendingRecipes({
                 type="button"
                 onClick={() => {
                   setSearchQuery('');
-                  if (view === 'search') setView('trending');
+                  if (recipeView === 'search') setRecipeView('trending');
                 }}
                 className="p-2 hover:bg-gray-100 dark:hover:bg-cred-gray rounded-full text-gray-400"
               >
@@ -207,32 +235,39 @@ export default function TrendingRecipes({
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">
-                {view === 'trending' ? 'Trending Now' : 'Saved Recipes'}
+                {recipeView === 'trending' ? 'Trending Now' : (recipeView === 'saved' ? 'Saved Recipes' : 'Search Results')}
               </h2>
-              {view === 'trending' && (
+              {recipeView === 'trending' && (
                 <button 
-                  onClick={() => setRefreshKey(prev => prev + 1)}
+                  onClick={handleRefresh}
                   className="p-1.5 hover:bg-gray-100 dark:hover:bg-cred-gray rounded-lg transition-colors text-gray-400 hover:text-blue-600"
                   title="Refresh trends"
                 >
-                  <History className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+                  <History className={`w-4 h-4 ${isRecipeLoading ? 'animate-spin' : ''}`} />
                 </button>
               )}
             </div>
-            <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">
-              {view === 'trending' 
-                ? (userLocation ? 'Popular in your region' : 'Global food trends')
-                : `${savedRecipes.length}/5 recipes saved`}
-            </p>
+            <div className="flex flex-col">
+              <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">
+                {recipeView === 'trending' 
+                  ? (userLocation ? 'Popular in your region' : 'Global food trends')
+                  : (recipeView === 'saved' ? `${savedRecipes.length}/5 recipes saved` : `Found ${cachedSearchResults.length} recipes`)}
+              </p>
+              {recipeView === 'trending' && lastRecipeFetch > 0 && (
+                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">
+                  Last updated: {new Date(lastRecipeFetch).toLocaleTimeString()}
+                </p>
+              )}
+            </div>
           </div>
         </div>
 
         <div className="flex items-center gap-4">
           <div className="flex bg-gray-100 dark:bg-cred-gray p-1 rounded-xl">
             <button
-              onClick={() => setView('trending')}
+              onClick={() => setRecipeView('trending')}
               className={`px-4 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${
-                view === 'trending' 
+                recipeView === 'trending' 
                   ? 'bg-white dark:bg-cred-dark text-blue-600 dark:text-cred-accent shadow-sm' 
                   : 'text-gray-500 hover:text-gray-700'
               }`}
@@ -243,9 +278,9 @@ export default function TrendingRecipes({
               </div>
             </button>
             <button
-              onClick={() => setView('saved')}
+              onClick={() => setRecipeView('saved')}
               className={`px-4 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${
-                view === 'saved' 
+                recipeView === 'saved' 
                   ? 'bg-white dark:bg-cred-dark text-blue-600 dark:text-cred-accent shadow-sm' 
                   : 'text-gray-500 hover:text-gray-700'
               }`}
@@ -281,21 +316,21 @@ export default function TrendingRecipes({
         </div>
       </div>
 
-      {error && view === 'trending' && (
+      {error && recipeView === 'trending' && (
         <div className="p-8 text-center cred-card border-red-100 dark:border-red-900 bg-red-50/30 dark:bg-red-950/20">
           <p className="text-red-600 dark:text-red-400 font-bold mb-4">{error}</p>
-          <button onClick={() => window.location.reload()} className="cred-button-primary">Try Again</button>
+          <button onClick={() => handleRefresh()} className="cred-button-primary">Try Again</button>
         </div>
       )}
 
-      {view === 'saved' && savedRecipes.length === 0 && (
+      {recipeView === 'saved' && savedRecipes.length === 0 && (
         <div className="text-center py-20 cred-card border-2 border-dashed border-gray-100 dark:border-white/5 flex flex-col items-center justify-center gap-4">
           <div className="w-16 h-16 bg-gray-50 dark:bg-cred-gray rounded-2xl flex items-center justify-center">
             <Bookmark className="w-8 h-8 text-gray-300" />
           </div>
           <h3 className="text-lg font-bold">No saved recipes yet</h3>
           <p className="text-sm text-gray-500 max-w-xs">Save trending recipes to view them later and check your pantry stock.</p>
-          <button onClick={() => setView('trending')} className="cred-button-primary">Explore Trending</button>
+          <button onClick={() => setRecipeView('trending')} className="cred-button-primary">Explore Trending</button>
         </div>
       )}
 
@@ -306,7 +341,7 @@ export default function TrendingRecipes({
         </div>
       )}
 
-      {view === 'search' && !isSearching && searchResults.length === 0 && !error && (
+      {recipeView === 'search' && !isSearching && cachedSearchResults.length === 0 && !error && (
         <div className="text-center py-20 cred-card border-2 border-dashed border-gray-100 dark:border-white/5 flex flex-col items-center justify-center gap-4">
           <div className="w-16 h-16 bg-gray-50 dark:bg-cred-gray rounded-2xl flex items-center justify-center">
             <Search className="w-8 h-8 text-gray-300" />
@@ -347,7 +382,7 @@ export default function TrendingRecipes({
                 </div>
                 
                 <div className="absolute top-4 right-4 flex gap-2">
-                  {view === 'saved' ? (
+                  {recipeView === 'saved' ? (
                     <button
                       onClick={() => {
                         const saved = savedRecipes.find(r => r.title === recipe.title);

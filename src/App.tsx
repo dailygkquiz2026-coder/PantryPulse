@@ -122,6 +122,13 @@ function AppContent() {
   const [hasChanges, setHasChanges] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [savedRecipes, setSavedRecipes] = useState<SavedRecipe[]>([]);
+  
+  // Recipe Caching State
+  const [cachedRecipes, setCachedRecipes] = useState<any[]>([]);
+  const [cachedSearchResults, setCachedSearchResults] = useState<any[]>([]);
+  const [lastRecipeFetch, setLastRecipeFetch] = useState<number>(0);
+  const [recipeView, setRecipeView] = useState<'trending' | 'saved' | 'search'>('trending');
+  const [isRecipeLoading, setIsRecipeLoading] = useState(false);
 
   // Notification Logic for Low Stock
   useEffect(() => {
@@ -250,6 +257,21 @@ function AppContent() {
     }, (error) => handleFirestoreError(error, OperationType.GET, `households/${user.uid}`));
     return () => unsubscribe();
   }, [user, isAuthReady]);
+
+  // Auto-refresh recipes every 1 hour
+  useEffect(() => {
+    const ONE_HOUR = 60 * 60 * 1000;
+    const checkRefresh = () => {
+      const now = Date.now();
+      if (now - lastRecipeFetch > ONE_HOUR && lastRecipeFetch !== 0) {
+        console.log("Auto-refreshing recipes (1 hour passed)");
+        setLastRecipeFetch(0); 
+      }
+    };
+
+    const interval = setInterval(checkRefresh, 60000); 
+    return () => clearInterval(interval);
+  }, [lastRecipeFetch]);
 
   // Run predictions
   useEffect(() => {
@@ -533,6 +555,8 @@ function AppContent() {
         const history = existing.restockHistory || [];
         await updateDoc(doc(db, 'inventory', existing.id), {
           quantity: existing.quantity + item.quantity,
+          unit: item.unit, // Update unit to match what was just bought/confirmed
+          category: item.category, // Update category to match what was confirmed
           usageFrequency: item.usageFrequency,
           lastUpdated: new Date().toISOString(),
           restockHistory: [...history, restockEntry].slice(-5) // Keep last 5 restocks for context
@@ -1002,6 +1026,17 @@ function AppContent() {
                       savedRecipes={savedRecipes}
                       onSaveRecipe={handleSaveRecipe}
                       onDeleteRecipe={handleDeleteRecipe}
+                      // Persisted State Props
+                      cachedRecipes={cachedRecipes}
+                      setCachedRecipes={setCachedRecipes}
+                      cachedSearchResults={cachedSearchResults}
+                      setCachedSearchResults={setCachedSearchResults}
+                      lastRecipeFetch={lastRecipeFetch}
+                      setLastRecipeFetch={setLastRecipeFetch}
+                      recipeView={recipeView}
+                      setRecipeView={setRecipeView}
+                      isRecipeLoading={isRecipeLoading}
+                      setIsRecipeLoading={setIsRecipeLoading}
                     />
                   </motion.div>
                 )}
