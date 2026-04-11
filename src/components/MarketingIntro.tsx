@@ -18,7 +18,7 @@ interface MarketingIntroProps {
 
 export default function MarketingIntro({ onClose }: MarketingIntroProps) {
   return (
-    <div className="fixed inset-0 z-[100] bg-white dark:bg-cred-black overflow-y-auto selection:bg-blue-600 selection:text-white">
+    <div className="fixed inset-0 z-[100] bg-white dark:bg-cred-black overflow-y-auto selection:bg-red-600 selection:text-white">
       {/* Close Button */}
       <button 
         onClick={onClose}
@@ -29,10 +29,10 @@ export default function MarketingIntro({ onClose }: MarketingIntroProps) {
 
       {/* Hero Section */}
       <section className="min-h-screen flex flex-col items-center justify-center p-6 relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10 dark:opacity-20 pointer-events-none">
-          <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-600 rounded-full blur-[120px]" />
-          <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-amber-500 rounded-full blur-[120px]" />
-        </div>
+      <div className="absolute inset-0 opacity-10 dark:opacity-20 pointer-events-none">
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-red-600 rounded-full blur-[120px]" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-yellow-400 rounded-full blur-[120px]" />
+      </div>
 
         <motion.div 
           initial={{ opacity: 0, y: 40 }}
@@ -40,15 +40,20 @@ export default function MarketingIntro({ onClose }: MarketingIntroProps) {
           transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
           className="text-center max-w-4xl z-10"
         >
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-full text-xs font-black uppercase tracking-widest mb-8">
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-full text-xs font-black uppercase tracking-widest mb-8">
             <Zap className="w-3 h-3" />
             The Future of Grocery Management
           </div>
           
-          <h1 className="text-7xl md:text-9xl font-black text-gray-900 dark:text-white leading-[0.85] tracking-tighter mb-8">
-            PANTRY<br />
-            <span className="text-blue-600">PULSE.</span>
-          </h1>
+          <div className="flex flex-col items-center mb-8">
+            <div className="w-20 h-20 bg-red-600 rounded-2xl flex items-center justify-center shadow-2xl mb-6 transform rotate-3">
+              <span className="text-white font-black text-4xl italic tracking-tighter">PP</span>
+            </div>
+            <h1 className="text-7xl md:text-9xl font-black text-gray-900 dark:text-white leading-[0.85] tracking-tighter">
+              PANTRY<br />
+              <span className="text-red-600">PULSE.</span>
+            </h1>
+          </div>
           
           <p className="text-xl md:text-2xl text-gray-500 dark:text-gray-400 font-medium max-w-2xl mx-auto mb-12 leading-relaxed">
             Smart inventory tracking, AI-powered price comparison, and trending recipes—all in one place.
@@ -57,7 +62,7 @@ export default function MarketingIntro({ onClose }: MarketingIntroProps) {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <button 
               onClick={onClose}
-              className="px-8 py-4 bg-blue-600 text-white rounded-2xl font-bold text-lg hover:bg-blue-700 transition-all flex items-center gap-2 shadow-xl shadow-blue-200 dark:shadow-none"
+              className="px-8 py-4 bg-red-600 text-white rounded-2xl font-bold text-lg hover:bg-red-700 transition-all flex items-center gap-2 shadow-xl shadow-red-200 dark:shadow-none"
             >
               Get Started Now
               <ArrowRight className="w-5 h-5" />
@@ -112,7 +117,7 @@ export default function MarketingIntro({ onClose }: MarketingIntroProps) {
           <div className="flex-1">
             <h2 className="text-5xl font-black text-gray-900 dark:text-white leading-tight mb-6">
               Stop wasting food.<br />
-              <span className="text-amber-500">Start saving money.</span>
+              <span className="text-yellow-500">Start saving money.</span>
             </h2>
             <p className="text-lg text-gray-500 dark:text-gray-400 mb-8">
               PantryPulse helps you manage your household inventory with precision. No more double-buying, no more expired items.
@@ -123,13 +128,13 @@ export default function MarketingIntro({ onClose }: MarketingIntroProps) {
                 Secure Firebase Data Sync
               </div>
               <div className="flex items-center gap-3 text-gray-700 dark:text-gray-300 font-bold">
-                <Globe className="w-6 h-6 text-blue-500" />
+                <Globe className="w-6 h-6 text-red-500" />
                 Location-Aware Shopping
               </div>
             </div>
           </div>
           <div className="flex-1 relative">
-            <div className="aspect-square bg-blue-600 rounded-[40px] rotate-6 absolute inset-0 opacity-10" />
+            <div className="aspect-square bg-red-600 rounded-[40px] rotate-6 absolute inset-0 opacity-10" />
             <img 
               src="https://picsum.photos/seed/pantry/800/800" 
               className="rounded-[40px] shadow-2xl relative z-10 grayscale hover:grayscale-0 transition-all duration-700"
@@ -141,11 +146,11 @@ export default function MarketingIntro({ onClose }: MarketingIntroProps) {
       </section>
 
       {/* Footer CTA */}
-      <section className="py-24 px-6 text-center bg-blue-600">
+      <section className="py-24 px-6 text-center bg-red-600">
         <h2 className="text-4xl md:text-6xl font-black text-white mb-8">Ready to pulse?</h2>
         <button 
           onClick={onClose}
-          className="px-12 py-6 bg-white text-blue-600 rounded-3xl font-black text-xl hover:scale-105 transition-transform shadow-2xl"
+          className="px-12 py-6 bg-white text-red-600 rounded-3xl font-black text-xl hover:scale-105 transition-transform shadow-2xl"
         >
           Launch PantryPulse.in
         </button>
@@ -163,7 +168,7 @@ function FeatureCard({ icon, title, description, delay }: { icon: React.ReactNod
       transition={{ delay, duration: 0.5 }}
       className="p-8 bg-white dark:bg-cred-black rounded-[32px] border border-gray-100 dark:border-white/5 shadow-sm hover:shadow-xl transition-all group"
     >
-      <div className="w-16 h-16 bg-gray-50 dark:bg-cred-gray rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 group-hover:bg-blue-600 group-hover:text-white transition-all text-blue-600 dark:text-blue-400">
+      <div className="w-16 h-16 bg-gray-50 dark:bg-cred-gray rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 group-hover:bg-red-600 group-hover:text-white transition-all text-red-600 dark:text-red-400">
         {icon}
       </div>
       <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">{title}</h3>

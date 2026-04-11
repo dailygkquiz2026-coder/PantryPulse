@@ -169,7 +169,7 @@ function AppContent() {
   const [isStockoutModalOpen, setIsStockoutModalOpen] = useState(false);
   const [stockoutItems, setStockoutItems] = useState<GroceryItem[]>([]);
   const [lastShoppingActivity, setLastShoppingActivity] = useState(Date.now());
-  const [isPromoMode, setIsPromoMode] = useState(false);
+  const [isPromoMode, setIsPromoMode] = useState(true);
 
   // Auth Listener
   useEffect(() => {
@@ -1133,8 +1133,8 @@ function NavButton({ active, onClick, icon, label, badge }: { active: boolean, o
       onClick={onClick}
       className={`relative flex flex-col md:flex-row items-center gap-1 md:gap-3 px-3 py-2 md:px-6 md:py-4 rounded-xl md:rounded-2xl transition-all duration-300 ${
         active 
-          ? 'bg-white text-black shadow-xl' 
-          : 'text-gray-400 hover:text-white hover:bg-cred-gray'
+          ? 'bg-red-600 text-white shadow-xl' 
+          : 'text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20'
       }`}
     >
       {icon}
