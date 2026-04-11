@@ -2,6 +2,10 @@ import { GoogleGenAI, Type } from "@google/genai";
 
 let aiInstance: any = null;
 
+// Simple in-memory cache for search results to mitigate quota issues
+const searchCache: Record<string, { data: any, timestamp: number }> = {};
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
 function getAI() {
   if (!aiInstance) {
     const apiKey = process.env.GEMINI_API_KEY;
@@ -277,6 +281,14 @@ export async function predictExpiryDate(itemName: string, category: string) {
 }
 
 export async function searchCheapestSource(itemName: string, location?: string, previousPurchase?: string) {
+  const cacheKey = `price-${itemName}-${location || 'global'}`;
+  const now = Date.now();
+  
+  if (searchCache[cacheKey] && (now - searchCache[cacheKey].timestamp < CACHE_TTL)) {
+    console.log(`Returning cached price results for: ${itemName}`);
+    return searchCache[cacheKey].data;
+  }
+
   const ai = getAI();
   const locationContext = location ? ` for the location/pincode associated with coordinates: ${location}` : " (if location is not provided, assume a general search in India)";
   const purchaseContext = previousPurchase ? `The user previously bought "${previousPurchase}".` : "";
@@ -344,7 +356,15 @@ export async function searchCheapestSource(itemName: string, location?: string, 
       tools: [{ googleSearch: {} }]
     }
   });
-  return parseGeminiResponse(response.text);
+  
+  const results = parseGeminiResponse(response.text);
+  
+  // Cache successful results
+  if (results && results.length > 0) {
+    searchCache[cacheKey] = { data: results, timestamp: Date.now() };
+  }
+  
+  return results;
 }
 
 export async function getTrendingRecipes(location?: string) {
@@ -416,6 +436,14 @@ export async function getTrendingRecipes(location?: string) {
 }
 
 export async function searchRecipes(query: string) {
+  const cacheKey = `recipe-${query}`;
+  const now = Date.now();
+  
+  if (searchCache[cacheKey] && (now - searchCache[cacheKey].timestamp < CACHE_TTL)) {
+    console.log(`Returning cached recipe results for: ${query}`);
+    return searchCache[cacheKey].data;
+  }
+
   const ai = getAI();
   
   const response = await ai.models.generateContent({

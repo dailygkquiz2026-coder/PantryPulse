@@ -161,7 +161,11 @@ export default function TrendingRecipes({
       setCachedSearchResults(results);
     } catch (err: any) {
       console.error('Search failed:', err);
-      setError(err.message || 'Failed to find recipes');
+      let message = err.message || 'Failed to find recipes';
+      if (err.message?.includes('RESOURCE_EXHAUSTED')) {
+        message = "AI Search quota exceeded. Google Search grounding is currently unavailable. Please try again in a few minutes.";
+      }
+      setError(message);
     } finally {
       setIsSearching(false);
     }
