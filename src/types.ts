@@ -58,4 +58,9 @@ export interface PriceComparisonResult {
   price: number;
   link: string;
   quantity: string;
+  productImage: string;
+  sourceVerification: string;
+  pricePerUnit: number;
+  unit: string;
+  sourceUrl?: string;
 }

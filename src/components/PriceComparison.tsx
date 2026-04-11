@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ShoppingCart, ExternalLink, X, MapPin, Loader2, Info } from 'lucide-react';
+import { ShoppingCart, ExternalLink, X, MapPin, Loader2, Info, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { PriceComparisonResult } from '../types';
 
@@ -8,6 +8,7 @@ interface PriceComparisonProps {
   onClose: () => void;
   itemName: string;
   results: PriceComparisonResult[] | null;
+  error?: string | null;
   isLoading: boolean;
   userLocation: string | null;
   onLocationUpdate: (location: string) => void;
@@ -15,12 +16,12 @@ interface PriceComparisonProps {
 }
 
 const STORE_LOGOS: Record<string, string> = {
-  'Zepto': 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7d/Zepto_Logo.svg/512px-Zepto_Logo.svg.png',
-  'Blinkit': 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/Blinkit_logo.svg/512px-Blinkit_logo.svg.png',
-  'Amazon Fresh': 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a9/Amazon_logo.svg/512px-Amazon_logo.svg.png',
-  'BigBasket': 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d2/BigBasket_Logo.svg/512px-BigBasket_Logo.svg.png',
-  'Swiggy Instamart': 'https://upload.wikimedia.org/wikipedia/en/thumb/1/12/Swiggy_logo.svg/512px-Swiggy_logo.svg.png',
-  'Flipkart Grocery': 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/17/Flipkart_logo.png/512px-Flipkart_logo.png'
+  'Zepto': 'https://logo.clearbit.com/zepto.com',
+  'Blinkit': 'https://logo.clearbit.com/blinkit.com',
+  'Amazon Fresh': 'https://logo.clearbit.com/amazon.in',
+  'BigBasket': 'https://logo.clearbit.com/bigbasket.com',
+  'Swiggy Instamart': 'https://logo.clearbit.com/swiggy.com',
+  'Flipkart Grocery': 'https://logo.clearbit.com/flipkart.com'
 };
 
 export default function PriceComparison({ 
@@ -28,6 +29,7 @@ export default function PriceComparison({
   onClose, 
   itemName, 
   results, 
+  error,
   isLoading, 
   userLocation,
   onLocationUpdate,
@@ -164,6 +166,22 @@ export default function PriceComparison({
                     <p className="text-sm text-gray-500 dark:text-gray-400 font-medium animate-pulse">Checking Zepto, Blinkit, and more</p>
                   </div>
                 </div>
+              ) : error ? (
+                <div className="text-center py-20 space-y-6">
+                  <div className="w-20 h-20 bg-red-50 dark:bg-red-900/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <AlertTriangle className="w-10 h-10 text-red-600" />
+                  </div>
+                  <h3 className="text-xl font-black tracking-tight">Search Unavailable</h3>
+                  <p className="text-gray-500 dark:text-gray-400 max-w-sm mx-auto font-medium leading-relaxed">
+                    {error}
+                  </p>
+                  <button 
+                    onClick={() => onRetry()}
+                    className="mt-4 px-8 py-3 bg-red-600 text-white font-black uppercase tracking-widest text-[10px] rounded-2xl hover:bg-red-700 transition-all shadow-xl shadow-red-200 dark:shadow-none"
+                  >
+                    Try Again
+                  </button>
+                </div>
               ) : results && results.length > 0 && !isEditingPincode ? (
                 <div className="space-y-8">
                   {userLocation && (
@@ -181,80 +199,103 @@ export default function PriceComparison({
                     </div>
                   )}
                   
-                  <div className="overflow-x-auto rounded-[2rem] border border-gray-100 dark:border-white/5 shadow-xl bg-white dark:bg-cred-gray/10">
-                    <table className="w-full border-collapse">
-                      <thead>
-                        <tr className="bg-gray-50/50 dark:bg-cred-gray/30">
-                          {stores.map(store => (
-                            <th key={store} className="p-6 text-center border-b border-gray-100 dark:border-white/5 min-w-[180px]">
-                              <div className="flex flex-col items-center gap-3">
-                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Buy On</span>
-                                <div className="h-10 flex items-center justify-center">
-                                  {STORE_LOGOS[store] ? (
-                                    <img 
-                                      src={STORE_LOGOS[store]} 
-                                      alt={store} 
-                                      className="max-h-full max-w-[120px] object-contain filter dark:brightness-110"
-                                      referrerPolicy="no-referrer"
-                                    />
-                                  ) : (
-                                    <span className="text-lg font-black tracking-tighter">{store}</span>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {results.map((result, idx) => {
+                      const storeKey = Object.keys(STORE_LOGOS).find(k => 
+                        result.storeName.toLowerCase().includes(k.toLowerCase())
+                      ) || result.storeName;
+
+                      const isBestValue = idx === 0;
+
+                      return (
+                        <motion.div
+                          key={idx}
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: idx * 0.05 }}
+                          className={`relative flex flex-col bg-white dark:bg-cred-gray/10 rounded-[2.5rem] border ${isBestValue ? 'border-emerald-500/50 ring-1 ring-emerald-500/20' : 'border-gray-100 dark:border-white/5'} overflow-hidden hover:shadow-2xl transition-all group h-full`}
+                        >
+                          {isBestValue && (
+                            <div className="absolute top-4 left-4 bg-emerald-500 text-white text-[10px] font-black px-4 py-1.5 rounded-full shadow-lg uppercase tracking-widest z-10">
+                              Best Value
+                            </div>
+                          )}
+
+                          {/* Card Header with Store Logo */}
+                          <div className="p-6 border-b border-gray-100 dark:border-white/5 bg-gray-50/30 dark:bg-white/5 flex items-center justify-between">
+                            <div className="h-8 flex items-center">
+                              {STORE_LOGOS[storeKey] ? (
+                                <img 
+                                  src={STORE_LOGOS[storeKey]} 
+                                  alt={storeKey} 
+                                  className="h-full w-auto object-contain filter dark:brightness-110"
+                                  referrerPolicy="no-referrer"
+                                  onError={(e) => {
+                                    e.currentTarget.onerror = null;
+                                    e.currentTarget.style.display = 'none';
+                                  }}
+                                />
+                              ) : (
+                                <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">{result.storeName}</span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] font-black text-red-600 uppercase tracking-widest bg-red-50 dark:bg-red-900/20 px-3 py-1 rounded-full">
+                                {result.quantity}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Content Section */}
+                          <div className="p-6 flex flex-col flex-1">
+                            <div className="mb-6">
+                              <h3 className="text-lg font-black text-gray-900 dark:text-white leading-tight line-clamp-2 min-h-[3.5rem]">
+                                {result.productName}
+                              </h3>
+                            </div>
+
+                            <div className="mt-auto space-y-6">
+                              <div className="flex items-end justify-between">
+                                <div>
+                                  <div className="text-4xl font-black tracking-tighter text-gray-900 dark:text-white">
+                                    ₹{result.price}
+                                  </div>
+                                  <div className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">
+                                    ₹{result.pricePerUnit} / {result.unit}
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <div className="flex items-center justify-end gap-1 text-[8px] font-black text-emerald-600 uppercase tracking-widest mb-1">
+                                    {result.sourceVerification || 'Verified'}
+                                    <Info className="w-2 h-2" />
+                                  </div>
+                                  {result.sourceUrl && (
+                                    <a 
+                                      href={result.sourceUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-[8px] font-bold text-gray-400 hover:text-red-600 transition-colors uppercase tracking-widest flex items-center justify-end gap-1"
+                                    >
+                                      Source <ExternalLink className="w-2 h-2" />
+                                    </a>
                                   )}
                                 </div>
-                                <span className="text-[10px] font-black text-red-600 uppercase tracking-widest mt-1">Price</span>
                               </div>
-                            </th>
-                          ))}
-                          <th className="p-6 text-center border-b border-gray-100 dark:border-white/5 min-w-[120px]">
-                            <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Quantity</span>
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {variants.map((variantKey, idx) => {
-                          const [productName, quantity] = variantKey.split('|');
-                          return (
-                            <tr key={idx} className="group hover:bg-gray-50/50 dark:hover:bg-white/5 transition-colors">
-                              {stores.map(store => {
-                                const result = results.find(r => r.storeName === store && r.productName === productName && r.quantity === quantity);
-                                return (
-                                  <td key={store} className="p-6 text-center border-b border-gray-50 dark:border-white/5">
-                                    {result ? (
-                                      <div className="flex flex-col items-center gap-3">
-                                        <span className="text-2xl font-black tracking-tighter text-gray-900 dark:text-white">
-                                          ₹{result.price}
-                                        </span>
-                                        <a 
-                                          href={result.link}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-red-200 dark:shadow-none hover:scale-105"
-                                        >
-                                          Buy Now
-                                          <ExternalLink className="w-3 h-3" />
-                                        </a>
-                                      </div>
-                                    ) : (
-                                      <span className="text-[10px] font-black text-gray-300 dark:text-gray-600 uppercase tracking-widest">
-                                        Not Available
-                                      </span>
-                                    )}
-                                  </td>
-                                );
-                              })}
-                              <td className="p-6 text-center border-b border-gray-50 dark:border-white/5">
-                                <div className="flex flex-col items-center gap-1">
-                                  <span className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-tight">{quantity}</span>
-                                  <span className="text-[8px] font-black text-gray-400 uppercase tracking-widest text-center leading-tight max-w-[100px] line-clamp-2">
-                                    {productName}
-                                  </span>
-                                </div>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
+
+                              <a 
+                                href={result.link}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="w-full cred-button-primary py-4 text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 group/btn"
+                              >
+                                Buy Now
+                                <ExternalLink className="w-4 h-4 group-hover/btn:translate-x-1 group-hover/btn:-translate-y-1 transition-transform" />
+                              </a>
+                            </div>
+                          </div>
+                        </motion.div>
+                      );
+                    })}
                   </div>
 
                   <div className="flex items-start gap-3 p-4 bg-blue-50 dark:bg-blue-950/20 rounded-2xl border border-blue-100 dark:border-blue-900/40">
@@ -284,23 +325,31 @@ export default function PriceComparison({
             {/* Footer */}
             <div className="p-8 border-t border-gray-100 dark:border-white/5 bg-gray-50 dark:bg-cred-gray/50 flex justify-between items-center shrink-0">
               <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">
-                Prices may vary by location • Real-time data
+                Prices may vary by location • Links open in mobile apps if installed
               </p>
-              <div className="flex gap-4">
+              <div className="flex gap-4 items-center">
                 <button
-                  onClick={onClose}
-                  className="px-8 py-3 bg-white dark:bg-cred-gray border border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-300 font-black uppercase tracking-widest text-[10px] rounded-2xl hover:bg-gray-100 dark:hover:bg-cred-dark transition-all shadow-sm"
+                  onClick={() => window.open(`mailto:support@credgrocery.com?subject=Price%20Inaccuracy%20Report&body=Item:%20${encodeURIComponent(itemName)}%0ALocation:%20GPS%20Active%0AStore:%20Multiple`)}
+                  className="text-[10px] font-black text-red-500 uppercase tracking-widest hover:underline"
                 >
-                  Close
+                  Report Inaccuracy
                 </button>
-                {results && results.length > 0 && (
+                <div className="flex gap-4">
                   <button
-                    onClick={() => onRetry()}
-                    className="px-8 py-3 bg-red-600 text-white font-black uppercase tracking-widest text-[10px] rounded-2xl hover:bg-red-700 transition-all shadow-xl shadow-red-200 dark:shadow-none"
+                    onClick={onClose}
+                    className="px-8 py-3 bg-white dark:bg-cred-gray border border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-300 font-black uppercase tracking-widest text-[10px] rounded-2xl hover:bg-gray-100 dark:hover:bg-cred-dark transition-all shadow-sm"
                   >
-                    Refresh Results
+                    Close
                   </button>
-                )}
+                  {results && results.length > 0 && (
+                    <button
+                      onClick={() => onRetry()}
+                      className="px-8 py-3 bg-red-600 text-white font-black uppercase tracking-widest text-[10px] rounded-2xl hover:bg-red-700 transition-all shadow-xl shadow-red-200 dark:shadow-none"
+                    >
+                      Refresh Results
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           </motion.div>

@@ -116,6 +116,7 @@ function AppContent() {
   const [isPriceModalOpen, setIsPriceModalOpen] = useState(false);
   const [searchItem, setSearchItem] = useState('');
   const [searchResults, setSearchResults] = useState<PriceComparisonResult[] | null>(null);
+  const [searchError, setSearchError] = useState<string | null>(null);
   const [isSearching, setIsSearching] = useState(false);
   const [predictions, setPredictions] = useState<Record<string, number>>({});
   const [notifiedItems, setNotifiedItems] = useState<Set<string>>(new Set());
@@ -655,6 +656,7 @@ function AppContent() {
   const handleSearchPrice = async (name: string) => {
     setSearchItem(name);
     setIsPriceModalOpen(true);
+    setSearchError(null);
     
     if (!userLocation) {
       setIsSearching(false);
@@ -673,6 +675,11 @@ function AppContent() {
       setSearchResults(results);
     } catch (error: any) {
       console.error('Search failed:', error);
+      let message = "Search failed. Please try again later.";
+      if (error.message?.includes('RESOURCE_EXHAUSTED')) {
+        message = "AI Search quota exceeded. Google Search grounding is currently unavailable. Please try again in a few minutes.";
+      }
+      setSearchError(message);
       setSearchResults([]);
     } finally {
       setIsSearching(false);
@@ -1066,6 +1073,7 @@ function AppContent() {
         onClose={() => setIsPriceModalOpen(false)}
         itemName={searchItem}
         results={searchResults}
+        error={searchError}
         isLoading={isSearching}
         userLocation={userLocation}
         onLocationUpdate={(loc) => setUserLocation(loc)}
