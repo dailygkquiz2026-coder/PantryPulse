@@ -99,6 +99,12 @@ service cloud.firestore {
       allow delete: if isDocOwner();
     }
 
+    match /deletedItems/{itemId} {
+      allow read: if isDocOwner();
+      allow create: if isAuthenticated() && request.resource.data.uid == request.auth.uid;
+      allow delete: if isDocOwner();
+    }
+
     match /scanFailures/{failureId} {
       allow read: if isAdmin();
       allow create: if isAuthenticated();

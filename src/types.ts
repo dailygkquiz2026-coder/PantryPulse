@@ -64,3 +64,7 @@ export interface PriceComparisonResult {
   unit: string;
   sourceUrl?: string;
 }
+
+export interface DeletedItem extends GroceryItem {
+  deletedAt: string;
+}

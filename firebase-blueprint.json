@@ -83,6 +83,21 @@
         "platform": { "type": "string" }
       },
       "required": ["uid", "updatedAt", "platform"]
+    },
+    "DeletedItem": {
+      "title": "Deleted Item",
+      "description": "An item recently deleted from inventory",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "category": { "type": "string" },
+        "quantity": { "type": "number" },
+        "unit": { "type": "string" },
+        "purchaseDate": { "type": "string", "format": "date-time" },
+        "deletedAt": { "type": "string", "format": "date-time" },
+        "uid": { "type": "string" }
+      },
+      "required": ["name", "category", "quantity", "unit", "purchaseDate", "deletedAt", "uid"]
     }
   },
   "firestore": {
@@ -109,6 +124,10 @@
     "/fcmTokens/{token}": {
       "schema": "FCMToken",
       "description": "User push notification tokens"
+    },
+    "/deletedItems/{itemId}": {
+      "schema": "DeletedItem",
+      "description": "Recently deleted inventory items"
     }
   }
 }

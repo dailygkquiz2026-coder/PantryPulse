@@ -22,8 +22,13 @@ import {
   LogOut,
   Camera,
   X,
-  RefreshCw
+  RefreshCw,
+  ChevronDown,
+  ChevronUp,
+  RotateCcw,
+  Trash
 } from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
 import { 
   onAuthStateChanged, 
   signInWithPopup, 
@@ -41,7 +46,8 @@ import {
   deleteDoc, 
   doc, 
   setDoc,
-  getDocFromServer
+  getDocFromServer,
+  orderBy
 } from 'firebase/firestore';
 import { db, auth, handleFirestoreError, OperationType, messaging } from './firebase';
 import { getToken } from 'firebase/messaging';
@@ -58,7 +64,7 @@ import RestockModal from './components/RestockModal';
 import UpdateQuantityModal from './components/UpdateQuantityModal';
 import EditItemModal from './components/EditItemModal';
 import ExpiringItemsModal from './components/ExpiringItemsModal';
-import { GroceryItem, HouseholdInfo, ShoppingListItem, SavedRecipe, PriceComparisonResult } from './types';
+import { GroceryItem, HouseholdInfo, ShoppingListItem, SavedRecipe, PriceComparisonResult, DeletedItem } from './types';
 import { predictMultipleRestocks, searchCheapestSource } from './services/geminiService';
 
 // Error Boundary Component
@@ -124,6 +130,8 @@ function AppContent() {
   const [hasChanges, setHasChanges] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [savedRecipes, setSavedRecipes] = useState<SavedRecipe[]>([]);
+  const [deletedItems, setDeletedItems] = useState<DeletedItem[]>([]);
+  const [isBinOpen, setIsBinOpen] = useState(false);
   
   // Recipe Caching State
   const [cachedRecipes, setCachedRecipes] = useState<any[]>([]);
@@ -286,6 +294,21 @@ function AppContent() {
     return () => unsubscribe();
   }, [user, isAuthReady]);
 
+  // Real-time Deleted Items
+  useEffect(() => {
+    if (!user || !isAuthReady) return;
+    const q = query(
+      collection(db, 'deletedItems'), 
+      where('uid', '==', user.uid),
+      orderBy('deletedAt', 'desc')
+    );
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const items = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as DeletedItem));
+      setDeletedItems(items);
+    }, (error) => handleFirestoreError(error, OperationType.GET, 'deletedItems'));
+    return () => unsubscribe();
+  }, [user, isAuthReady]);
+
   // Real-time Household
   useEffect(() => {
     if (!user || !isAuthReady) return;
@@ -436,6 +459,30 @@ function AppContent() {
     }
   }, [inventory, isAuthReady]);
 
+  // Cleanup old deleted items (older than 2 days)
+  useEffect(() => {
+    if (!user || deletedItems.length === 0) return;
+    
+    const cleanup = async () => {
+      const now = new Date().getTime();
+      const twoDaysInMs = 2 * 24 * 60 * 60 * 1000;
+      
+      const itemsToDelete = deletedItems.filter(item => {
+        const deletedAt = new Date(item.deletedAt).getTime();
+        return now - deletedAt > twoDaysInMs;
+      });
+      
+      if (itemsToDelete.length > 0) {
+        console.log(`Cleaning up ${itemsToDelete.length} old deleted items`);
+        const batch = itemsToDelete.map(item => deleteDoc(doc(db, 'deletedItems', item.id)));
+        await Promise.all(batch);
+      }
+    };
+    
+    const timer = setTimeout(cleanup, 5000); // Run cleanup 5 seconds after load
+    return () => clearTimeout(timer);
+  }, [deletedItems, user]);
+
   const [loginError, setLoginError] = useState<string | null>(null);
 
   const handleLogin = async () => {
@@ -497,11 +544,45 @@ function AppContent() {
   };
 
   const handleDeleteGrocery = async (id: string) => {
+    if (!user) return;
+    const item = inventory.find(i => i.id === id);
     try {
+      if (item) {
+        // Add to deleted items bin
+        await addDoc(collection(db, 'deletedItems'), {
+          ...item,
+          deletedAt: new Date().toISOString(),
+          uid: user.uid
+        });
+      }
       await deleteDoc(doc(db, 'inventory', id));
       setHasChanges(true);
     } catch (error) {
       handleFirestoreError(error, OperationType.DELETE, `inventory/${id}`);
+    }
+  };
+
+  const handleRestoreGrocery = async (item: DeletedItem) => {
+    if (!user) return;
+    try {
+      const { id, deletedAt, ...groceryData } = item;
+      await addDoc(collection(db, 'inventory'), {
+        ...groceryData,
+        uid: user.uid,
+        lastUpdated: new Date().toISOString()
+      });
+      await deleteDoc(doc(db, 'deletedItems', id));
+      setHasChanges(true);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.CREATE, 'inventory');
+    }
+  };
+
+  const handlePermanentDelete = async (id: string) => {
+    try {
+      await deleteDoc(doc(db, 'deletedItems', id));
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, `deletedItems/${id}`);
     }
   };
 
@@ -518,6 +599,12 @@ function AppContent() {
         status: 'to-buy',
         uid: user.uid
       });
+
+      // If moved from inventory, delete it from inventory (which adds to bin)
+      if (details?.id) {
+        await handleDeleteGrocery(details.id);
+      }
+
       setHasChanges(true);
       if (!preventTabSwitch) {
         setActiveTab('shopping');
@@ -690,7 +777,7 @@ function AppContent() {
   const handleConfirmStockouts = async (items: GroceryItem[]) => {
     if (!user) return;
     try {
-      const promises = items.map(item => 
+      const shoppingPromises = items.map(item => 
         addDoc(collection(db, 'shoppingList'), {
           name: item.name,
           quantity: 1, // Default to 1 unit for restock
@@ -701,7 +788,12 @@ function AppContent() {
           uid: user.uid
         })
       );
-      await Promise.all(promises);
+      
+      const deletePromises = items.map(item => 
+        handleDeleteGrocery(item.id)
+      );
+
+      await Promise.all([...shoppingPromises, ...deletePromises]);
       setIsStockoutModalOpen(false);
       setActiveTab('shopping');
     } catch (error) {
@@ -1025,6 +1117,83 @@ function AppContent() {
                 }}
                 predictions={predictions}
               />
+
+              {/* Recently Deleted Bin */}
+              {deletedItems.length > 0 && (
+                <div className="mt-12 border-t border-gray-100 dark:border-white/5 pt-8">
+                  <button 
+                    onClick={() => setIsBinOpen(!isBinOpen)}
+                    className="flex items-center justify-between w-full group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-gray-100 dark:bg-cred-gray rounded-xl text-gray-500">
+                        <Trash className="w-5 h-5" />
+                      </div>
+                      <div className="text-left">
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-white">Recently Deleted Bin</h3>
+                        <p className="text-xs text-gray-500">Items are permanently removed after 2 days</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="px-2 py-1 bg-gray-100 dark:bg-cred-gray rounded-lg text-xs font-bold text-gray-500">
+                        {deletedItems.length}
+                      </span>
+                      {isBinOpen ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
+                    </div>
+                  </button>
+
+                  <AnimatePresence>
+                    {isBinOpen && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                          {deletedItems.map((item) => (
+                            <motion.div
+                              key={item.id}
+                              layout
+                              initial={{ opacity: 0, scale: 0.95 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              className="p-4 bg-gray-50/50 dark:bg-cred-gray/30 rounded-2xl border border-gray-100 dark:border-white/5 flex items-center justify-between group"
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-gray-200 dark:bg-cred-gray flex items-center justify-center text-gray-400">
+                                  <ShoppingBag className="w-5 h-5" />
+                                </div>
+                                <div>
+                                  <p className="font-bold text-gray-900 dark:text-white">{item.name}</p>
+                                  <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest">
+                                    Deleted {formatDistanceToNow(new Date(item.deletedAt))} ago
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button
+                                  onClick={() => handleRestoreGrocery(item)}
+                                  className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-all"
+                                  title="Restore to Inventory"
+                                >
+                                  <RotateCcw className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={() => handlePermanentDelete(item.id)}
+                                  className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all"
+                                  title="Delete Permanently"
+                                >
+                                  <Trash className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </motion.div>
+                          ))}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              )}
             </motion.div>
           )}
 
