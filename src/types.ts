@@ -51,3 +51,11 @@ export interface SavedRecipe {
   uid: string;
   createdAt: string;
 }
+
+export interface PriceComparisonResult {
+  productName: string;
+  storeName: string;
+  price: number;
+  link: string;
+  quantity: string;
+}

@@ -57,7 +57,7 @@ import RestockModal from './components/RestockModal';
 import UpdateQuantityModal from './components/UpdateQuantityModal';
 import EditItemModal from './components/EditItemModal';
 import ExpiringItemsModal from './components/ExpiringItemsModal';
-import { GroceryItem, HouseholdInfo, ShoppingListItem, SavedRecipe } from './types';
+import { GroceryItem, HouseholdInfo, ShoppingListItem, SavedRecipe, PriceComparisonResult } from './types';
 import { predictMultipleRestocks, searchCheapestSource } from './services/geminiService';
 
 // Error Boundary Component
@@ -115,7 +115,7 @@ function AppContent() {
   const [household, setHousehold] = useState<HouseholdInfo>({ members: 2, preferences: [], uid: '' });
   const [isPriceModalOpen, setIsPriceModalOpen] = useState(false);
   const [searchItem, setSearchItem] = useState('');
-  const [searchResults, setSearchResults] = useState<string | null>(null);
+  const [searchResults, setSearchResults] = useState<PriceComparisonResult[] | null>(null);
   const [isSearching, setIsSearching] = useState(false);
   const [predictions, setPredictions] = useState<Record<string, number>>({});
   const [notifiedItems, setNotifiedItems] = useState<Set<string>>(new Set());
@@ -673,13 +673,7 @@ function AppContent() {
       setSearchResults(results);
     } catch (error: any) {
       console.error('Search failed:', error);
-      let errorMessage = error.message || 'Unknown error';
-      
-      if (errorMessage.includes('RESOURCE_EXHAUSTED') || errorMessage.includes('429')) {
-        errorMessage = "You've hit the Gemini API Free Tier limit. To fix this, enable billing in Google AI Studio or wait a few minutes for the quota to reset.";
-      }
-      
-      setSearchResults(`Failed to find price information: ${errorMessage}. Please ensure GEMINI_API_KEY is set in Vercel.`);
+      setSearchResults([]);
     } finally {
       setIsSearching(false);
     }

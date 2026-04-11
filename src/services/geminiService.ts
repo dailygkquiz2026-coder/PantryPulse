@@ -291,10 +291,11 @@ export async function searchCheapestSource(itemName: string, location?: string, 
     2. Rank the outcomes based on the LOWEST PRICE first.
     3. Provide EXACTLY 5-6 results. Do not provide more.
     4. For each result, provide:
-       - Exact Product Name
-       - Store Name
-       - Price (in INR)
-       - A direct Hyperlink (use stable search URLs as defined below).
+       - productName: Exact Product Name
+       - storeName: Store Name
+       - price: Price (in INR, as a number)
+       - link: A direct Hyperlink (use stable search URLs as defined below).
+       - quantity: The pack size/quantity (e.g., "500g", "1 Ltr", "6 Pcs").
     5. If a product is NOT available on a specific seller site for the given location, explicitly write "Not available for your pincode now" for that seller.
     
     CRITICAL INSTRUCTIONS FOR LINKS:
@@ -307,18 +308,27 @@ export async function searchCheapestSource(itemName: string, location?: string, 
       - Amazon Fresh: https://www.amazon.in/s?k=[Product+Name]&i=nowstore
       - Flipkart Grocery: https://www.flipkart.com/search?q=[Product+Name]&marketplace=GROCERY
     
-    Format the output as a short, crisp, and actionable Markdown table:
-    | Rank | Product | Store | Price | Action |
-    |------|---------|-------|-------|--------|
-    | 1 | [Name] | [Store] | ₹[Price] | [Link] |
-    
-    If no results are found at all, state "No variants found for your location."
-    Keep it extremely concise. No conversational filler.`,
+    Return the result as a JSON array of objects.`,
     config: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: Type.ARRAY,
+        items: {
+          type: Type.OBJECT,
+          properties: {
+            productName: { type: Type.STRING },
+            storeName: { type: Type.STRING },
+            price: { type: Type.NUMBER },
+            link: { type: Type.STRING },
+            quantity: { type: Type.STRING }
+          },
+          required: ["productName", "storeName", "price", "link", "quantity"]
+        }
+      },
       tools: [{ googleSearch: {} }]
     }
   });
-  return response.text;
+  return parseGeminiResponse(response.text);
 }
 
 export async function getTrendingRecipes(location?: string) {
