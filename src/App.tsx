@@ -43,7 +43,8 @@ import {
   setDoc,
   getDocFromServer
 } from 'firebase/firestore';
-import { db, auth, handleFirestoreError, OperationType } from './firebase';
+import { db, auth, handleFirestoreError, OperationType, messaging } from './firebase';
+import { getToken } from 'firebase/messaging';
 import GroceryForm from './components/GroceryForm';
 import InventoryList from './components/InventoryList';
 import ShoppingList from './components/ShoppingList';
@@ -171,6 +172,42 @@ function AppContent() {
   const [stockoutItems, setStockoutItems] = useState<GroceryItem[]>([]);
   const [lastShoppingActivity, setLastShoppingActivity] = useState(Date.now());
   const [isPromoMode, setIsPromoMode] = useState(true);
+  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>(
+    typeof window !== 'undefined' ? Notification.permission : 'default'
+  );
+
+  // Push Notification Logic
+  const requestNotificationPermission = async () => {
+    if (!user || !messaging) return;
+    
+    try {
+      const permission = await Notification.requestPermission();
+      setNotificationPermission(permission);
+      
+      if (permission === 'granted') {
+        // Get FCM Token
+        // Note: User needs to provide their own VAPID key from Firebase Console
+        // For now, we attempt to get it. If it fails, we log it.
+        const token = await getToken(messaging, {
+          vapidKey: 'BIXKRElY3xay1BnpkP5PmLJGZawnVcbNmgDWu6jUJGVqcPC-Oh92yZYyaxNAR2XY8YgnUjChBDgdePIngQMVozg'
+        }).catch(err => {
+          console.warn("FCM Token generation failed. This usually requires a valid VAPID key from Firebase Console.", err);
+          return null;
+        });
+
+        if (token) {
+          console.log("FCM Token acquired:", token);
+          await setDoc(doc(db, 'fcmTokens', token), {
+            uid: user.uid,
+            updatedAt: new Date().toISOString(),
+            platform: 'web'
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Error requesting notification permission:", error);
+    }
+  };
 
   // Auth Listener
   useEffect(() => {
@@ -180,6 +217,12 @@ function AppContent() {
     });
     return () => unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (user && isAuthReady) {
+      requestNotificationPermission();
+    }
+  }, [user, isAuthReady]);
 
   // Location Listener
   useEffect(() => {
@@ -485,26 +528,39 @@ function AppContent() {
   };
 
   const handleSaveRecipe = async (recipe: Omit<SavedRecipe, 'id' | 'uid' | 'createdAt'>) => {
-    if (!user) return;
+    if (!user) {
+      console.warn("Cannot save recipe: No user authenticated");
+      return;
+    }
     if (savedRecipes.length >= 5) {
       alert("You can only save up to 5 recipes. Please delete one to save a new one.");
       return;
     }
     try {
+      console.log("Saving recipe:", recipe.title);
       await addDoc(collection(db, 'savedRecipes'), {
         ...recipe,
         uid: user.uid,
         createdAt: new Date().toISOString()
       });
+      console.log("Recipe saved successfully");
     } catch (error) {
+      console.error("Error saving recipe:", error);
       handleFirestoreError(error, OperationType.CREATE, 'savedRecipes');
     }
   };
 
   const handleDeleteRecipe = async (id: string) => {
+    if (!id) {
+      console.warn("Cannot delete recipe: No ID provided");
+      return;
+    }
     try {
+      console.log("Deleting recipe with ID:", id);
       await deleteDoc(doc(db, 'savedRecipes', id));
+      console.log("Recipe deleted successfully");
     } catch (error) {
+      console.error("Error deleting recipe:", error);
       handleFirestoreError(error, OperationType.DELETE, `savedRecipes/${id}`);
     }
   };

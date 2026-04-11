@@ -71,7 +71,18 @@
         "uid": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["title", "description", "source", "imageUrl", "link", "ingredients", "uid", "createdAt"]
+      "required": ["title", "description", "source", "imageUrl", "ingredients", "uid", "createdAt"]
+    },
+    "FCMToken": {
+      "title": "FCM Token",
+      "description": "A push notification token for a user device",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "platform": { "type": "string" }
+      },
+      "required": ["uid", "updatedAt", "platform"]
     }
   },
   "firestore": {
@@ -94,6 +105,10 @@
     "/savedRecipes/{recipeId}": {
       "schema": "SavedRecipe",
       "description": "Recipes saved by the user"
+    },
+    "/fcmTokens/{token}": {
+      "schema": "FCMToken",
+      "description": "User push notification tokens"
     }
   }
 }

@@ -361,34 +361,22 @@ export default function TrendingRecipes({
               transition={{ delay: index * 0.1 }}
               className="cred-card overflow-hidden flex flex-col group hover:shadow-2xl transition-all border-gray-100 dark:border-cred-gray"
             >
-              <div className="relative h-56 overflow-hidden bg-gray-100 dark:bg-cred-gray flex items-center justify-center">
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-amber-500/5 animate-pulse" />
-                <ChefHat className="w-12 h-12 text-gray-200 dark:text-cred-gray absolute" />
-                <img 
-                  src={recipe.imageUrl} 
-                  alt={recipe.title}
-                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 relative z-10"
-                  referrerPolicy="no-referrer"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    // Use LoremFlickr with more specific keywords for better fallback relevance
-                    const keywords = encodeURIComponent(`${recipe.title},cooked,food,dish`);
-                    target.src = `https://loremflickr.com/800/600/${keywords}`;
-                  }}
-                />
-                <div className="absolute top-4 left-4 px-3 py-1 bg-white/90 dark:bg-black/80 backdrop-blur-md rounded-full flex items-center gap-2 text-[10px] font-black uppercase tracking-widest shadow-lg">
-                  {getSourceIcon(recipe.source)}
-                  {recipe.source}
+              <div className="p-6 border-b border-gray-100 dark:border-white/5 bg-gray-50/30 dark:bg-cred-gray/10 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-blue-100 dark:bg-blue-900/40 rounded-xl">
+                    {getSourceIcon(recipe.source)}
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Source</p>
+                    <p className="text-xs font-bold text-gray-900 dark:text-white">{recipe.source}</p>
+                  </div>
                 </div>
                 
-                <div className="absolute top-4 right-4 flex gap-2">
+                <div className="flex gap-2">
                   {recipeView === 'saved' ? (
                     <button
-                      onClick={() => {
-                        const saved = savedRecipes.find(r => r.title === recipe.title);
-                        if (saved) onDeleteRecipe(saved.id);
-                      }}
-                      className="p-2 bg-red-500 text-white rounded-full shadow-lg hover:bg-red-600 transition-all"
+                      onClick={() => onDeleteRecipe((recipe as SavedRecipe).id)}
+                      className="p-2.5 bg-red-50 dark:bg-red-900/20 text-red-600 rounded-xl hover:bg-red-100 transition-all"
                       title="Remove from saved"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -403,10 +391,10 @@ export default function TrendingRecipes({
                           onSaveRecipe(recipe);
                         }
                       }}
-                      className={`p-2 rounded-full shadow-lg transition-all ${
+                      className={`p-2.5 rounded-xl transition-all ${
                         isRecipeSaved(recipe.title) 
                           ? 'bg-blue-600 text-white hover:bg-blue-700' 
-                          : 'bg-white/90 dark:bg-black/80 text-gray-600 dark:text-gray-300 hover:bg-white'
+                          : 'bg-gray-100 dark:bg-cred-gray text-gray-600 dark:text-gray-300 hover:bg-gray-200'
                       }`}
                     >
                       {isRecipeSaved(recipe.title) ? <BookmarkCheck className="w-4 h-4" /> : <Bookmark className="w-4 h-4" />}

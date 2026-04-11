@@ -56,8 +56,9 @@ service cloud.firestore {
              data.description is string &&
              data.source is string &&
              data.imageUrl is string &&
-             data.link is string &&
+             (!('link' in data) || data.link is string) &&
              data.ingredients is list &&
+             data.instructions is list &&
              data.uid == request.auth.uid;
     }
 
@@ -86,10 +87,16 @@ service cloud.firestore {
     }
 
     match /savedRecipes/{recipeId} {
-      allow read: if isAuthenticated() && (resource == null || resource.data.uid == request.auth.uid);
-      allow create: if isAuthenticated() && request.resource.data.uid == request.auth.uid;
-      allow update: if isAuthenticated() && resource.data.uid == request.auth.uid && request.resource.data.uid == request.auth.uid;
-      allow delete: if isAuthenticated() && resource.data.uid == request.auth.uid;
+      allow read: if isDocOwner();
+      allow create: if isAuthenticated() && isValidSavedRecipe(request.resource.data);
+      allow update: if isDocOwner() && isValidSavedRecipe(request.resource.data);
+      allow delete: if isDocOwner();
+    }
+
+    match /fcmTokens/{token} {
+      allow read: if isDocOwner();
+      allow create, update: if isAuthenticated() && request.resource.data.uid == request.auth.uid;
+      allow delete: if isDocOwner();
     }
 
     match /scanFailures/{failureId} {
