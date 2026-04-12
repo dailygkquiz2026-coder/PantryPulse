@@ -33,7 +33,7 @@ import {
   orderBy,
   limit
 } from 'firebase/firestore';
-import { db, auth } from '../firebase';
+import { db, auth, handleFirestoreError, OperationType } from '../firebase';
 import { analyzeMealImage, calculateRequiredCalories, AnalyzedFoodItem } from '../services/calorieService';
 import { 
   BarChart, 
@@ -113,6 +113,9 @@ export default function CalorieTracker({ inventory }: { inventory: any[] }) {
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const items = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as CalorieLog));
       setLogs(items);
+    }, (error) => {
+      console.error("Calorie logs snapshot failed:", error);
+      handleFirestoreError(error, OperationType.LIST, 'calorieLogs');
     });
     return () => unsubscribe();
   }, [user]);
@@ -126,7 +129,7 @@ export default function CalorieTracker({ inventory }: { inventory: any[] }) {
       const reader = new FileReader();
       reader.onloadend = async () => {
         const base64 = (reader.result as string).split(',')[1];
-        const result = await analyzeMealImage(base64, userDescription);
+        const result = await analyzeMealImage(base64, userDescription, user?.uid);
         setAnalysisResult(result);
         setIsAnalyzing(false);
       };
@@ -141,10 +144,15 @@ export default function CalorieTracker({ inventory }: { inventory: any[] }) {
     setIsCameraOpen(true);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: 'environment' } 
+        video: { 
+          facingMode: 'environment',
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        } 
       });
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
+        videoRef.current.play();
       }
     } catch (err) {
       console.error("Camera access denied:", err);
@@ -164,19 +172,34 @@ export default function CalorieTracker({ inventory }: { inventory: any[] }) {
     if (videoRef.current && canvasRef.current) {
       const video = videoRef.current;
       const canvas = canvasRef.current;
+      
+      console.log("Capturing photo...", video.videoWidth, "x", video.videoHeight);
+      
+      if (video.videoWidth === 0 || video.videoHeight === 0) {
+        console.warn("Video not ready, waiting...");
+        return;
+      }
+
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
       const ctx = canvas.getContext('2d');
-      ctx?.drawImage(video, 0, 0);
-      const base64 = canvas.toDataURL('image/jpeg').split(',')[1];
+      if (ctx) {
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(video, 0, 0);
+      }
+      
+      const base64 = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
+      console.log("Photo captured, base64 length:", base64.length);
       
       setIsAnalyzing(true);
       stopCamera();
       try {
-        const result = await analyzeMealImage(base64, userDescription);
+        const result = await analyzeMealImage(base64, userDescription, user?.uid);
         setAnalysisResult(result);
       } catch (error) {
         console.error("Analysis failed:", error);
+        alert("Failed to analyze image. Please try again or upload a file.");
       } finally {
         setIsAnalyzing(false);
       }
@@ -200,6 +223,7 @@ export default function CalorieTracker({ inventory }: { inventory: any[] }) {
       setActiveSubTab('history');
     } catch (error) {
       console.error("Save failed:", error);
+      handleFirestoreError(error, OperationType.CREATE, 'calorieLogs');
     } finally {
       setIsSaving(false);
     }
@@ -433,7 +457,7 @@ export default function CalorieTracker({ inventory }: { inventory: any[] }) {
                             newResult[idx].name = e.target.value;
                             setAnalysisResult(newResult);
                           }}
-                          className="bg-transparent font-bold text-lg w-full focus:outline-none"
+                          className="bg-transparent font-bold text-lg w-full focus:outline-none text-black dark:text-white"
                         />
                         <input 
                           type="text"

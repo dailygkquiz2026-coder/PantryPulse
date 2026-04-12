@@ -76,6 +76,9 @@ service cloud.firestore {
              (!('height' in data) || data.height is number) &&
              (!('age' in data) || data.age is number) &&
              (!('gender' in data) || data.gender in ['male', 'female', 'other']) &&
+             (!('ethnicity' in data) || data.ethnicity is string) &&
+             (!('bmr' in data) || data.bmr is number) &&
+             (!('tdee' in data) || data.tdee is number) &&
              (!('shareAnonymousData' in data) || data.shareAnonymousData is bool);
     }
 
@@ -150,6 +153,16 @@ service cloud.firestore {
       allow read: if isAdmin();
       allow create: if isAuthenticated();
       allow update, delete: if isAdmin();
+    }
+
+    match /userActivityLogs/{logId} {
+      allow read: if isAdmin();
+      allow create, update: if isAuthenticated() && request.resource.data.uid == request.auth.uid;
+    }
+
+    match /aiUsageLogs/{logId} {
+      allow read: if isAdmin();
+      allow create: if isAuthenticated() && request.resource.data.uid == request.auth.uid;
     }
   }
 }

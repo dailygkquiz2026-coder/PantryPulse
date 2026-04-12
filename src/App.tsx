@@ -247,8 +247,27 @@ function AppContent() {
             timestamp: new Date().toISOString(),
             location: userLocation // If available
           }, { merge: true });
+
+          // Initialize profile if missing
+          const profileRef = doc(db, 'userProfiles', currentUser.uid);
+          const profileSnap = await getDocFromServer(profileRef).catch(() => null);
+          if (!profileSnap?.exists()) {
+            await setDoc(profileRef, {
+              uid: currentUser.uid,
+              email: currentUser.email,
+              createdAt: new Date().toISOString(),
+              shareAnonymousData: false,
+              weight: 0,
+              height: 0,
+              age: 0,
+              gender: 'male',
+              ethnicity: 'Unknown',
+              bmr: 0,
+              tdee: 2000
+            });
+          }
         } catch (error) {
-          console.error("Failed to log activity:", error);
+          console.error("Failed to log activity or init profile:", error);
         }
       }
     });
