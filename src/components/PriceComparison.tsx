@@ -323,30 +323,30 @@ export default function PriceComparison({
             </div>
 
             {/* Footer */}
-            <div className="p-8 border-t border-gray-100 dark:border-white/5 bg-gray-50 dark:bg-cred-gray/50 flex justify-between items-center shrink-0">
-              <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">
+            <div className="p-6 md:p-8 border-t border-gray-100 dark:border-white/5 bg-gray-50 dark:bg-cred-gray/50 flex flex-col md:flex-row justify-between items-center gap-6 shrink-0">
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] text-center md:text-left">
                 Prices may vary by location • Links open in mobile apps if installed
               </p>
-              <div className="flex gap-4 items-center">
+              <div className="flex flex-col sm:flex-row gap-4 items-center w-full md:w-auto">
                 <button
                   onClick={() => window.open(`mailto:support@credgrocery.com?subject=Price%20Inaccuracy%20Report&body=Item:%20${encodeURIComponent(itemName)}%0ALocation:%20GPS%20Active%0AStore:%20Multiple`)}
                   className="text-[10px] font-black text-red-500 uppercase tracking-widest hover:underline"
                 >
                   Report Inaccuracy
                 </button>
-                <div className="flex gap-4">
+                <div className="flex gap-3 w-full sm:w-auto">
                   <button
                     onClick={onClose}
-                    className="px-8 py-3 bg-white dark:bg-cred-gray border border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-300 font-black uppercase tracking-widest text-[10px] rounded-2xl hover:bg-gray-100 dark:hover:bg-cred-dark transition-all shadow-sm"
+                    className="flex-1 sm:flex-none px-6 md:px-8 py-3 bg-white dark:bg-cred-gray border border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-300 font-black uppercase tracking-widest text-[10px] rounded-2xl hover:bg-gray-100 dark:hover:bg-cred-dark transition-all shadow-sm"
                   >
                     Close
                   </button>
                   {results && results.length > 0 && (
                     <button
                       onClick={() => onRetry()}
-                      className="px-8 py-3 bg-red-600 text-white font-black uppercase tracking-widest text-[10px] rounded-2xl hover:bg-red-700 transition-all shadow-xl shadow-red-200 dark:shadow-none"
+                      className="flex-1 sm:flex-none px-6 md:px-8 py-3 bg-red-600 text-white font-black uppercase tracking-widest text-[10px] rounded-2xl hover:bg-red-700 transition-all shadow-xl shadow-red-200 dark:shadow-none"
                     >
-                      Refresh Results
+                      Refresh
                     </button>
                   )}
                 </div>

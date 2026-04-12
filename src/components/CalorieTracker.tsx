@@ -196,6 +196,7 @@ export default function CalorieTracker({ inventory }: { inventory: any[] }) {
         totalCalories: total
       });
       setAnalysisResult(null);
+      setUserDescription('');
       setActiveSubTab('history');
     } catch (error) {
       console.error("Save failed:", error);
