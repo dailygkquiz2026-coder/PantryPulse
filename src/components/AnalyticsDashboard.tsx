@@ -109,7 +109,7 @@ export default function AnalyticsDashboard({ inventory }: AnalyticsDashboardProp
       </div>
 
       {/* Health Insights & Calorie Warnings */}
-      <div className="cred-card cred-card-glow-purple p-8">
+      <div className="cred-card cred-card-glow-purple p-6 sm:p-8">
         <div className="flex items-center gap-3 mb-8">
           <Zap className="w-5 h-5 text-amber-500" />
           <h3 className="text-xl font-black uppercase tracking-tighter">Dietary Insights</h3>

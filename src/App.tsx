@@ -27,7 +27,8 @@ import {
   ChevronUp,
   RotateCcw,
   Trash,
-  Info
+  Info,
+  Activity
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { 
@@ -65,6 +66,7 @@ import RestockModal from './components/RestockModal';
 import UpdateQuantityModal from './components/UpdateQuantityModal';
 import EditItemModal from './components/EditItemModal';
 import ExpiringItemsModal from './components/ExpiringItemsModal';
+import CalorieTracker from './components/CalorieTracker';
 import { GroceryItem, HouseholdInfo, ShoppingListItem, SavedRecipe, PriceComparisonResult, DeletedItem } from './types';
 import { predictMultipleRestocks, searchCheapestSource } from './services/geminiService';
 
@@ -117,7 +119,8 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
 }
 
 function AppContent() {
-  const [activeTab, setActiveTab] = useState<'inventory' | 'add' | 'shopping' | 'recipes' | 'settings'>('inventory');
+  const [activeTab, setActiveTab] = useState<'inventory' | 'add' | 'shopping' | 'recipes' | 'calorie' | 'settings'>('inventory');
+  const [isSettingsMenuOpen, setIsSettingsMenuOpen] = useState(false);
   const [inventory, setInventory] = useState<GroceryItem[]>([]);
   const [shoppingList, setShoppingList] = useState<ShoppingListItem[]>([]);
   const [household, setHousehold] = useState<HouseholdInfo>({ members: 2, preferences: [], uid: '' });
@@ -869,6 +872,12 @@ function AppContent() {
           <div className="space-y-4 mb-12 text-left">
             <div className="flex items-center gap-3 text-gray-500 dark:text-gray-400">
               <div className="w-8 h-8 bg-gray-50 dark:bg-cred-gray rounded-lg flex items-center justify-center">
+                <Activity className="w-5 h-5 text-blue-500" />
+              </div>
+              <span className="text-sm font-bold uppercase tracking-widest text-[10px]">AI Calorie & Nutrition Tracking</span>
+            </div>
+            <div className="flex items-center gap-3 text-gray-500 dark:text-gray-400">
+              <div className="w-8 h-8 bg-gray-50 dark:bg-cred-gray rounded-lg flex items-center justify-center">
                 <CheckCircle2 className="w-5 h-5 text-black dark:text-white" />
               </div>
               <span className="text-sm font-bold uppercase tracking-widest text-[10px]">Track freshness automatically</span>
@@ -887,13 +896,27 @@ function AppContent() {
             </div>
           </div>
 
+          <div className="mb-8 p-4 bg-blue-50/50 dark:bg-blue-900/10 rounded-2xl border border-blue-100/50 dark:border-blue-900/20 text-left">
+            <div className="flex items-center gap-2 mb-2">
+              <Info className="w-4 h-4 text-blue-500" />
+              <span className="text-[10px] font-black uppercase tracking-widest text-blue-600 dark:text-blue-400">Beta Testing Phase</span>
+            </div>
+            <p className="text-[10px] text-gray-500 dark:text-gray-400 leading-relaxed">
+              PantryPulse is currently in public beta. During this phase, all features are free to use. In the future, advanced AI features (like Calorie Scanning and Recipe Generation) will be part of a <strong>Pro Subscription</strong>. This will come with a <strong>monthly subscription cost</strong> to cover the high operational and AI processing costs.
+            </p>
+          </div>
+
           <button
             onClick={handleLogin}
-            className="w-full cred-button-primary flex items-center justify-center gap-3"
+            className="w-full cred-button-primary flex items-center justify-center gap-3 mb-4"
           >
             <LogIn className="w-6 h-6" />
             Get Started with Google
           </button>
+
+          <p className="text-[9px] text-gray-400 dark:text-gray-500 font-medium px-4">
+            By continuing, you agree to our <button onClick={() => setIsTroubleshootingOpen(true)} className="underline hover:text-black dark:hover:text-white">Data Usage & Security Policy</button>. We use your data solely to provide personalized nutrition and pantry insights.
+          </p>
 
           {loginError && (
             <motion.div 
@@ -913,11 +936,11 @@ function AppContent() {
             onClick={() => setIsTroubleshootingOpen(true)}
             className="mt-8 text-[10px] text-gray-400 font-black hover:text-black dark:hover:text-white transition-colors uppercase tracking-[0.2em]"
           >
-            Deployment Troubleshooting
+            Privacy Policy & Setup
           </button>
         </motion.div>
 
-        {/* Troubleshooting Modal */}
+        {/* Troubleshooting & Policy Modal */}
         <AnimatePresence>
           {isTroubleshootingOpen && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
@@ -925,37 +948,60 @@ function AppContent() {
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.9 }}
-                className="cred-card w-full max-w-lg p-8"
+                className="cred-card w-full max-w-lg p-8 max-h-[80vh] overflow-y-auto no-scrollbar"
               >
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-2xl font-black">Vercel Setup Guide</h2>
+                <div className="flex items-center justify-between mb-6 sticky top-0 bg-white dark:bg-cred-dark py-2 z-10">
+                  <h2 className="text-2xl font-black">Policy & Setup</h2>
                   <button onClick={() => setIsTroubleshootingOpen(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-cred-gray rounded-full">
                     <X className="w-6 h-6 text-gray-400" />
                   </button>
                 </div>
-                <div className="space-y-6 text-gray-600 dark:text-gray-400">
-                  <div className="flex gap-4">
-                    <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/20 text-blue-600 rounded-full flex items-center justify-center font-bold flex-shrink-0">1</div>
-                    <p>Go to <strong>Vercel Dashboard &gt; Project &gt; Settings &gt; Environment Variables</strong>.</p>
-                  </div>
-                  <div className="flex gap-4">
-                    <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/20 text-blue-600 rounded-full flex items-center justify-center font-bold flex-shrink-0">2</div>
-                    <p>Add <strong>GEMINI_API_KEY</strong> with your key from <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="text-blue-600 underline">Google AI Studio</a>.</p>
-                  </div>
-                  <div className="flex gap-4">
-                    <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/20 text-blue-600 rounded-full flex items-center justify-center font-bold flex-shrink-0">3</div>
-                    <p><strong>IMPORTANT:</strong> You must <strong>Redeploy</strong> (Deployments &gt; Redeploy) for the changes to take effect.</p>
-                  </div>
-                  <div className="flex gap-4">
-                    <div className="w-8 h-8 bg-amber-100 dark:bg-amber-900/20 text-amber-600 rounded-full flex items-center justify-center font-bold flex-shrink-0">5</div>
-                    <p><strong>Quota Exceeded (429):</strong> If you see "Resource Exhausted", go to <a href="https://aistudio.google.com/app/billing" target="_blank" rel="noreferrer" className="text-blue-600 underline font-bold">AI Studio Billing</a> and enable Pay-as-you-go to get higher search limits.</p>
-                  </div>
+
+                <div className="space-y-8">
+                  <section>
+                    <h3 className="text-xs font-black uppercase tracking-widest text-purple-500 mb-4">Security & Data Policy</h3>
+                    <div className="space-y-4 text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+                      <p>
+                        <strong>Data Usage:</strong> We collect your inventory items, meal logs, and nutritional profiles to provide AI-driven insights. Your data is stored securely in Firebase and is only accessible by you.
+                      </p>
+                      <p>
+                        <strong>Sharing:</strong> We do not sell your personal data. If you enable "Community Comparison", your calorie data is shared <strong>anonymously</strong> to generate aggregate benchmarks.
+                      </p>
+                      <p>
+                        <strong>AI Processing:</strong> Images and text are processed via Google Gemini AI. These interactions are subject to Google's privacy standards for API usage.
+                      </p>
+                      <div className="p-4 bg-emerald-50 dark:bg-emerald-900/10 rounded-xl border border-emerald-100 dark:border-emerald-900/20">
+                        <p className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400">
+                          By using PantryPulse, you agree to this data policy and acknowledge that your information is used to improve your personalized experience.
+                        </p>
+                      </div>
+                    </div>
+                  </section>
+
+                  <section>
+                    <h3 className="text-xs font-black uppercase tracking-widest text-blue-500 mb-4">Vercel Setup Guide</h3>
+                    <div className="space-y-6 text-gray-600 dark:text-gray-400">
+                      <div className="flex gap-4">
+                        <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/20 text-blue-600 rounded-full flex items-center justify-center font-bold flex-shrink-0">1</div>
+                        <p className="text-sm">Go to <strong>Vercel Dashboard &gt; Project &gt; Settings &gt; Environment Variables</strong>.</p>
+                      </div>
+                      <div className="flex gap-4">
+                        <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/20 text-blue-600 rounded-full flex items-center justify-center font-bold flex-shrink-0">2</div>
+                        <p className="text-sm">Add <strong>GEMINI_API_KEY</strong> with your key from <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="text-blue-600 underline">Google AI Studio</a>.</p>
+                      </div>
+                      <div className="flex gap-4">
+                        <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/20 text-blue-600 rounded-full flex items-center justify-center font-bold flex-shrink-0">3</div>
+                        <p className="text-sm"><strong>IMPORTANT:</strong> You must <strong>Redeploy</strong> (Deployments &gt; Redeploy) for the changes to take effect.</p>
+                      </div>
+                    </div>
+                  </section>
                 </div>
+
                 <button
                   onClick={() => setIsTroubleshootingOpen(false)}
                   className="w-full mt-8 py-4 bg-gray-100 dark:bg-cred-gray hover:bg-gray-200 dark:hover:bg-cred-dark font-black uppercase tracking-widest rounded-2xl transition-all"
                 >
-                  Got it!
+                  I Understand
                 </button>
               </motion.div>
             </div>
@@ -993,14 +1039,63 @@ function AppContent() {
             )}
           </AnimatePresence>
           
-          <div className="flex items-center gap-2 md:gap-3 pl-2 md:pl-4 border-l border-cred-gray">
+          <div className="flex items-center gap-2 md:gap-3 pl-2 md:pl-4 border-l border-cred-gray relative">
             <div className="text-right">
               <p className="hidden sm:block text-[10px] md:text-xs font-black uppercase tracking-widest text-gray-400">{user.displayName}</p>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 justify-end">
+                <button 
+                  onClick={() => setIsSettingsMenuOpen(!isSettingsMenuOpen)} 
+                  className="text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-white flex items-center gap-1"
+                >
+                  <Settings className="w-3 h-3" />
+                  Settings
+                </button>
+                <span className="text-gray-700">|</span>
                 <button onClick={handleLogout} className="text-[10px] font-black uppercase tracking-widest text-red-500 hover:text-red-600">Sign Out</button>
               </div>
             </div>
             <img src={user.photoURL || ''} alt="" className="w-8 h-8 md:w-10 md:h-10 rounded-full border-2 border-cred-dark shadow-sm" />
+            
+            {/* Settings Dropdown */}
+            <AnimatePresence>
+              {isSettingsMenuOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                  className="absolute top-full right-0 mt-4 w-64 bg-cred-dark border border-white/10 rounded-2xl shadow-2xl p-2 z-50"
+                >
+                  <button
+                    onClick={() => {
+                      setActiveTab('settings');
+                      setIsSettingsMenuOpen(false);
+                    }}
+                    className="w-full flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl transition-all text-left"
+                  >
+                    <div className="p-2 bg-purple-500/10 text-purple-500 rounded-lg">
+                      <Users className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold">Household Settings</p>
+                      <p className="text-[8px] text-gray-500 uppercase font-black tracking-widest">Members & Preferences</p>
+                    </div>
+                  </button>
+                  <div className="h-px bg-white/5 my-2" />
+                  <button
+                    onClick={handleLogout}
+                    className="w-full flex items-center gap-3 p-3 hover:bg-red-500/10 rounded-xl transition-all text-left group"
+                  >
+                    <div className="p-2 bg-red-500/10 text-red-500 rounded-lg group-hover:bg-red-500 group-hover:text-white transition-all">
+                      <LogOut className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold group-hover:text-red-500 transition-all">Sign Out</p>
+                      <p className="text-[8px] text-gray-500 uppercase font-black tracking-widest">End Session</p>
+                    </div>
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
       </header>
@@ -1043,15 +1138,15 @@ function AppContent() {
           label="Recipes"
         />
         <NavButton 
-          active={activeTab === 'settings'} 
-          onClick={() => setActiveTab('settings')}
-          icon={<Settings className="w-5 h-5" />}
-          label="Settings"
+          active={activeTab === 'calorie'} 
+          onClick={() => setActiveTab('calorie')}
+          icon={<Activity className="w-5 h-5" />}
+          label="Calorie"
         />
       </nav>
 
       {/* Main Content */}
-      <main className="max-w-5xl mx-auto px-6 pt-32 pb-40">
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 pt-32 pb-40">
         <AnimatePresence mode="wait">
           {activeTab === 'inventory' && (
             <motion.div
@@ -1300,6 +1395,17 @@ function AppContent() {
                     />
                   </motion.div>
                 )}
+
+          {activeTab === 'calorie' && (
+            <motion.div
+              key="calorie"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+            >
+              <CalorieTracker inventory={inventory} />
+            </motion.div>
+          )}
 
           {activeTab === 'settings' && (
             <motion.div

@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { HouseholdInfo } from '../types';
-import { Users, Settings, Plus, X, CheckCircle2, Bell, BellOff, User as UserIcon, MapPin, Phone, BarChart3, Info, MessageSquare, Send } from 'lucide-react';
+import { Users, Settings, Plus, X, CheckCircle2, Bell, BellOff, User as UserIcon, MapPin, Phone, Info, MessageSquare, Send } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import AnalyticsDashboard from './AnalyticsDashboard';
 import { GroceryItem } from '../types';
 import { db, auth } from '../firebase';
 import { collection, addDoc } from 'firebase/firestore';
@@ -14,7 +13,7 @@ interface HouseholdSettingsProps {
 }
 
 export default function HouseholdSettings({ info, onUpdate, inventory }: HouseholdSettingsProps) {
-  const [activeTab, setActiveTab] = useState<'profile' | 'household' | 'analytics' | 'feedback'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'household' | 'feedback'>('profile');
   const [members, setMembers] = React.useState(info.members);
   const [name, setName] = useState(info.name || '');
   const [address, setAddress] = useState(info.address || '');
@@ -98,7 +97,7 @@ export default function HouseholdSettings({ info, onUpdate, inventory }: Househo
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="cred-card cred-card-glow-purple p-8 space-y-8 relative"
+      className="cred-card cred-card-glow-purple p-5 sm:p-8 space-y-8 relative"
     >
       <AnimatePresence>
         {showSuccess && (
@@ -122,10 +121,10 @@ export default function HouseholdSettings({ info, onUpdate, inventory }: Househo
           <h2 className="text-3xl font-black tracking-tighter">Settings & Analytics</h2>
         </div>
 
-        <div className="flex items-center gap-2 p-1 bg-gray-100 dark:bg-cred-gray rounded-2xl">
+        <div className="flex items-center gap-1 p-1 bg-gray-100 dark:bg-cred-gray rounded-2xl overflow-x-auto no-scrollbar max-w-full">
           <button
             onClick={() => setActiveTab('profile')}
-            className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+            className={`px-3 sm:px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shrink-0 ${
               activeTab === 'profile' ? 'bg-white dark:bg-cred-dark shadow-sm text-purple-600' : 'text-gray-500'
             }`}
           >
@@ -133,23 +132,15 @@ export default function HouseholdSettings({ info, onUpdate, inventory }: Househo
           </button>
           <button
             onClick={() => setActiveTab('household')}
-            className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+            className={`px-3 sm:px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shrink-0 ${
               activeTab === 'household' ? 'bg-white dark:bg-cred-dark shadow-sm text-purple-600' : 'text-gray-500'
             }`}
           >
             Household
           </button>
           <button
-            onClick={() => setActiveTab('analytics')}
-            className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
-              activeTab === 'analytics' ? 'bg-white dark:bg-cred-dark shadow-sm text-purple-600' : 'text-gray-500'
-            }`}
-          >
-            Analytics
-          </button>
-          <button
             onClick={() => setActiveTab('feedback')}
-            className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+            className={`px-3 sm:px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shrink-0 ${
               activeTab === 'feedback' ? 'bg-white dark:bg-cred-dark shadow-sm text-purple-600' : 'text-gray-500'
             }`}
           >
@@ -297,17 +288,6 @@ export default function HouseholdSettings({ info, onUpdate, inventory }: Househo
                 </div>
               </div>
             </div>
-          </motion.div>
-        )}
-
-        {activeTab === 'analytics' && (
-          <motion.div
-            key="analytics"
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 20 }}
-          >
-            <AnalyticsDashboard inventory={inventory} />
           </motion.div>
         )}
 

@@ -98,6 +98,62 @@
         "uid": { "type": "string" }
       },
       "required": ["name", "category", "quantity", "unit", "purchaseDate", "deletedAt", "uid"]
+    },
+    "CalorieLog": {
+      "title": "Calorie Log",
+      "description": "A log of food consumed and its calorie count",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "uid": { "type": "string" },
+        "date": { "type": "string", "format": "date-time" },
+        "mealType": { "type": "string", "enum": ["breakfast", "lunch", "dinner", "snack"] },
+        "items": { 
+          "type": "array", 
+          "items": { 
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "calories": { "type": "number" },
+              "portion": { "type": "string" }
+            }
+          }
+        },
+        "totalCalories": { "type": "number" },
+        "photoUrl": { "type": "string" }
+      },
+      "required": ["uid", "date", "mealType", "items", "totalCalories"]
+    },
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "Personal health and physical data for calorie tracking",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "weight": { "type": "number", "description": "Weight in kg" },
+        "height": { "type": "number", "description": "Height in cm" },
+        "gender": { "type": "string", "enum": ["male", "female", "other"] },
+        "ethnicity": { "type": "string" },
+        "age": { "type": "number" },
+        "shareAnonymousData": { "type": "boolean" },
+        "bmr": { "type": "number" },
+        "tdee": { "type": "number" }
+      },
+      "required": ["uid"]
+    },
+    "Feedback": {
+      "title": "Feedback",
+      "description": "User feedback about the application",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "name": { "type": "string" },
+        "message": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "appVersion": { "type": "string" }
+      },
+      "required": ["uid", "message", "timestamp"]
     }
   },
   "firestore": {
@@ -112,6 +168,18 @@
     "/households/{userId}": {
       "schema": "HouseholdInfo",
       "description": "User's household settings"
+    },
+    "/userProfiles/{userId}": {
+      "schema": "UserProfile",
+      "description": "User's health and physical profile"
+    },
+    "/calorieLogs/{logId}": {
+      "schema": "CalorieLog",
+      "description": "User's daily food and calorie logs"
+    },
+    "/feedback/{feedbackId}": {
+      "schema": "Feedback",
+      "description": "User feedback submissions"
     },
     "/scanFailures/{failureId}": {
       "schema": "ScanFailure",
