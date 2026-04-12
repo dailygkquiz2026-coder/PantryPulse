@@ -1,6 +1,23 @@
 import { GoogleGenAI, Type } from "@google/genai";
+import { db } from "../firebase";
+import { collection, addDoc } from "firebase/firestore";
 
 let aiInstance: any = null;
+
+async function logAIUsage(uid: string | undefined, type: string, model: string = "gemini-3-flash-preview") {
+  if (!uid) return;
+  try {
+    await addDoc(collection(db, 'aiUsageLogs'), {
+      uid,
+      type,
+      timestamp: new Date().toISOString(),
+      model,
+      estimatedCost: model.includes('pro') ? 0.002 : 0.0005 
+    });
+  } catch (error) {
+    console.error("Failed to log AI usage:", error);
+  }
+}
 
 // Simple in-memory cache for search results to mitigate quota issues
 const searchCache: Record<string, { data: any, timestamp: number }> = {};
@@ -38,9 +55,11 @@ function parseGeminiResponse(text: string) {
 
 export async function predictMultipleRestocks(
   items: { id: string; name: string; quantity: number; unit: string; usageFrequency: number; restockHistory?: { date: string; quantity: number }[] }[],
-  members: number
+  members: number,
+  uid?: string
 ) {
   if (items.length === 0) return {};
+  if (uid) logAIUsage(uid, 'predict_restocks');
   
   const ai = getAI();
   const response = await ai.models.generateContent({
@@ -114,7 +133,8 @@ export async function predictRestock(
   return parseGeminiResponse(response.text);
 }
 
-export async function analyzeProductImage(base64Image: string) {
+export async function analyzeProductImage(base64Image: string, uid?: string) {
+  if (uid) logAIUsage(uid, 'analyze_product');
   const ai = getAI();
   const response = await ai.models.generateContent({
     model: "gemini-3-flash-preview",
@@ -147,7 +167,8 @@ export async function analyzeProductImage(base64Image: string) {
   return parseGeminiResponse(response.text);
 }
 
-export async function analyzeInvoice(base64Data: string, mimeType: string) {
+export async function analyzeInvoice(base64Data: string, mimeType: string, uid?: string) {
+  if (uid) logAIUsage(uid, 'analyze_invoice', "gemini-3.1-pro-preview");
   const ai = getAI();
   const response = await ai.models.generateContent({
     model: "gemini-3.1-pro-preview",
@@ -289,7 +310,7 @@ export async function predictExpiryDate(itemName: string, category: string) {
   return parseGeminiResponse(response.text);
 }
 
-export async function searchCheapestSource(itemName: string, location?: string, previousPurchase?: string) {
+export async function searchCheapestSource(itemName: string, location?: string, previousPurchase?: string, uid?: string) {
   const cacheKey = `price-${itemName}-${location || 'global'}`;
   const now = Date.now();
   
@@ -298,6 +319,7 @@ export async function searchCheapestSource(itemName: string, location?: string, 
     return searchCache[cacheKey].data;
   }
 
+  if (uid) logAIUsage(uid, 'price_comparison', "gemini-3.1-pro-preview");
   const ai = getAI();
   const locationContext = location ? ` for the location/pincode associated with coordinates: ${location}` : " (if location is not provided, assume a general search in India)";
   const purchaseContext = previousPurchase ? `The user previously bought "${previousPurchase}".` : "";
@@ -376,7 +398,8 @@ export async function searchCheapestSource(itemName: string, location?: string, 
   return results;
 }
 
-export async function getTrendingRecipes(location?: string) {
+export async function getTrendingRecipes(location?: string, uid?: string) {
+  if (uid) logAIUsage(uid, 'trending_recipes');
   const ai = getAI();
   const locationContext = location ? ` for the location: ${location}` : " (assume a general search in India)";
   
@@ -444,7 +467,7 @@ export async function getTrendingRecipes(location?: string) {
   return parseGeminiResponse(response.text);
 }
 
-export async function searchRecipes(query: string) {
+export async function searchRecipes(query: string, uid?: string) {
   const cacheKey = `recipe-${query}`;
   const now = Date.now();
   
@@ -453,6 +476,7 @@ export async function searchRecipes(query: string) {
     return searchCache[cacheKey].data;
   }
 
+  if (uid) logAIUsage(uid, 'search_recipes');
   const ai = getAI();
   
   const response = await ai.models.generateContent({

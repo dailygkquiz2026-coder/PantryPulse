@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { auth } from '../firebase';
 import { getTrendingRecipes, searchRecipes } from '../services/geminiService';
 import { GroceryItem, SavedRecipe } from '../types';
 import { 
@@ -104,7 +105,7 @@ export default function TrendingRecipes({
 
       try {
         setIsRecipeLoading(true);
-        const data = await getTrendingRecipes(userLocation || undefined);
+        const data = await getTrendingRecipes(userLocation || undefined, auth.currentUser?.uid);
         setCachedRecipes(data);
         setLastRecipeFetch(Date.now());
       } catch (err: any) {
@@ -157,7 +158,7 @@ export default function TrendingRecipes({
     setRecipeView('search');
     setError(null);
     try {
-      const results = await searchRecipes(searchQuery);
+      const results = await searchRecipes(searchQuery, auth.currentUser?.uid);
       setCachedSearchResults(results);
     } catch (err: any) {
       console.error('Search failed:', err);

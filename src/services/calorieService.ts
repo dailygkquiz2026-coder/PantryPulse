@@ -1,4 +1,6 @@
 import { GoogleGenAI, Type } from "@google/genai";
+import { db } from "../firebase";
+import { collection, addDoc } from "firebase/firestore";
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
@@ -8,7 +10,24 @@ export interface AnalyzedFoodItem {
   portion: string;
 }
 
-export async function analyzeMealImage(base64Image: string, userDescription?: string): Promise<AnalyzedFoodItem[]> {
+async function logAIUsage(uid: string, type: string) {
+  try {
+    await addDoc(collection(db, 'aiUsageLogs'), {
+      uid,
+      type,
+      timestamp: new Date().toISOString(),
+      model: "gemini-3-flash-preview",
+      estimatedCost: 0.0005 // Rough estimate for Gemini Flash
+    });
+  } catch (error) {
+    console.error("Failed to log AI usage:", error);
+  }
+}
+
+export async function analyzeMealImage(base64Image: string, userDescription?: string, uid?: string): Promise<AnalyzedFoodItem[]> {
+  if (uid) {
+    logAIUsage(uid, 'meal_analysis');
+  }
   try {
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",

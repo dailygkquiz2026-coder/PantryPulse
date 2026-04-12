@@ -27,6 +27,7 @@ import {
   ChevronUp,
   RotateCcw,
   Trash,
+  ShieldAlert,
   Info,
   Activity
 } from 'lucide-react';
@@ -119,7 +120,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
 }
 
 function AppContent() {
-  const [activeTab, setActiveTab] = useState<'inventory' | 'add' | 'shopping' | 'recipes' | 'calorie' | 'settings'>('inventory');
+  const [activeTab, setActiveTab] = useState<'inventory' | 'add' | 'shopping' | 'recipes' | 'calorie' | 'settings' | 'dev'>('inventory');
   const [isSettingsMenuOpen, setIsSettingsMenuOpen] = useState(false);
   const [inventory, setInventory] = useState<GroceryItem[]>([]);
   const [shoppingList, setShoppingList] = useState<ShoppingListItem[]>([]);
@@ -230,12 +231,29 @@ function AppContent() {
 
   // Auth Listener
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
       setIsAuthReady(true);
+      
+      if (currentUser) {
+        // Log activity for DAU tracking
+        try {
+          const today = new Date().toISOString().split('T')[0];
+          const activityId = `${currentUser.uid}_${today}`;
+          await setDoc(doc(db, 'userActivityLogs', activityId), {
+            uid: currentUser.uid,
+            email: currentUser.email,
+            date: today,
+            timestamp: new Date().toISOString(),
+            location: userLocation // If available
+          }, { merge: true });
+        } catch (error) {
+          console.error("Failed to log activity:", error);
+        }
+      }
     });
     return () => unsubscribe();
-  }, []);
+  }, [userLocation]);
 
   useEffect(() => {
     if (user && isAuthReady) {
@@ -393,7 +411,8 @@ function AppContent() {
             usageFrequency: i.usageFrequency,
             restockHistory: i.restockHistory
           })),
-          household.members
+          household.members,
+          user?.uid
         );
         
         Object.entries(aiPredictions).forEach(([id, days]) => {
@@ -830,7 +849,7 @@ function AppContent() {
       const previous = inventory.find(i => i.name.toLowerCase().includes(name.toLowerCase()));
       const previousPurchase = previous ? `${previous.name} (${previous.quantity} ${previous.unit})` : undefined;
       
-      const results = await searchCheapestSource(name, userLocation || undefined, previousPurchase);
+      const results = await searchCheapestSource(name, userLocation || undefined, previousPurchase, user?.uid);
       setSearchResults(results);
     } catch (error: any) {
       console.error('Search failed:', error);
@@ -1143,6 +1162,14 @@ function AppContent() {
           icon={<Activity className="w-5 h-5" />}
           label="Calorie"
         />
+        {user?.email === "dailygkquiz2026@gmail.com" && (
+          <NavButton 
+            active={activeTab === 'dev'} 
+            onClick={() => setActiveTab('dev')}
+            icon={<ShieldAlert className="w-5 h-5" />}
+            label="Dev"
+          />
+        )}
       </nav>
 
       {/* Main Content */}
@@ -1421,6 +1448,17 @@ function AppContent() {
               />
             </motion.div>
           )}
+
+          {activeTab === 'dev' && user?.email === "dailygkquiz2026@gmail.com" && (
+            <motion.div
+              key="dev"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+            >
+              <AdminDashboard />
+            </motion.div>
+          )}
         </AnimatePresence>
       </main>
 
@@ -1477,8 +1515,6 @@ function AppContent() {
         item={itemToUpdate}
         onConfirm={handleUpdateInventoryQuantity}
       />
-
-      <AdminDashboard />
     </div>
   );
 }
