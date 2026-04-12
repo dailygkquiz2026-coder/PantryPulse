@@ -51,6 +51,10 @@ export async function predictMultipleRestocks(
     1. Use the 'restockHistory' to identify individual user patterns. If an item is restocked frequently, it means this specific family consumes it faster than average.
     2. Use the EXACT item names provided in the 'Items' list as keys in your response.
     3. Provide realistic predictions. Most household grocery items last between 1 and 30 days. Do not exceed 90 days for any item.
+    4. CATEGORY INTELLIGENCE: 
+       - Perishables (Produce, Dairy, Bakery) should have shorter, more conservative estimates.
+       - Staples (Grains, Oil, Spices) should have longer estimates.
+       - If an item is "Bread" and unit is "kg", assume it's a large quantity but check if it's realistic for a household.
     
     Items: ${JSON.stringify(items.map(i => ({ 
       name: i.name, 
@@ -162,7 +166,12 @@ export async function analyzeInvoice(base64Data: string, mimeType: string) {
         2. These invoices use a tabular format. You MUST find the table and extract EVERY row that represents a product.
         3. Look for columns like 'SR No', 'Item & Description', 'Qty', 'MRP', 'Product Rate', and 'Total Amt'.
         4. If the document has multiple pages, you MUST extract items from ALL pages. Do not stop after the first page.
-        5. For each item:
+        5. UNIT ACCURACY:
+           - Be extremely precise with units. Distinguish between 'kg', 'g', 'ml', 'L', 'packet', 'pcs', 'bundle'.
+           - If a product says "Bread 400g", the unit is "400g" and quantity is "1".
+           - If a product says "Milk 500ml", the unit is "500ml".
+           - If the unit is unclear, mark 'isUnclear' as true.
+        6. For each item:
            - 'name': Extract the full product name (e.g., "Amul Gold Full Cream Fresh Milk").
            - 'quantity': The number of units purchased (e.g., 1, 2).
            - 'unit': The pack size or unit (e.g., "500 ml", "1 pack", "3 L", "pcs").

@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { CATEGORIES, UNITS, CATEGORY_IMAGES, CATEGORY_COLORS } from '../constants';
-import { Plus, ShoppingCart, Camera, Loader2, FileText, Upload } from 'lucide-react';
-import { motion } from 'motion/react';
+import { Plus, ShoppingCart, Camera, Loader2, FileText, Upload, AlertCircle } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import AutocompleteInput from './AutocompleteInput';
 import { analyzeProductImage, analyzeInvoice, fetchProductImage, predictExpiryDate } from '../services/geminiService';
 import InvoiceReviewModal from './InvoiceReviewModal';
@@ -20,10 +20,10 @@ interface GroceryFormProps {
 export default function GroceryForm({ onAdd, onAddMultiple, inventory, onUpdateQuantity }: GroceryFormProps) {
   const [name, setName] = useState('');
   const [category, setCategory] = useState(CATEGORIES[0]);
-  const [quantity, setQuantity] = useState(1);
+  const [quantity, setQuantity] = useState<string | number>(1);
   const [unit, setUnit] = useState(UNITS[0]);
-  const [price, setPrice] = useState(0);
-  const [usageFrequency, setUsageFrequency] = useState(1);
+  const [price, setPrice] = useState<string | number>(0);
+  const [usageFrequency, setUsageFrequency] = useState<string | number>(1);
   const [expiryDate, setExpiryDate] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isScanningInvoice, setIsScanningInvoice] = useState(false);
@@ -38,6 +38,26 @@ export default function GroceryForm({ onAdd, onAddMultiple, inventory, onUpdateQ
   // Invoice Review State
   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
   const [scannedInvoiceData, setScannedInvoiceData] = useState<{ purchaseDate: string | null, items: any[] } | null>(null);
+  const [unitSuggestion, setUnitSuggestion] = useState<{ message: string; type: 'warning' | 'info' } | null>(null);
+
+  const checkUnitLogic = (name: string, unit: string) => {
+    const lowerName = name.toLowerCase();
+    const lowerUnit = unit.toLowerCase();
+
+    if (lowerName.includes('bread') && lowerUnit.includes('kg')) {
+      setUnitSuggestion({ message: "Bread is usually sold in packets or grams. Are you sure about 1kg?", type: 'warning' });
+    } else if (lowerName.includes('sugar') && (lowerUnit.includes('packet') || lowerUnit.includes('pc'))) {
+      setUnitSuggestion({ message: "Entering sugar in 'kg' helps the AI predict depletion more accurately. Consider switching to kg.", type: 'info' });
+    } else if (lowerName.includes('milk') && lowerUnit.includes('kg')) {
+      setUnitSuggestion({ message: "Milk is typically measured in 'L' or 'ml'.", type: 'info' });
+    } else {
+      setUnitSuggestion(null);
+    }
+  };
+
+  React.useEffect(() => {
+    checkUnitLogic(name, unit);
+  }, [name, unit]);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const fileUploadRef = useRef<HTMLInputElement>(null);
@@ -48,6 +68,19 @@ export default function GroceryForm({ onAdd, onAddMultiple, inventory, onUpdateQ
     e.preventDefault();
     if (!name) {
       alert("Please enter a product name");
+      return;
+    }
+
+    const numQuantity = Number(quantity);
+    const numUsage = Number(usageFrequency);
+
+    if (isNaN(numQuantity) || numQuantity <= 0 || quantity === '') {
+      alert("Please enter a valid quantity");
+      return;
+    }
+
+    if (isNaN(numUsage) || numUsage <= 0 || usageFrequency === '') {
+      alert("Please enter a valid usage frequency");
       return;
     }
     
@@ -70,10 +103,10 @@ export default function GroceryForm({ onAdd, onAddMultiple, inventory, onUpdateQ
     const newItem: any = {
       name,
       category,
-      quantity,
+      quantity: numQuantity,
       unit,
-      price,
-      usageFrequency,
+      price: Number(price) || 0,
+      usageFrequency: numUsage,
       purchaseDate: new Date().toISOString(),
       lastUpdated: new Date().toISOString()
     };
@@ -192,7 +225,7 @@ export default function GroceryForm({ onAdd, onAddMultiple, inventory, onUpdateQ
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="cred-card p-8"
+      className="cred-card cred-card-glow-amber p-8"
     >
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-10">
         <div className="flex items-center gap-4">
@@ -382,7 +415,7 @@ export default function GroceryForm({ onAdd, onAddMultiple, inventory, onUpdateQ
               <input
                 type="number"
                 value={quantity}
-                onChange={(e) => setQuantity(Number(e.target.value))}
+                onChange={(e) => setQuantity(e.target.value)}
                 min="0.1"
                 step="0.1"
                 className="cred-input"
@@ -403,12 +436,30 @@ export default function GroceryForm({ onAdd, onAddMultiple, inventory, onUpdateQ
             </div>
           </div>
 
+          <AnimatePresence>
+            {unitSuggestion && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className={`p-4 rounded-2xl flex items-start gap-3 border ${
+                  unitSuggestion.type === 'warning' 
+                    ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-100 dark:border-amber-900/40 text-amber-700 dark:text-amber-400' 
+                    : 'bg-blue-50 dark:bg-blue-900/20 border-blue-100 dark:border-blue-900/40 text-blue-700 dark:text-blue-400'
+                }`}
+              >
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                <p className="text-xs font-bold leading-relaxed">{unitSuggestion.message}</p>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           <div className="space-y-2">
             <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-2">Price (Optional)</label>
             <input
               type="number"
               value={price}
-              onChange={(e) => setPrice(Number(e.target.value))}
+              onChange={(e) => setPrice(e.target.value)}
               min="0"
               step="0.01"
               className="cred-input"
@@ -420,7 +471,7 @@ export default function GroceryForm({ onAdd, onAddMultiple, inventory, onUpdateQ
             <input
               type="number"
               value={usageFrequency}
-              onChange={(e) => setUsageFrequency(Number(e.target.value))}
+              onChange={(e) => setUsageFrequency(e.target.value)}
               min="0.1"
               step="0.1"
               className="cred-input"

@@ -26,7 +26,8 @@ import {
   ChevronDown,
   ChevronUp,
   RotateCcw,
-  Trash
+  Trash,
+  Info
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { 
@@ -139,19 +140,27 @@ function AppContent() {
   const [lastRecipeFetch, setLastRecipeFetch] = useState<number>(0);
   const [recipeView, setRecipeView] = useState<'trending' | 'saved' | 'search'>('trending');
   const [isRecipeLoading, setIsRecipeLoading] = useState(false);
+  const [inventoryFilter, setInventoryFilter] = useState<'all' | 'low-stock'>('all');
+
+  const lowStockItems = inventory.filter(item => {
+    const days = predictions[item.id];
+    return days !== undefined && days <= 3;
+  });
+
+  const filteredInventory = inventoryFilter === 'low-stock' ? lowStockItems : inventory;
 
   // Notification Logic for Low Stock
   useEffect(() => {
     if (!('Notification' in window) || Notification.permission !== 'granted') return;
 
-    const lowStockItems = inventory.filter(item => {
+    const itemsToNotify = inventory.filter(item => {
       const days = predictions[item.id];
       // Notify if 1 day left or out of stock, and not notified yet
       return days !== undefined && days <= 1 && !notifiedItems.has(item.id);
     });
 
-    if (lowStockItems.length > 0) {
-      const itemNames = lowStockItems.map(i => i.name).join(', ');
+    if (itemsToNotify.length > 0) {
+      const itemNames = itemsToNotify.map(i => i.name).join(', ');
       new Notification("Low Stock Alert", {
         body: `The following items are running out: ${itemNames}. Consider restocking soon!`,
         icon: "/favicon.ico"
@@ -159,7 +168,7 @@ function AppContent() {
 
       setNotifiedItems(prev => {
         const next = new Set(prev);
-        lowStockItems.forEach(i => next.add(i.id));
+        itemsToNotify.forEach(i => next.add(i.id));
         return next;
       });
     }
@@ -179,14 +188,13 @@ function AppContent() {
   const [isStockoutModalOpen, setIsStockoutModalOpen] = useState(false);
   const [stockoutItems, setStockoutItems] = useState<GroceryItem[]>([]);
   const [lastShoppingActivity, setLastShoppingActivity] = useState(Date.now());
-  const [isPromoMode, setIsPromoMode] = useState(true);
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>(
-    typeof window !== 'undefined' ? Notification.permission : 'default'
+    (typeof window !== 'undefined' && 'Notification' in window) ? Notification.permission : 'default'
   );
 
   // Push Notification Logic
   const requestNotificationPermission = async () => {
-    if (!user || !messaging) return;
+    if (!user || !messaging || !('Notification' in window)) return;
     
     try {
       const permission = await Notification.requestPermission();
@@ -957,7 +965,6 @@ function AppContent() {
     );
   }
 
-  const lowStockItems = inventory.filter(item => (predictions[item.id] || 10) < 3);
 
   return (
     <div className="min-h-screen bg-cred-black font-sans transition-colors duration-500">
@@ -990,13 +997,6 @@ function AppContent() {
             <div className="text-right">
               <p className="hidden sm:block text-[10px] md:text-xs font-black uppercase tracking-widest text-gray-400">{user.displayName}</p>
               <div className="flex items-center gap-2">
-                <button 
-                  onClick={() => setIsPromoMode(true)}
-                  className="text-[10px] font-black uppercase tracking-widest text-amber-500 hover:text-amber-600"
-                >
-                  Promo Mode
-                </button>
-                <span className="text-gray-700">•</span>
                 <button onClick={handleLogout} className="text-[10px] font-black uppercase tracking-widest text-red-500 hover:text-red-600">Sign Out</button>
               </div>
             </div>
@@ -1004,8 +1004,6 @@ function AppContent() {
           </div>
         </div>
       </header>
-
-      {isPromoMode && <MarketingIntro onClose={() => setIsPromoMode(false)} />}
 
       <StockoutConfirmationModal 
         isOpen={isStockoutModalOpen}
@@ -1015,10 +1013,13 @@ function AppContent() {
       />
 
       {/* Navigation */}
-      <nav className="fixed bottom-6 md:bottom-8 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur-xl px-2 py-2 md:px-4 md:py-3 rounded-[2rem] md:rounded-[2.5rem] z-50 flex items-center gap-1 md:gap-2 shadow-2xl border border-black/10 w-[90%] max-w-fit overflow-x-auto no-scrollbar">
+      <nav className="fixed bottom-6 md:bottom-8 left-1/2 -translate-x-1/2 bg-black/40 backdrop-blur-2xl px-2 py-2 md:px-4 md:py-3 rounded-[2rem] md:rounded-[2.5rem] z-50 flex items-center gap-1 md:gap-2 shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-white/10 w-[90%] max-w-fit overflow-x-auto no-scrollbar">
         <NavButton 
           active={activeTab === 'inventory'} 
-          onClick={() => setActiveTab('inventory')}
+          onClick={() => {
+            setActiveTab('inventory');
+            setInventoryFilter('all');
+          }}
           icon={<LayoutDashboard className="w-5 h-5" />}
           label="Inventory"
         />
@@ -1062,7 +1063,9 @@ function AppContent() {
             >
               <header className="flex flex-col md:flex-row md:items-end justify-between gap-8">
                 <div>
-                  <h2 className="text-5xl font-black tracking-tighter mb-2">Your Pantry</h2>
+                  <h2 className="text-5xl font-black tracking-tighter mb-2">
+                    {household.name ? `Welcome back, ${household.name.split(' ')[0]}` : user?.displayName ? `Welcome back, ${user.displayName.split(' ')[0]}` : 'Your Pantry'}
+                  </h2>
                   <p className="text-gray-500 dark:text-gray-400 font-medium text-lg">Smart tracking for your household of {household.members}</p>
                 </div>
                 <div className="flex gap-4">
@@ -1077,29 +1080,60 @@ function AppContent() {
                 </div>
               </header>
 
+              <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-2xl border border-blue-100 dark:border-blue-900/40 flex gap-3 items-start">
+                <Info className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
+                <p className="text-[10px] text-blue-700 dark:text-blue-400 font-medium leading-relaxed">
+                  <span className="font-black uppercase tracking-widest mr-1">AI Disclaimer:</span>
+                  Predictions are estimates based on your usage patterns and AI analysis. They can sometimes contain errors. Please verify critical dates.
+                </p>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="cred-card p-8 group hover:scale-[1.02] transition-all cursor-default">
+                <button 
+                  onClick={() => {
+                    setInventoryFilter('all');
+                    setActiveTab('inventory');
+                  }}
+                  className="cred-card cred-card-glow-blue p-8 group hover:scale-[1.02] transition-all text-left"
+                >
                   <p className="text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] mb-2">Total Items</p>
                   <p className="text-5xl font-black tracking-tighter">{inventory.length}</p>
-                </div>
+                </button>
                 <button 
-                  onClick={() => setActiveTab('inventory')}
-                  className="cred-card p-8 group hover:scale-[1.02] transition-all text-left"
+                  onClick={() => {
+                    setInventoryFilter('low-stock');
+                    setActiveTab('inventory');
+                  }}
+                  className="cred-card cred-card-glow-red p-8 group hover:scale-[1.02] transition-all text-left"
                 >
                   <p className="text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] mb-2">Low Stock</p>
                   <p className="text-5xl font-black tracking-tighter text-red-500">{lowStockItems.length}</p>
                 </button>
                 <button 
                   onClick={() => setActiveTab('shopping')}
-                  className="cred-card p-8 group hover:scale-[1.02] transition-all text-left"
+                  className="cred-card cred-card-glow-blue p-8 group hover:scale-[1.02] transition-all text-left"
                 >
                   <p className="text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] mb-2">Shopping List</p>
                   <p className="text-5xl font-black tracking-tighter text-blue-500">{shoppingList.filter(i => i.status === 'to-buy').length}</p>
                 </button>
               </div>
 
+              <div className="flex items-center justify-between">
+                <h3 className="text-2xl font-black tracking-tight">
+                  {inventoryFilter === 'low-stock' ? 'Low Stock Items' : 'All Items'}
+                </h3>
+                {inventoryFilter !== 'all' && (
+                  <button 
+                    onClick={() => setInventoryFilter('all')}
+                    className="text-xs font-black uppercase tracking-widest text-purple-500 hover:text-purple-400 transition-colors"
+                  >
+                    Show All Items
+                  </button>
+                )}
+              </div>
+
               <InventoryList 
-                items={inventory} 
+                items={filteredInventory} 
                 onDelete={handleDeleteGrocery} 
                 onAddToShopping={(name, details) => {
                   setLastShoppingActivity(Date.now());
@@ -1277,6 +1311,7 @@ function AppContent() {
               <HouseholdSettings 
                 info={household} 
                 onUpdate={handleUpdateHousehold} 
+                inventory={inventory}
               />
             </motion.div>
           )}

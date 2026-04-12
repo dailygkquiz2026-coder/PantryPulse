@@ -11,7 +11,7 @@ interface UpdateQuantityModalProps {
 }
 
 export default function UpdateQuantityModal({ isOpen, onClose, item, onConfirm }: UpdateQuantityModalProps) {
-  const [quantity, setQuantity] = useState(item?.quantity || 0);
+  const [quantity, setQuantity] = useState<string | number>(item?.quantity || 0);
 
   React.useEffect(() => {
     if (item) setQuantity(item.quantity);
@@ -57,7 +57,7 @@ export default function UpdateQuantityModal({ isOpen, onClose, item, onConfirm }
                 <input
                   type="number"
                   value={quantity}
-                  onChange={(e) => setQuantity(Number(e.target.value))}
+                  onChange={(e) => setQuantity(e.target.value)}
                   min="0"
                   step="0.1"
                   className="cred-input text-lg font-bold"
@@ -73,7 +73,14 @@ export default function UpdateQuantityModal({ isOpen, onClose, item, onConfirm }
                 Cancel
               </button>
               <button
-                onClick={() => onConfirm(item.id, quantity)}
+                onClick={() => {
+                  const numQty = Number(quantity);
+                  if (isNaN(numQty) || quantity === '') {
+                    alert("Please enter a valid quantity");
+                    return;
+                  }
+                  onConfirm(item.id, numQty);
+                }}
                 className="w-full sm:flex-1 px-6 py-3 bg-amber-600 text-white font-bold rounded-xl hover:bg-amber-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-amber-200 dark:shadow-none"
               >
                 <CheckCircle2 className="w-5 h-5" />

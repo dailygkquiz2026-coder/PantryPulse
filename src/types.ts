@@ -17,6 +17,9 @@ export interface HouseholdInfo {
   members: number;
   preferences: string[];
   uid: string;
+  name?: string;
+  address?: string;
+  phone?: string;
 }
 
 export interface ShoppingListItem {

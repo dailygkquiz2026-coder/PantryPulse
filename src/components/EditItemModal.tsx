@@ -14,9 +14,9 @@ interface EditItemModalProps {
 export default function EditItemModal({ isOpen, onClose, item, onUpdate }: EditItemModalProps) {
   const [name, setName] = useState('');
   const [category, setCategory] = useState('');
-  const [quantity, setQuantity] = useState(0);
+  const [quantity, setQuantity] = useState<string | number>(0);
   const [unit, setUnit] = useState('');
-  const [usageFrequency, setUsageFrequency] = useState(0);
+  const [usageFrequency, setUsageFrequency] = useState<string | number>(0);
   const [expiryDate, setExpiryDate] = useState('');
 
   useEffect(() => {
@@ -33,13 +33,26 @@ export default function EditItemModal({ isOpen, onClose, item, onUpdate }: EditI
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!item) return;
+
+    const numQty = Number(quantity);
+    const numUsage = Number(usageFrequency);
+
+    if (isNaN(numQty) || quantity === '') {
+      alert("Please enter a valid quantity");
+      return;
+    }
+
+    if (isNaN(numUsage) || numUsage <= 0 || usageFrequency === '') {
+      alert("Please enter a valid usage frequency");
+      return;
+    }
     
     const updates: Partial<GroceryItem> = {
       name,
       category,
-      quantity,
+      quantity: numQty,
       unit,
-      usageFrequency,
+      usageFrequency: numUsage,
       lastUpdated: new Date().toISOString()
     };
     
@@ -98,7 +111,7 @@ export default function EditItemModal({ isOpen, onClose, item, onUpdate }: EditI
                   <input
                     type="number"
                     value={quantity}
-                    onChange={(e) => setQuantity(Number(e.target.value))}
+                    onChange={(e) => setQuantity(e.target.value)}
                     min="0"
                     step="0.1"
                     className="cred-input"
@@ -124,7 +137,7 @@ export default function EditItemModal({ isOpen, onClose, item, onUpdate }: EditI
                 <input
                   type="number"
                   value={usageFrequency}
-                  onChange={(e) => setUsageFrequency(Number(e.target.value))}
+                  onChange={(e) => setUsageFrequency(e.target.value)}
                   min="0.1"
                   step="0.1"
                   className="cred-input"

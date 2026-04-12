@@ -6,11 +6,11 @@ import {
   ExternalLink, 
   Loader2, 
   Sparkles, 
-  Instagram, 
+  Camera, 
   Music, 
   Pin, 
-  Youtube,
-  Facebook,
+  Video,
+  Share2,
   Users, 
   ShoppingCart, 
   CheckCircle2, 
@@ -123,10 +123,10 @@ export default function TrendingRecipes({
 
   const getSourceIcon = (source: string) => {
     const s = source.toLowerCase();
-    if (s.includes('youtube')) return <Youtube className="w-4 h-4" />;
-    if (s.includes('facebook')) return <Facebook className="w-4 h-4" />;
+    if (s.includes('youtube')) return <Video className="w-4 h-4" />;
+    if (s.includes('facebook')) return <Share2 className="w-4 h-4" />;
     if (s.includes('tiktok')) return <Music className="w-4 h-4" />;
-    if (s.includes('instagram')) return <Instagram className="w-4 h-4" />;
+    if (s.includes('instagram')) return <Camera className="w-4 h-4" />;
     if (s.includes('pinterest')) return <Pin className="w-4 h-4" />;
     return <Sparkles className="w-4 h-4" />;
   };

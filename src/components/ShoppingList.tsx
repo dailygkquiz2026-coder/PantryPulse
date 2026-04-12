@@ -152,7 +152,7 @@ export default function ShoppingList({ items, onDelete, onToggleStatus, onSearch
                 className={`p-4 rounded-2xl shadow-sm border transition-all flex items-center justify-between group ${
                   item.status === 'bought' 
                     ? 'bg-gray-50 dark:bg-cred-gray/50 border-gray-100 dark:border-white/5 opacity-60' 
-                    : 'bg-white dark:bg-cred-gray border-gray-100 dark:border-white/5 hover:shadow-md'
+                    : 'bg-white dark:bg-cred-dark border-blue-500/10 hover:shadow-[0_0_20px_rgba(59,130,246,0.15)] hover:border-blue-500/30'
                 }`}
               >
                 <div className="flex items-center gap-4 flex-1 min-w-0">

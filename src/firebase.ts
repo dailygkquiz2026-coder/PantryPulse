@@ -7,7 +7,9 @@ import firebaseConfig from '../firebase-applet-config.json';
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
 export const auth = getAuth(app);
-export const messaging = typeof window !== 'undefined' ? getMessaging(app) : null;
+
+// Messaging might not be supported in all environments (e.g. some mobile browsers or non-HTTPS)
+export const messaging = (typeof window !== 'undefined' && 'Notification' in window) ? getMessaging(app) : null;
 
 export enum OperationType {
   CREATE = 'create',

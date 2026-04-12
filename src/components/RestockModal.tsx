@@ -13,10 +13,10 @@ interface RestockModalProps {
 }
 
 export default function RestockModal({ isOpen, onClose, item, onConfirm, onSkip }: RestockModalProps) {
-  const [quantity, setQuantity] = useState(item?.quantity || 1);
+  const [quantity, setQuantity] = useState<string | number>(item?.quantity || 1);
   const [unit, setUnit] = useState(item?.unit || 'pcs');
   const [category, setCategory] = useState(item?.category || 'Other');
-  const [usageFrequency, setUsageFrequency] = useState(item?.usageFrequency || 1);
+  const [usageFrequency, setUsageFrequency] = useState<string | number>(item?.usageFrequency || 1);
 
   React.useEffect(() => {
     if (item) {
@@ -68,7 +68,7 @@ export default function RestockModal({ isOpen, onClose, item, onConfirm, onSkip 
                   <input
                     type="number"
                     value={quantity}
-                    onChange={(e) => setQuantity(Number(e.target.value))}
+                    onChange={(e) => setQuantity(e.target.value)}
                     className="cred-input"
                   />
                 </div>
@@ -101,7 +101,7 @@ export default function RestockModal({ isOpen, onClose, item, onConfirm, onSkip 
                   <input
                     type="number"
                     value={usageFrequency}
-                    onChange={(e) => setUsageFrequency(Number(e.target.value))}
+                    onChange={(e) => setUsageFrequency(e.target.value)}
                     className="cred-input"
                   />
                 </div>
@@ -116,7 +116,19 @@ export default function RestockModal({ isOpen, onClose, item, onConfirm, onSkip 
                 Skip
               </button>
               <button
-                onClick={() => onConfirm({ ...item, quantity, unit, category, usageFrequency })}
+                onClick={() => {
+                  const numQty = Number(quantity);
+                  const numUsage = Number(usageFrequency);
+                  if (isNaN(numQty) || numQty <= 0 || quantity === '') {
+                    alert("Please enter a valid quantity");
+                    return;
+                  }
+                  if (isNaN(numUsage) || numUsage <= 0 || usageFrequency === '') {
+                    alert("Please enter a valid usage frequency");
+                    return;
+                  }
+                  onConfirm({ ...item, quantity: numQty, unit, category, usageFrequency: numUsage });
+                }}
                 className="w-full sm:flex-1 px-6 py-3 bg-green-600 text-white font-bold rounded-xl hover:bg-green-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-green-200 dark:shadow-none"
               >
                 <CheckCircle2 className="w-5 h-5" />

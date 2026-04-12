@@ -63,10 +63,10 @@ export default function InventoryList({ items, onDelete, onAddToShopping, onUpda
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: index * 0.05 }}
-              className={`cred-card p-4 flex flex-col sm:flex-row sm:items-center justify-between group hover:shadow-lg transition-all gap-4 ${
-                isExpired || isStockout ? 'border-red-300 dark:border-red-900 bg-red-50/30 dark:bg-red-950/20' : 
-                isExpiringSoon || isLow ? 'border-amber-300 dark:border-amber-900 bg-amber-50/30 dark:bg-amber-950/20' : 
-                'border-gray-100 dark:border-cred-gray'
+              className={`cred-card p-4 flex flex-col sm:flex-row sm:items-center justify-between group transition-all gap-4 ${
+                isExpired || isStockout ? 'cred-card-glow-red' : 
+                isExpiringSoon || isLow ? 'cred-card-glow-amber' : 
+                'cred-card-glow-blue'
               }`}
             >
               <div className="flex items-center gap-4 flex-1 min-w-0 w-full">
