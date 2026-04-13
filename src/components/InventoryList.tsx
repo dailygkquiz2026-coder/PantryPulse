@@ -3,7 +3,7 @@ import { GroceryItem } from '../types';
 import { Trash2, AlertTriangle, CheckCircle2, Clock, ShoppingBag, Edit2 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { formatDistanceToNow } from 'date-fns';
-import { CATEGORY_IMAGES, CATEGORY_COLORS } from '../constants';
+import { CATEGORY_IMAGES, CATEGORY_COLORS, FALLBACK_IMAGE } from '../constants';
 
 interface InventoryListProps {
   items: GroceryItem[];
@@ -75,6 +75,9 @@ export default function InventoryList({ items, onDelete, onAddToShopping, onUpda
                     alt={item.category}
                     className="w-full h-full object-cover rounded-[1.5rem] md:rounded-[2rem] transition-transform duration-500 group-hover/img:scale-110"
                     referrerPolicy="no-referrer"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = FALLBACK_IMAGE;
+                    }}
                   />
                   {(isExpired || isStockout || isExpiringSoon || isLow) && (
                     <div className={`absolute -top-1 -right-1 p-1.5 rounded-full shadow-xl z-20 ${

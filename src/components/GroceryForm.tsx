@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { CATEGORIES, UNITS, CATEGORY_IMAGES, CATEGORY_COLORS } from '../constants';
+import { CATEGORIES, UNITS, CATEGORY_IMAGES, CATEGORY_COLORS, FALLBACK_IMAGE } from '../constants';
 import { Plus, ShoppingCart, Camera, Loader2, FileText, Upload, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import AutocompleteInput from './AutocompleteInput';
@@ -401,6 +401,9 @@ export default function GroceryForm({ onAdd, onAddMultiple, inventory, onUpdateQ
                         alt="" 
                         className="w-full h-full object-cover transition-transform duration-500 group-hover/cat:scale-110"
                         referrerPolicy="no-referrer"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = FALLBACK_IMAGE;
+                        }}
                       />
                     </div>
                     <span className="text-[10px] font-black uppercase tracking-widest text-center leading-tight">{cat}</span>
