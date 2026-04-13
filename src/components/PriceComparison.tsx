@@ -90,64 +90,64 @@ export default function PriceComparison({
             className="bg-white dark:bg-cred-black w-full max-w-5xl rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[90vh] border border-white/10"
           >
             {/* Header */}
-            <div className="p-8 border-b border-gray-100 dark:border-white/5 flex items-center justify-between bg-gray-50/50 dark:bg-cred-gray/20 shrink-0">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-red-600 rounded-2xl shadow-lg shadow-red-200 dark:shadow-none transform -rotate-3">
-                  <ShoppingCart className="w-6 h-6 text-white" />
+            <div className="p-6 md:p-8 border-b border-white/5 flex items-center justify-between bg-white/5 shrink-0">
+              <div className="flex items-center gap-3 md:gap-4">
+                <div className="p-2 md:p-3 bg-cred-primary rounded-xl md:rounded-2xl shadow-lg transform -rotate-3">
+                  <ShoppingCart className="w-5 h-5 md:w-6 md:h-6 text-white" />
                 </div>
                 <div>
-                  <h2 className="text-2xl font-black text-gray-900 dark:text-white tracking-tighter uppercase">Price Comparison</h2>
-                  <p className="text-sm font-bold text-gray-400 uppercase tracking-widest">
-                    Best deals for <span className="text-red-600">{itemName}</span>
+                  <h2 className="text-lg md:text-2xl font-black text-white tracking-tighter uppercase">Price Check</h2>
+                  <p className="text-[10px] md:text-sm font-bold text-gray-500 uppercase tracking-widest">
+                    Best deals for <span className="text-cred-primary">{itemName}</span>
                   </p>
                 </div>
               </div>
               <button
                 onClick={onClose}
-                className="p-3 hover:bg-gray-100 dark:hover:bg-cred-gray rounded-2xl transition-all border border-transparent hover:border-gray-200 dark:hover:border-white/10"
+                className="p-2 md:p-3 hover:bg-white/5 rounded-xl md:rounded-2xl transition-all border border-transparent hover:border-white/10"
               >
-                <X className="w-6 h-6 text-gray-400" />
+                <X className="w-5 h-5 md:w-6 md:h-6 text-gray-500" />
               </button>
             </div>
 
-            <div className="p-8 overflow-y-auto flex-1 bg-white dark:bg-cred-black">
+            <div className="p-4 md:p-8 overflow-y-auto flex-1 bg-cred-black">
               {(!userLocation || isEditingPincode) && !isLoading && (
-                <div className="flex flex-col items-center justify-center py-12 text-center space-y-8">
-                  <div className="w-20 h-20 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 rounded-3xl flex items-center justify-center shadow-inner transform rotate-6">
-                    <MapPin className="w-10 h-10" />
+                <div className="flex flex-col items-center justify-center py-8 md:py-12 text-center space-y-6 md:space-y-8">
+                  <div className="w-16 h-16 md:w-20 md:h-20 bg-white/5 text-cred-accent rounded-3xl flex items-center justify-center shadow-inner transform rotate-6 border border-white/5">
+                    <MapPin className="w-8 h-8 md:w-10 md:h-10" />
                   </div>
-                  <div className="max-w-sm">
-                    <h3 className="text-2xl font-black mb-3 tracking-tight">Location Required</h3>
-                    <p className="text-gray-500 dark:text-gray-400 font-medium">Enter your pincode or share location to find the best local prices and availability.</p>
+                  <div className="max-w-sm px-4">
+                    <h3 className="text-xl md:text-2xl font-black mb-2 md:mb-3 tracking-tight text-white">Location Required</h3>
+                    <p className="text-sm md:text-base text-gray-500 font-medium">Enter your pincode to find local prices.</p>
                   </div>
                   
-                  <form onSubmit={handlePincodeSubmit} className="w-full max-w-xs space-y-4">
+                  <form onSubmit={handlePincodeSubmit} className="w-full max-w-xs space-y-4 px-4">
                     <input
                       type="text"
-                      placeholder="6-digit Pincode"
+                      placeholder="Pincode"
                       value={manualPincode}
                       onChange={(e) => setManualPincode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                      className="w-full px-6 py-4 bg-gray-50 dark:bg-cred-gray border border-gray-200 dark:border-white/10 rounded-2xl text-center text-xl font-black tracking-[0.3em] focus:ring-4 focus:ring-red-500/20 outline-none transition-all"
+                      className="w-full px-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-center text-xl font-black tracking-[0.3em] focus:border-cred-primary outline-none transition-all text-white"
                     />
                     <button
                       type="submit"
                       disabled={manualPincode.length !== 6}
-                      className="w-full cred-button-primary disabled:opacity-50 disabled:cursor-not-allowed py-4 text-lg"
+                      className="w-full cred-button-primary py-4 text-lg"
                     >
-                      Search Prices
+                      Search
                     </button>
                   </form>
 
-                  <div className="flex items-center gap-6 w-full max-w-xs">
-                    <div className="flex-1 h-px bg-gray-100 dark:bg-white/5" />
-                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em]">OR</span>
-                    <div className="flex-1 h-px bg-gray-100 dark:bg-white/5" />
+                  <div className="flex items-center gap-6 w-full max-w-xs px-4">
+                    <div className="flex-1 h-px bg-white/5" />
+                    <span className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em]">OR</span>
+                    <div className="flex-1 h-px bg-white/5" />
                   </div>
 
                   <button
                     onClick={handleRequestLocation}
                     disabled={isRequestingLocation}
-                    className="flex items-center gap-3 text-red-600 dark:text-red-400 font-black text-xs uppercase tracking-widest hover:scale-105 transition-transform"
+                    className="flex items-center gap-3 text-cred-accent font-black text-xs uppercase tracking-widest hover:scale-105 transition-transform"
                   >
                     {isRequestingLocation ? <Loader2 className="w-5 h-5 animate-spin" /> : <MapPin className="w-5 h-5" />}
                     Detect My Location
@@ -158,48 +158,48 @@ export default function PriceComparison({
               {isLoading ? (
                 <div className="flex flex-col items-center justify-center py-20 gap-6">
                   <div className="relative">
-                    <div className="w-20 h-20 border-8 border-red-100 dark:border-red-900/20 border-t-red-600 dark:border-t-red-500 rounded-full animate-spin" />
-                    <ShoppingCart className="w-8 h-8 text-red-600 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse" />
+                    <div className="w-20 h-20 border-8 border-white/5 border-t-cred-primary rounded-full animate-spin" />
+                    <ShoppingCart className="w-8 h-8 text-cred-primary absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse" />
                   </div>
                   <div className="text-center">
-                    <p className="text-xl font-black tracking-tight mb-1">Scanning Platforms...</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 font-medium animate-pulse">Checking Zepto, Blinkit, and more</p>
+                    <p className="text-xl font-black tracking-tight mb-1 text-white">Scanning Platforms...</p>
+                    <p className="text-sm text-gray-500 font-medium animate-pulse">Checking Zepto, Blinkit, and more</p>
                   </div>
                 </div>
               ) : error ? (
-                <div className="text-center py-20 space-y-6">
-                  <div className="w-20 h-20 bg-red-50 dark:bg-red-900/20 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <AlertTriangle className="w-10 h-10 text-red-600" />
+                <div className="text-center py-12 md:py-20 space-y-6 px-4">
+                  <div className="w-16 h-16 md:w-20 md:h-20 bg-cred-primary/10 rounded-full flex items-center justify-center mx-auto mb-4 md:mb-6">
+                    <AlertTriangle className="w-8 h-8 md:w-10 md:h-10 text-cred-primary" />
                   </div>
-                  <h3 className="text-xl font-black tracking-tight">Search Unavailable</h3>
-                  <p className="text-gray-500 dark:text-gray-400 max-w-sm mx-auto font-medium leading-relaxed">
+                  <h3 className="text-lg md:text-xl font-black tracking-tight text-white">Search Unavailable</h3>
+                  <p className="text-sm md:text-base text-gray-500 max-w-sm mx-auto font-medium leading-relaxed">
                     {error}
                   </p>
                   <button 
                     onClick={() => onRetry()}
-                    className="mt-4 px-8 py-3 bg-red-600 text-white font-black uppercase tracking-widest text-[10px] rounded-2xl hover:bg-red-700 transition-all shadow-xl shadow-red-200 dark:shadow-none"
+                    className="mt-4 cred-button-primary px-8"
                   >
                     Try Again
                   </button>
                 </div>
               ) : results && results.length > 0 && !isEditingPincode ? (
-                <div className="space-y-8">
+                <div className="space-y-6 md:space-y-8">
                   {userLocation && (
-                    <div className="flex items-center justify-between px-6 py-4 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-2xl border border-emerald-100 dark:border-emerald-900/40 shadow-sm shadow-emerald-100/50 dark:shadow-none">
-                      <div className="flex items-center gap-3 text-xs font-black uppercase tracking-widest">
-                        <MapPin className="w-4 h-4" />
-                        Location: {userLocation.includes(',') ? 'GPS Active' : `Pincode ${userLocation}`}
+                    <div className="flex items-center justify-between px-4 md:px-6 py-3 md:py-4 bg-white/5 text-cred-accent rounded-2xl border border-white/5 shadow-sm">
+                      <div className="flex items-center gap-2 md:gap-3 text-[10px] md:text-xs font-black uppercase tracking-widest truncate">
+                        <MapPin className="w-3 h-3 md:w-4 md:h-4 shrink-0" />
+                        <span className="truncate">Location: {userLocation.includes(',') ? 'GPS Active' : `Pincode ${userLocation}`}</span>
                       </div>
                       <button 
                         onClick={() => setIsEditingPincode(true)}
-                        className="text-[10px] font-black uppercase tracking-widest hover:text-emerald-700 dark:hover:text-emerald-300 underline underline-offset-4"
+                        className="text-[10px] font-black uppercase tracking-widest hover:text-white underline underline-offset-4 shrink-0 ml-2"
                       >
                         Change
                       </button>
                     </div>
                   )}
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                     {results.map((result, idx) => {
                       const storeKey = Object.keys(STORE_LOGOS).find(k => 
                         result.storeName.toLowerCase().includes(k.toLowerCase())
@@ -213,22 +213,22 @@ export default function PriceComparison({
                           initial={{ opacity: 0, y: 20 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: idx * 0.05 }}
-                          className={`relative flex flex-col bg-white dark:bg-cred-gray/10 rounded-[2.5rem] border ${isBestValue ? 'border-emerald-500/50 ring-1 ring-emerald-500/20' : 'border-gray-100 dark:border-white/5'} overflow-hidden hover:shadow-2xl transition-all group h-full`}
+                          className={`relative flex flex-col bg-white/5 rounded-[2rem] border ${isBestValue ? 'border-cred-accent/50 ring-1 ring-cred-accent/20' : 'border-white/5'} overflow-hidden hover:border-white/10 transition-all group h-full`}
                         >
                           {isBestValue && (
-                            <div className="absolute top-4 left-4 bg-emerald-500 text-white text-[10px] font-black px-4 py-1.5 rounded-full shadow-lg uppercase tracking-widest z-10">
+                            <div className="absolute top-4 left-4 bg-cred-accent text-white text-[8px] font-black px-3 py-1 rounded-full shadow-lg uppercase tracking-widest z-10">
                               Best Value
                             </div>
                           )}
 
                           {/* Card Header with Store Logo */}
-                          <div className="p-6 border-b border-gray-100 dark:border-white/5 bg-gray-50/30 dark:bg-white/5 flex items-center justify-between">
-                            <div className="h-8 flex items-center">
+                          <div className="p-5 border-b border-white/5 bg-white/5 flex items-center justify-between">
+                            <div className="h-6 md:h-8 flex items-center">
                               {STORE_LOGOS[storeKey] ? (
                                 <img 
                                   src={STORE_LOGOS[storeKey]} 
                                   alt={storeKey} 
-                                  className="h-full w-auto object-contain filter dark:brightness-110"
+                                  className="h-full w-auto object-contain filter brightness-110"
                                   referrerPolicy="no-referrer"
                                   onError={(e) => {
                                     e.currentTarget.onerror = null;
@@ -236,36 +236,36 @@ export default function PriceComparison({
                                   }}
                                 />
                               ) : (
-                                <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">{result.storeName}</span>
+                                <span className="text-[8px] md:text-[10px] font-black uppercase tracking-widest text-gray-500">{result.storeName}</span>
                               )}
                             </div>
                             <div className="flex items-center gap-2">
-                              <span className="text-[10px] font-black text-red-600 uppercase tracking-widest bg-red-50 dark:bg-red-900/20 px-3 py-1 rounded-full">
+                              <span className="text-[8px] md:text-[10px] font-black text-cred-primary uppercase tracking-widest bg-cred-primary/10 px-2 md:px-3 py-1 rounded-full">
                                 {result.quantity}
                               </span>
                             </div>
                           </div>
 
                           {/* Content Section */}
-                          <div className="p-6 flex flex-col flex-1">
-                            <div className="mb-6">
-                              <h3 className="text-lg font-black text-gray-900 dark:text-white leading-tight line-clamp-2 min-h-[3.5rem]">
+                          <div className="p-5 flex flex-col flex-1">
+                            <div className="mb-4 md:mb-6">
+                              <h3 className="text-base md:text-lg font-black text-white leading-tight line-clamp-2 min-h-[2.5rem] md:min-h-[3.5rem]">
                                 {result.productName}
                               </h3>
                             </div>
 
-                            <div className="mt-auto space-y-6">
+                            <div className="mt-auto space-y-4 md:space-y-6">
                               <div className="flex items-end justify-between">
                                 <div>
-                                  <div className="text-4xl font-black tracking-tighter text-gray-900 dark:text-white">
+                                  <div className="text-3xl md:text-4xl font-black tracking-tighter text-white">
                                     ₹{result.price}
                                   </div>
-                                  <div className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">
+                                  <div className="text-[8px] md:text-[10px] font-bold text-gray-500 uppercase tracking-wider mt-1">
                                     ₹{result.pricePerUnit} / {result.unit}
                                   </div>
                                 </div>
                                 <div className="text-right">
-                                  <div className="flex items-center justify-end gap-1 text-[8px] font-black text-emerald-600 uppercase tracking-widest mb-1">
+                                  <div className="flex items-center justify-end gap-1 text-[8px] font-black text-cred-accent uppercase tracking-widest mb-1">
                                     {result.sourceVerification || 'Verified'}
                                     <Info className="w-2 h-2" />
                                   </div>
@@ -274,7 +274,7 @@ export default function PriceComparison({
                                       href={result.sourceUrl}
                                       target="_blank"
                                       rel="noopener noreferrer"
-                                      className="text-[8px] font-bold text-gray-400 hover:text-red-600 transition-colors uppercase tracking-widest flex items-center justify-end gap-1"
+                                      className="text-[8px] font-bold text-gray-500 hover:text-cred-primary transition-colors uppercase tracking-widest flex items-center justify-end gap-1"
                                     >
                                       Source <ExternalLink className="w-2 h-2" />
                                     </a>
@@ -286,7 +286,7 @@ export default function PriceComparison({
                                 href={result.link}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="w-full cred-button-primary py-4 text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 group/btn"
+                                className="w-full cred-button-primary py-4 text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 group/btn"
                               >
                                 Buy Now
                                 <ExternalLink className="w-4 h-4 group-hover/btn:translate-x-1 group-hover/btn:-translate-y-1 transition-transform" />
@@ -298,23 +298,23 @@ export default function PriceComparison({
                     })}
                   </div>
 
-                  <div className="flex items-start gap-3 p-4 bg-blue-50 dark:bg-blue-950/20 rounded-2xl border border-blue-100 dark:border-blue-900/40">
-                    <Info className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
-                    <p className="text-xs text-blue-700 dark:text-blue-300 font-medium leading-relaxed">
-                      Prices are fetched in real-time from multiple platforms. Availability and final price may change based on your exact delivery address within the selected location.
+                  <div className="flex items-start gap-3 p-4 bg-cred-accent/5 rounded-2xl border border-cred-accent/10">
+                    <Info className="w-4 h-4 md:w-5 md:h-5 text-cred-accent shrink-0 mt-0.5" />
+                    <p className="text-[10px] md:text-xs text-cred-accent/80 font-medium leading-relaxed">
+                      Prices are fetched in real-time. Availability may change based on your exact address.
                     </p>
                   </div>
                 </div>
               ) : results && results.length === 0 && !isEditingPincode ? (
-                <div className="text-center py-20 space-y-4">
-                  <div className="w-20 h-20 bg-gray-50 dark:bg-cred-gray rounded-full flex items-center justify-center mx-auto mb-6">
-                    <ShoppingCart className="w-10 h-10 text-gray-300" />
+                <div className="text-center py-12 md:py-20 space-y-4 px-4">
+                  <div className="w-16 h-16 md:w-20 md:h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4 md:mb-6 border border-white/5">
+                    <ShoppingCart className="w-8 h-8 md:w-10 md:h-10 text-gray-500" />
                   </div>
-                  <h3 className="text-xl font-black tracking-tight">No results found</h3>
-                  <p className="text-gray-500 dark:text-gray-400 max-w-xs mx-auto">We couldn't find any variants for "{itemName}" at your location. Try a different search term or location.</p>
+                  <h3 className="text-lg md:text-xl font-black tracking-tight text-white">No results found</h3>
+                  <p className="text-sm text-gray-500 max-w-xs mx-auto">Try a different search term or location.</p>
                   <button 
                     onClick={() => onRetry()}
-                    className="mt-4 text-red-600 font-black text-xs uppercase tracking-widest hover:underline"
+                    className="mt-4 text-cred-primary font-black text-xs uppercase tracking-widest hover:underline"
                   >
                     Try Again
                   </button>
@@ -323,28 +323,28 @@ export default function PriceComparison({
             </div>
 
             {/* Footer */}
-            <div className="p-6 md:p-8 border-t border-gray-100 dark:border-white/5 bg-gray-50 dark:bg-cred-gray/50 flex flex-col md:flex-row justify-between items-center gap-6 shrink-0">
-              <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] text-center md:text-left">
-                Prices may vary by location • Links open in mobile apps if installed
+            <div className="p-4 md:p-8 border-t border-white/5 bg-white/5 flex flex-col md:flex-row justify-between items-center gap-4 md:gap-6 shrink-0">
+              <p className="text-[8px] md:text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] text-center md:text-left">
+                Prices vary by location • Links open in apps
               </p>
-              <div className="flex flex-col sm:flex-row gap-4 items-center w-full md:w-auto">
+              <div className="flex flex-col sm:flex-row gap-3 md:gap-4 items-center w-full md:w-auto">
                 <button
                   onClick={() => window.open(`mailto:support@credgrocery.com?subject=Price%20Inaccuracy%20Report&body=Item:%20${encodeURIComponent(itemName)}%0ALocation:%20GPS%20Active%0AStore:%20Multiple`)}
-                  className="text-[10px] font-black text-red-500 uppercase tracking-widest hover:underline"
+                  className="text-[8px] md:text-[10px] font-black text-cred-primary uppercase tracking-widest hover:underline"
                 >
                   Report Inaccuracy
                 </button>
-                <div className="flex gap-3 w-full sm:w-auto">
+                <div className="flex gap-2 w-full sm:w-auto">
                   <button
                     onClick={onClose}
-                    className="flex-1 sm:flex-none px-6 md:px-8 py-3 bg-white dark:bg-cred-gray border border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-300 font-black uppercase tracking-widest text-[10px] rounded-2xl hover:bg-gray-100 dark:hover:bg-cred-dark transition-all shadow-sm"
+                    className="flex-1 sm:flex-none px-4 md:px-8 py-3 bg-white/5 border border-white/10 text-white font-black uppercase tracking-widest text-[10px] rounded-xl md:rounded-2xl hover:bg-white/10 transition-all"
                   >
                     Close
                   </button>
                   {results && results.length > 0 && (
                     <button
                       onClick={() => onRetry()}
-                      className="flex-1 sm:flex-none px-6 md:px-8 py-3 bg-red-600 text-white font-black uppercase tracking-widest text-[10px] rounded-2xl hover:bg-red-700 transition-all shadow-xl shadow-red-200 dark:shadow-none"
+                      className="flex-1 sm:flex-none px-4 md:px-8 py-3 bg-cred-primary text-white font-black uppercase tracking-widest text-[10px] rounded-xl md:rounded-2xl hover:bg-cred-primary/90 transition-all shadow-lg shadow-cred-primary/20"
                     >
                       Refresh
                     </button>

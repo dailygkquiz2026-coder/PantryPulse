@@ -162,22 +162,22 @@ export default function InvoiceReviewModal({ isOpen, onClose, purchaseDate, item
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="bg-white dark:bg-cred-black w-full h-full sm:h-auto sm:max-w-4xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col sm:max-h-[90vh] border border-white/10"
+            className="bg-cred-black w-full h-full sm:h-auto sm:max-w-4xl sm:rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col sm:max-h-[90vh] border border-white/10"
           >
-            <div className="p-4 sm:p-6 border-b border-gray-100 dark:border-white/5 flex items-center justify-between bg-amber-600 text-white">
+            <div className="p-6 border-b border-white/5 flex items-center justify-between bg-cred-primary text-white">
               <div>
-                <h2 className="text-xl sm:text-2xl font-black tracking-tighter">Review Invoice</h2>
-                <p className="text-amber-100 text-[10px] sm:text-xs font-medium uppercase tracking-widest opacity-80">Verify and confirm items to add</p>
+                <h2 className="text-2xl font-black tracking-tighter">Review Invoice</h2>
+                <p className="text-white/70 text-[10px] font-black uppercase tracking-widest">Verify and confirm items to add</p>
               </div>
               <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-all">
                 <X className="w-6 h-6" />
               </button>
             </div>
 
-            <div className="p-4 sm:p-6 bg-gray-50 dark:bg-cred-gray/50 border-b border-gray-100 dark:border-white/5 flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
+            <div className="p-6 bg-white/5 border-b border-white/5 flex flex-col sm:flex-row sm:items-center gap-6">
               <div className="flex items-center gap-3">
-                <Calendar className="w-5 h-5 text-gray-400" />
-                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Purchase Date</span>
+                <Calendar className="w-5 h-5 text-gray-500" />
+                <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Purchase Date</span>
                 <input
                   type="date"
                   value={date}
@@ -186,24 +186,24 @@ export default function InvoiceReviewModal({ isOpen, onClose, purchaseDate, item
                 />
               </div>
               <div className="flex items-center gap-2">
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-full border border-blue-100 dark:border-blue-900/40 text-[10px] font-black uppercase tracking-widest">
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-cred-accent/10 text-cred-accent rounded-full border border-cred-accent/20 text-[10px] font-black uppercase tracking-widest">
                   {confirmedIndices.size} Confirmed
                 </div>
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 dark:bg-gray-800 text-gray-400 rounded-full border border-gray-100 dark:border-white/5 text-[10px] font-black uppercase tracking-widest">
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 text-gray-500 rounded-full border border-white/10 text-[10px] font-black uppercase tracking-widest">
                   {skippedIndices.size} Skipped
                 </div>
                 <button
                   onClick={handlePredictAll}
                   disabled={isPredictingAll}
-                  className="flex items-center gap-2 px-3 py-1.5 bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 rounded-full border border-purple-100 dark:border-purple-900/40 text-[10px] font-black uppercase tracking-widest hover:bg-purple-100 transition-all disabled:opacity-50"
+                  className="flex items-center gap-2 px-3 py-1.5 bg-white/5 text-white rounded-full border border-white/10 text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-all disabled:opacity-50"
                 >
-                  {isPredictingAll ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                  {isPredictingAll ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3 text-cred-accent" />}
                   Predict All Expiry
                 </button>
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 bg-white dark:bg-cred-black">
+            <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-cred-black">
               {items.map((item, index) => {
                 const isConfirmed = confirmedIndices.has(index);
                 const isSkipped = skippedIndices.has(index);
@@ -213,25 +213,25 @@ export default function InvoiceReviewModal({ isOpen, onClose, purchaseDate, item
                     key={index}
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
-                    className={`p-4 sm:p-5 rounded-2xl border transition-all ${
+                    className={`p-5 rounded-[1.5rem] border transition-all ${
                       isConfirmed 
-                        ? 'bg-emerald-50/50 dark:bg-emerald-900/10 border-emerald-200 dark:border-emerald-900/40' 
+                        ? 'bg-emerald-500/5 border-emerald-500/20' 
                         : isSkipped
-                        ? 'bg-gray-50/50 dark:bg-gray-900/10 border-gray-200 dark:border-white/5 opacity-60'
-                        : 'bg-white dark:bg-cred-gray border-gray-100 dark:border-white/5 shadow-sm'
+                        ? 'bg-white/5 border-white/5 opacity-40'
+                        : 'bg-white/[0.02] border-white/5 shadow-sm'
                     }`}
                   >
                     <div className="flex flex-col gap-4">
                       <div className="w-full space-y-1">
                         <div className="flex items-center gap-2 ml-2">
-                          <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Item Name</label>
+                          <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Item Name</label>
                           {item.isUnclear && (
-                            <span className="flex items-center gap-1 px-2 py-0.5 bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400 rounded text-[8px] font-black uppercase tracking-tighter">
+                            <span className="flex items-center gap-1 px-2 py-0.5 bg-amber-500/10 text-amber-400 rounded text-[8px] font-black uppercase tracking-tighter">
                               <AlertCircle className="w-2 h-2" /> Unclear
                             </span>
                           )}
                           {!item.isGrocery && (
-                            <span className="flex items-center gap-1 px-2 py-0.5 bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400 rounded text-[8px] font-black uppercase tracking-tighter">
+                            <span className="flex items-center gap-1 px-2 py-0.5 bg-cred-primary/10 text-cred-primary rounded text-[8px] font-black uppercase tracking-tighter">
                               <X className="w-2 h-2" /> Non-Grocery
                             </span>
                           )}
@@ -246,7 +246,7 @@ export default function InvoiceReviewModal({ isOpen, onClose, purchaseDate, item
 
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                         <div className="space-y-1">
-                          <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-2">Qty</label>
+                          <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-2">Qty</label>
                           <input
                             type="number"
                             value={item.quantity}
@@ -256,7 +256,7 @@ export default function InvoiceReviewModal({ isOpen, onClose, purchaseDate, item
                         </div>
 
                         <div className="space-y-1">
-                          <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-2">Unit</label>
+                          <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-2">Unit</label>
                           <select
                             value={item.unit}
                             onChange={(e) => handleUpdateItem(index, { unit: e.target.value })}
@@ -267,7 +267,7 @@ export default function InvoiceReviewModal({ isOpen, onClose, purchaseDate, item
                         </div>
 
                         <div className="space-y-1">
-                          <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-2">Price</label>
+                          <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-2">Price</label>
                           <input
                             type="number"
                             value={item.price}
@@ -277,7 +277,7 @@ export default function InvoiceReviewModal({ isOpen, onClose, purchaseDate, item
                         </div>
 
                         <div className="space-y-1">
-                          <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-2">Category</label>
+                          <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-2">Category</label>
                           <select
                             value={item.category}
                             onChange={(e) => handleUpdateItem(index, { category: e.target.value })}
@@ -288,7 +288,7 @@ export default function InvoiceReviewModal({ isOpen, onClose, purchaseDate, item
                         </div>
 
                         <div className="space-y-1">
-                          <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-2">Expiry Date</label>
+                          <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-2">Expiry Date</label>
                           <div className="flex gap-2">
                             <input
                               type="date"
@@ -299,7 +299,7 @@ export default function InvoiceReviewModal({ isOpen, onClose, purchaseDate, item
                             <button
                               onClick={() => handlePredictExpiry(index)}
                               disabled={predictingIndices.has(index)}
-                              className="p-2 bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 rounded-xl hover:bg-purple-100 transition-all disabled:opacity-50"
+                              className="p-2 bg-cred-accent/10 text-cred-accent rounded-xl hover:bg-cred-accent/20 transition-all disabled:opacity-50 border border-cred-accent/20"
                               title="Predict Expiry"
                             >
                               {predictingIndices.has(index) ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
@@ -308,14 +308,14 @@ export default function InvoiceReviewModal({ isOpen, onClose, purchaseDate, item
                         </div>
                       </div>
 
-                      <div className="flex items-center justify-between gap-2 pt-2 border-t border-gray-100 dark:border-white/5">
+                      <div className="flex items-center justify-between gap-2 pt-4 border-t border-white/5">
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => handleToggleConfirm(index)}
                             className={`px-4 py-2.5 rounded-xl transition-all flex items-center gap-2 font-black uppercase tracking-widest text-[9px] ${
                               isConfirmed 
                                 ? 'bg-emerald-600 text-white' 
-                                : 'bg-gray-100 dark:bg-gray-800 text-gray-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:text-emerald-600'
+                                : 'bg-white/5 text-gray-500 hover:bg-emerald-500/10 hover:text-emerald-400'
                             }`}
                           >
                             <CheckCircle2 className="w-4 h-4" />
@@ -325,8 +325,8 @@ export default function InvoiceReviewModal({ isOpen, onClose, purchaseDate, item
                             onClick={() => handleToggleSkip(index)}
                             className={`px-4 py-2.5 rounded-xl transition-all flex items-center gap-2 font-black uppercase tracking-widest text-[9px] ${
                               isSkipped 
-                                ? 'bg-red-600 text-white' 
-                                : 'bg-gray-100 dark:bg-gray-800 text-gray-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600'
+                                ? 'bg-cred-primary text-white' 
+                                : 'bg-white/5 text-gray-500 hover:bg-cred-primary/10 hover:text-cred-primary'
                             }`}
                           >
                             <X className="w-4 h-4" />
@@ -335,7 +335,7 @@ export default function InvoiceReviewModal({ isOpen, onClose, purchaseDate, item
                         </div>
                         <button
                           onClick={() => handleRemoveItem(index)}
-                          className="p-2.5 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all"
+                          className="p-2.5 text-gray-500 hover:text-cred-primary hover:bg-cred-primary/10 rounded-xl transition-all"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -347,21 +347,21 @@ export default function InvoiceReviewModal({ isOpen, onClose, purchaseDate, item
 
               <button
                 onClick={handleAddItem}
-                className="w-full py-6 border-2 border-dashed border-gray-200 dark:border-white/10 rounded-2xl text-gray-400 hover:text-amber-600 dark:hover:text-amber-400 hover:border-amber-200 dark:hover:border-amber-900/40 hover:bg-amber-50 dark:hover:bg-amber-900/10 transition-all flex items-center justify-center gap-3 font-bold uppercase tracking-widest text-xs"
+                className="w-full py-8 border-2 border-dashed border-white/10 rounded-[1.5rem] text-gray-500 hover:text-white hover:border-white/20 hover:bg-white/5 transition-all flex items-center justify-center gap-3 font-black uppercase tracking-widest text-[10px]"
               >
                 <Plus className="w-5 h-5" />
                 Add Another Item
               </button>
             </div>
 
-            <div className="p-4 sm:p-6 border-t border-gray-100 dark:border-white/5 bg-gray-50 dark:bg-cred-gray/50 flex flex-col gap-4">
+            <div className="p-6 border-t border-white/5 bg-white/5 flex flex-col gap-4">
               <div className="flex items-center justify-between">
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">
                   {items.length} total items found
                 </p>
                 <button
                   onClick={onClose}
-                  className="sm:hidden text-[10px] font-black text-gray-400 uppercase tracking-widest"
+                  className="sm:hidden text-[10px] font-black text-gray-500 uppercase tracking-widest"
                 >
                   Close
                 </button>
@@ -369,21 +369,21 @@ export default function InvoiceReviewModal({ isOpen, onClose, purchaseDate, item
               <div className="flex flex-col sm:flex-row gap-3 sm:justify-end">
                 <button
                   onClick={onClose}
-                  className="hidden sm:block px-8 py-4 text-gray-600 dark:text-gray-400 font-bold hover:bg-gray-100 dark:hover:bg-cred-dark rounded-2xl transition-all"
+                  className="hidden sm:block px-8 py-4 text-gray-500 font-black uppercase tracking-widest text-[10px] hover:bg-white/5 rounded-2xl transition-all"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleConfirmSelected}
                   disabled={confirmedIndices.size === 0}
-                  className="w-full sm:w-auto px-6 py-4 bg-white dark:bg-cred-gray border border-gray-200 dark:border-white/10 text-black dark:text-white font-bold rounded-2xl hover:bg-gray-50 dark:hover:bg-cred-dark transition-all flex items-center justify-center gap-3 disabled:opacity-50"
+                  className="w-full sm:w-auto px-6 py-4 bg-white/5 border border-white/10 text-white font-black uppercase tracking-widest text-[10px] rounded-2xl hover:bg-white/10 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
                 >
                   <Save className="w-5 h-5" />
                   Add Confirmed ({confirmedIndices.size})
                 </button>
                 <button
                   onClick={handleConfirmAll}
-                  className="w-full sm:w-auto px-8 py-4 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-2xl shadow-lg shadow-amber-200 dark:shadow-none transition-all flex items-center justify-center gap-3"
+                  className="w-full sm:w-auto px-8 py-4 bg-cred-primary hover:bg-cred-primary/90 text-white font-black uppercase tracking-widest text-[10px] rounded-2xl shadow-lg shadow-cred-primary/20 transition-all flex items-center justify-center gap-3"
                 >
                   <Save className="w-5 h-5" />
                   Add All

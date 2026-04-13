@@ -2,10 +2,11 @@
 
 @theme {
   --color-cred-black: #000000;
-  --color-cred-dark: #0a0a0a;
-  --color-cred-gray: #141414;
+  --color-cred-dark: #080808;
+  --color-cred-gray: #121212;
   --color-cred-light: #f5f5f5;
-  --color-cred-accent: #00e5ff;
+  --color-cred-accent: #3b82f6; /* Blue informational accent */
+  --color-cred-primary: #ef4444; /* Red primary action */
   --animate-spin-slow: spin 3s linear infinite;
   --shadow-glow-purple: 0 0 30px -10px rgba(139, 92, 246, 0.3);
   --shadow-glow-blue: 0 0 30px -10px rgba(59, 130, 246, 0.3);
@@ -18,10 +19,7 @@
   body {
     @apply bg-cred-black text-white antialiased transition-colors duration-300;
     color-scheme: dark;
-    background-image: 
-      radial-gradient(circle at 0% 0%, rgba(139, 92, 246, 0.05) 0%, transparent 50%),
-      radial-gradient(circle at 100% 100%, rgba(0, 229, 255, 0.05) 0%, transparent 50%);
-    background-attachment: fixed;
+    background-image: none; /* Pure black background as requested */
   }
   
   * {
@@ -30,18 +28,18 @@
   
   /* Custom scrollbar */
   ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: 4px;
+    height: 4px;
   }
   ::-webkit-scrollbar-track {
     @apply bg-transparent;
   }
   ::-webkit-scrollbar-thumb {
-    @apply bg-cred-gray rounded-full hover:bg-cred-dark transition-colors;
+    @apply bg-white/10 rounded-full hover:bg-white/20 transition-colors;
   }
 
   .markdown-body {
-    @apply text-gray-300 leading-relaxed;
+    @apply text-gray-400 leading-relaxed;
   }
   .markdown-body h1 {
     @apply text-2xl font-bold mb-4 mt-6 text-white;
@@ -50,17 +48,17 @@
 
 @layer components {
   .cred-card {
-    @apply bg-cred-dark/80 backdrop-blur-xl border border-white/10 rounded-[32px] text-white transition-all duration-500;
+    @apply bg-cred-gray/40 backdrop-blur-2xl border border-white/5 rounded-[2.5rem] text-white transition-all duration-500;
   }
   
-  .cred-card-glow-purple { @apply shadow-glow-purple hover:shadow-[0_0_40px_-5px_rgba(139,92,246,0.4)] border-purple-500/20; }
-  .cred-card-glow-blue { @apply shadow-glow-blue hover:shadow-[0_0_40px_-5px_rgba(59,130,246,0.4)] border-blue-500/20; }
-  .cred-card-glow-emerald { @apply shadow-glow-emerald hover:shadow-[0_0_40px_-5px_rgba(16,185,129,0.4)] border-emerald-500/20; }
-  .cred-card-glow-amber { @apply shadow-glow-amber hover:shadow-[0_0_40px_-5px_rgba(245,158,11,0.4)] border-amber-500/20; }
-  .cred-card-glow-red { @apply shadow-glow-red hover:shadow-[0_0_40px_-5px_rgba(239,68,68,0.4)] border-red-500/20; }
+  .cred-card-glow-purple { @apply shadow-glow-purple border-purple-500/10; }
+  .cred-card-glow-blue { @apply shadow-glow-blue border-blue-500/10; }
+  .cred-card-glow-emerald { @apply shadow-glow-emerald border-emerald-500/10; }
+  .cred-card-glow-amber { @apply shadow-glow-amber border-amber-500/10; }
+  .cred-card-glow-red { @apply shadow-glow-red border-red-500/10; }
 
   .cred-input {
-    @apply w-full px-6 py-4 rounded-2xl bg-white/5 border border-white/10 focus:ring-2 focus:ring-cred-accent focus:border-cred-accent/50 outline-none transition-all text-white placeholder:text-gray-600;
+    @apply w-full px-6 py-5 rounded-2xl bg-white/5 border border-white/5 focus:ring-1 focus:ring-cred-primary focus:border-cred-primary/50 outline-none transition-all text-white placeholder:text-gray-700;
   }
   
   select.cred-input option {
@@ -68,11 +66,11 @@
   }
 
   .cred-button-primary {
-    @apply px-8 py-4 bg-white text-black font-black uppercase tracking-widest text-xs rounded-2xl hover:bg-gray-100 hover:shadow-[0_0_30px_rgba(255,255,255,0.2)] transition-all active:scale-95 disabled:opacity-50;
+    @apply px-8 py-5 bg-cred-primary text-white font-black uppercase tracking-widest text-[10px] rounded-2xl hover:bg-red-500 hover:shadow-[0_0_30px_rgba(239,68,68,0.3)] transition-all active:scale-95 disabled:opacity-50;
   }
 
-  .cred-button-glow-purple {
-    @apply bg-purple-600 text-white hover:bg-purple-500 shadow-glow-purple hover:shadow-[0_0_30px_rgba(139,92,246,0.5)];
+  .cred-button-secondary {
+    @apply px-8 py-5 bg-white/5 text-white font-black uppercase tracking-widest text-[10px] rounded-2xl hover:bg-white/10 transition-all active:scale-95 disabled:opacity-50;
   }
 
   .no-scrollbar::-webkit-scrollbar {

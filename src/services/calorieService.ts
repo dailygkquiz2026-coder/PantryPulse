@@ -68,6 +68,44 @@ export async function analyzeMealImage(base64Image: string, userDescription?: st
   }
 }
 
+export async function analyzeMealDescription(description: string, uid?: string): Promise<AnalyzedFoodItem[]> {
+  if (uid) {
+    logAIUsage(uid, 'meal_description_analysis');
+  }
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: [
+        {
+          text: `The user has described a meal: "${description}". Identify each food item mentioned, estimate its portion size, and calculate the probable calorie count for that portion. Return the result as a JSON array of objects with 'name', 'calories' (number), and 'portion' (string) properties.`,
+        },
+      ],
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.ARRAY,
+          items: {
+            type: Type.OBJECT,
+            properties: {
+              name: { type: Type.STRING },
+              calories: { type: Type.NUMBER },
+              portion: { type: Type.STRING },
+            },
+            required: ["name", "calories", "portion"],
+          },
+        },
+      },
+    });
+
+    const text = response.text;
+    if (!text) throw new Error("No response from AI");
+    return JSON.parse(text);
+  } catch (error) {
+    console.error("Meal description analysis failed:", error);
+    throw error;
+  }
+}
+
 export function calculateRequiredCalories(
   weight: number,
   height: number,

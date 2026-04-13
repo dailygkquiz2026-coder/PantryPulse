@@ -74,15 +74,15 @@ export default function ShoppingList({ items, onDelete, onToggleStatus, onSearch
               <AutocompleteInput
                 value={newItemName}
                 onChange={setNewItemName}
-                placeholder="Search or add items..."
+                placeholder="Add to list..."
                 className="cred-input pl-14 text-lg"
               />
-              <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-6 h-6 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+              <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-6 h-6 text-gray-500 group-focus-within:text-cred-primary transition-colors" />
             </div>
             <button
               type="submit"
               disabled={!newItemName.trim()}
-              className="px-8 bg-blue-600 text-white rounded-2xl hover:bg-blue-700 disabled:opacity-50 transition-all shadow-lg shadow-blue-200 dark:shadow-none flex items-center gap-2 font-bold"
+              className="cred-button-primary flex items-center gap-2"
             >
               <Plus className="w-5 h-5" />
               <span className="hidden sm:inline">Add</span>
@@ -93,7 +93,7 @@ export default function ShoppingList({ items, onDelete, onToggleStatus, onSearch
         <div className="relative">
           <button
             onClick={() => setIsExportMenuOpen(!isExportMenuOpen)}
-            className="p-4 bg-gray-50 dark:bg-cred-gray text-gray-600 dark:text-gray-400 rounded-2xl hover:bg-gray-100 dark:hover:bg-cred-dark transition-all border border-gray-100 dark:border-white/5 shadow-sm"
+            className="p-5 bg-white/5 text-gray-500 rounded-2xl hover:bg-white/10 transition-all border border-white/5 shadow-sm"
             title="Export List"
           >
             <Share2 className="w-6 h-6" />
@@ -107,24 +107,22 @@ export default function ShoppingList({ items, onDelete, onToggleStatus, onSearch
                   initial={{ opacity: 0, scale: 0.95, y: 10 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                  className="absolute right-0 mt-2 w-56 bg-white dark:bg-cred-black rounded-2xl shadow-2xl border border-gray-100 dark:border-white/10 z-50 overflow-hidden"
+                  className="absolute right-0 mt-2 w-56 bg-cred-gray border border-white/10 rounded-2xl shadow-2xl z-50 overflow-hidden p-2"
                 >
-                  <div className="p-2 space-y-1">
-                    <button
-                      onClick={exportToWhatsApp}
-                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-green-50 dark:hover:bg-green-950/20 text-green-600 rounded-xl transition-all font-bold text-sm"
-                    >
-                      <MessageSquare className="w-5 h-5" />
-                      Share via WhatsApp
-                    </button>
-                    <button
-                      onClick={exportToEmail}
-                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-blue-50 dark:hover:bg-blue-950/20 text-blue-600 rounded-xl transition-all font-bold text-sm"
-                    >
-                      <Mail className="w-5 h-5" />
-                      Send via Email
-                    </button>
-                  </div>
+                  <button
+                    onClick={exportToWhatsApp}
+                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 text-white rounded-xl transition-all font-bold text-sm"
+                  >
+                    <MessageSquare className="w-5 h-5 text-green-500" />
+                    WhatsApp
+                  </button>
+                  <button
+                    onClick={exportToEmail}
+                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 text-white rounded-xl transition-all font-bold text-sm"
+                  >
+                    <Mail className="w-5 h-5 text-blue-500" />
+                    Email
+                  </button>
                 </motion.div>
               </>
             )}
@@ -134,10 +132,14 @@ export default function ShoppingList({ items, onDelete, onToggleStatus, onSearch
 
       <div className="space-y-4">
         {items.length === 0 ? (
-          <div className="text-center py-12 bg-gray-50 rounded-3xl border-2 border-dashed border-gray-200">
-            <ShoppingBag className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500 font-medium">Your shopping list is empty.</p>
-            <p className="text-sm text-gray-400 mt-1">Use the search bar above to add items.</p>
+          <div className="text-center py-20 cred-card border-2 border-dashed border-white/5 flex flex-col items-center justify-center gap-4 px-6">
+            <div className="w-20 h-20 bg-white/5 rounded-3xl flex items-center justify-center mb-2">
+              <ShoppingBag className="text-gray-500 w-10 h-10" />
+            </div>
+            <h3 className="text-xl font-bold text-white">List is empty</h3>
+            <p className="text-gray-500 max-w-xs mx-auto">
+              Add items you need to buy to keep your pantry stocked.
+            </p>
           </div>
         ) : (
           <AnimatePresence mode="popLayout">
@@ -149,19 +151,19 @@ export default function ShoppingList({ items, onDelete, onToggleStatus, onSearch
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: -10 }}
                 transition={{ duration: 0.2 }}
-                className={`p-4 rounded-2xl shadow-sm border transition-all flex items-center justify-between group ${
+                className={`p-5 rounded-[2rem] border transition-all flex items-center justify-between group ${
                   item.status === 'bought' 
-                    ? 'bg-gray-50 dark:bg-cred-gray/50 border-gray-100 dark:border-white/5 opacity-60' 
-                    : 'bg-white dark:bg-cred-dark border-blue-500/10 hover:shadow-[0_0_20px_rgba(59,130,246,0.15)] hover:border-blue-500/30'
+                    ? 'bg-white/5 border-white/5 opacity-40' 
+                    : 'bg-cred-gray/40 border-white/5 hover:border-white/10'
                 }`}
               >
-                <div className="flex items-center gap-4 flex-1 min-w-0">
+                <div className="flex items-center gap-5 flex-1 min-w-0">
                   <button
                     onClick={() => onToggleStatus(item.id)}
-                    className={`p-2 rounded-xl transition-all flex-shrink-0 ${
+                    className={`p-3 rounded-2xl transition-all flex-shrink-0 ${
                       item.status === 'bought' 
-                        ? 'bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-400' 
-                        : 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100'
+                        ? 'bg-green-500 text-white' 
+                        : 'bg-white/5 text-gray-500 hover:bg-white/10'
                     }`}
                   >
                     <CheckCircle2 className={`w-6 h-6 ${item.status === 'bought' ? 'fill-current' : ''}`} />
@@ -173,7 +175,7 @@ export default function ShoppingList({ items, onDelete, onToggleStatus, onSearch
                         type="text"
                         value={editName}
                         onChange={(e) => setEditName(e.target.value)}
-                        className="flex-1 cred-input py-1 px-2 text-sm"
+                        className="flex-1 cred-input py-2 px-4 text-sm"
                         autoFocus
                       />
                       <div className="flex gap-2">
@@ -181,17 +183,17 @@ export default function ShoppingList({ items, onDelete, onToggleStatus, onSearch
                           type="number"
                           value={editQuantity}
                           onChange={(e) => setEditQuantity(Number(e.target.value))}
-                          className="w-20 cred-input py-1 px-2 text-sm"
+                          className="w-20 cred-input py-2 px-4 text-sm"
                         />
                         <button
                           onClick={() => handleSaveEdit(item.id)}
-                          className="px-3 py-1 bg-green-600 text-white rounded-lg text-xs font-bold"
+                          className="px-4 py-2 bg-green-600 text-white rounded-xl text-xs font-bold"
                         >
                           Save
                         </button>
                         <button
                           onClick={() => setEditingId(null)}
-                          className="px-3 py-1 bg-gray-200 dark:bg-cred-gray text-gray-600 dark:text-gray-400 rounded-lg text-xs font-bold"
+                          className="px-4 py-2 bg-white/5 text-gray-400 rounded-xl text-xs font-bold"
                         >
                           Cancel
                         </button>
@@ -199,25 +201,25 @@ export default function ShoppingList({ items, onDelete, onToggleStatus, onSearch
                     </div>
                   ) : (
                     <div className="flex-1 min-w-0">
-                      <h3 className={`font-bold text-gray-900 dark:text-white break-words ${item.status === 'bought' ? 'line-through opacity-50' : ''}`}>
+                      <h3 className={`font-black text-lg tracking-tight text-white break-words ${item.status === 'bought' ? 'line-through' : ''}`}>
                         {item.name || 'Unnamed Item'}
                       </h3>
                       <div className="flex items-center gap-2 mt-1">
-                        <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">{item.quantity} {item.unit}</p>
+                        <p className="text-xs text-gray-500 font-bold">{item.quantity} {item.unit}</p>
                         {item.category && (
                           <>
-                            <span className="text-gray-300 dark:text-cred-gray">•</span>
-                            <span className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-widest ${
-                              CATEGORY_COLORS[item.category] === 'emerald' ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400' :
-                              CATEGORY_COLORS[item.category] === 'blue' ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400' :
-                              CATEGORY_COLORS[item.category] === 'amber' ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400' :
-                              CATEGORY_COLORS[item.category] === 'red' ? 'bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400' :
-                              CATEGORY_COLORS[item.category] === 'orange' ? 'bg-orange-100 dark:bg-orange-900/40 text-orange-600 dark:text-orange-400' :
-                              CATEGORY_COLORS[item.category] === 'sky' ? 'bg-sky-100 dark:bg-sky-900/40 text-sky-600 dark:text-sky-400' :
-                              CATEGORY_COLORS[item.category] === 'indigo' ? 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400' :
-                              CATEGORY_COLORS[item.category] === 'purple' ? 'bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400' :
-                              CATEGORY_COLORS[item.category] === 'pink' ? 'bg-pink-100 dark:bg-pink-900/40 text-pink-600 dark:text-pink-400' :
-                              'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
+                            <span className="text-white/10">•</span>
+                            <span className={`px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-widest ${
+                              CATEGORY_COLORS[item.category] === 'emerald' ? 'bg-emerald-500/20 text-emerald-400' :
+                              CATEGORY_COLORS[item.category] === 'blue' ? 'bg-blue-500/20 text-blue-400' :
+                              CATEGORY_COLORS[item.category] === 'amber' ? 'bg-amber-500/20 text-amber-400' :
+                              CATEGORY_COLORS[item.category] === 'red' ? 'bg-red-500/20 text-red-400' :
+                              CATEGORY_COLORS[item.category] === 'orange' ? 'bg-orange-500/20 text-orange-400' :
+                              CATEGORY_COLORS[item.category] === 'sky' ? 'bg-sky-500/20 text-sky-400' :
+                              CATEGORY_COLORS[item.category] === 'indigo' ? 'bg-indigo-500/20 text-indigo-400' :
+                              CATEGORY_COLORS[item.category] === 'purple' ? 'bg-purple-500/20 text-purple-400' :
+                              CATEGORY_COLORS[item.category] === 'pink' ? 'bg-pink-500/20 text-pink-400' :
+                              'bg-white/5 text-gray-500'
                             }`}>
                               {item.category}
                             </span>
@@ -233,23 +235,23 @@ export default function ShoppingList({ items, onDelete, onToggleStatus, onSearch
                     <>
                       <button
                         onClick={() => handleStartEdit(item)}
-                        className="p-2 text-gray-500 hover:text-blue-600 dark:hover:text-cred-accent hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-all"
-                        title="Edit Item"
+                        className="p-3 text-gray-500 hover:text-white hover:bg-white/5 rounded-2xl transition-all"
+                        title="Edit"
                       >
-                        <Edit2 className="w-4 h-4" />
+                        <Edit2 className="w-5 h-5" />
                       </button>
                       <button
                         onClick={() => onSearchPrice(item.name)}
-                        className="px-4 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40 rounded-xl transition-all flex items-center gap-2 text-sm font-bold"
+                        className="px-5 py-3 bg-cred-accent/10 text-cred-accent hover:bg-cred-accent/20 rounded-2xl transition-all flex items-center gap-2 text-[10px] font-black uppercase tracking-widest"
                       >
                         <Search className="w-4 h-4" />
-                        <span className="hidden md:inline">Compare Variants</span>
+                        <span className="hidden md:inline">Compare</span>
                       </button>
                     </>
                   )}
                   <button
                     onClick={() => onDelete(item.id)}
-                    className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                    className="p-3 text-gray-500 hover:text-red-500 hover:bg-white/5 rounded-2xl transition-all opacity-0 group-hover:opacity-100"
                   >
                     <Trash2 className="w-5 h-5" />
                   </button>

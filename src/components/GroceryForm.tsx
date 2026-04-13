@@ -225,14 +225,14 @@ export default function GroceryForm({ onAdd, onAddMultiple, inventory, onUpdateQ
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="cred-card cred-card-glow-amber p-8"
+      className="cred-card p-8 border-white/5 bg-white/[0.02]"
     >
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-10">
         <div className="flex items-center gap-4">
-          <div className="p-3 bg-black dark:bg-white rounded-2xl shadow-lg">
-            <Plus className="w-6 h-6 text-white dark:text-black" />
+          <div className="p-3 bg-cred-primary rounded-2xl shadow-[0_0_20px_rgba(239,68,68,0.3)]">
+            <Plus className="w-6 h-6 text-white" />
           </div>
-          <h2 className="text-3xl font-black tracking-tighter">Log Purchase</h2>
+          <h2 className="text-3xl font-black tracking-tighter text-white">Log Purchase</h2>
         </div>
         
         <div className="flex flex-wrap items-center gap-3">
@@ -240,7 +240,7 @@ export default function GroceryForm({ onAdd, onAddMultiple, inventory, onUpdateQ
             type="button"
             onClick={() => invoiceInputRef.current?.click()}
             disabled={isScanningInvoice}
-            className="flex items-center gap-2 px-4 py-3 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 rounded-2xl hover:bg-amber-100 transition-all font-black uppercase tracking-widest text-[10px] disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-3 bg-amber-500/10 text-amber-400 rounded-2xl hover:bg-amber-500/20 transition-all font-black uppercase tracking-widest text-[10px] disabled:opacity-50 border border-amber-500/20"
           >
             {isScanningInvoice ? (
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -254,17 +254,17 @@ export default function GroceryForm({ onAdd, onAddMultiple, inventory, onUpdateQ
             type="button"
             onClick={() => invoiceUploadRef.current?.click()}
             disabled={isScanningInvoice}
-            className="flex items-center gap-2 px-4 py-3 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 rounded-2xl hover:bg-amber-100 transition-all font-black uppercase tracking-widest text-[10px] disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-3 bg-amber-500/10 text-amber-400 rounded-2xl hover:bg-amber-500/20 transition-all font-black uppercase tracking-widest text-[10px] disabled:opacity-50 border border-amber-500/20"
           >
             <Upload className="w-4 h-4" />
-            Upload Invoice (PDF/Image)
+            Upload Invoice
           </button>
           
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={isAnalyzing}
-            className="flex items-center gap-2 px-4 py-3 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-2xl hover:bg-blue-100 transition-all font-black uppercase tracking-widest text-[10px] disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-3 bg-cred-accent/10 text-cred-accent rounded-2xl hover:bg-cred-accent/20 transition-all font-black uppercase tracking-widest text-[10px] disabled:opacity-50 border border-cred-accent/20"
           >
             {isAnalyzing ? (
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -278,7 +278,7 @@ export default function GroceryForm({ onAdd, onAddMultiple, inventory, onUpdateQ
             type="button"
             onClick={() => fileUploadRef.current?.click()}
             disabled={isAnalyzing}
-            className="flex items-center gap-2 px-4 py-3 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-2xl hover:bg-blue-100 transition-all font-black uppercase tracking-widest text-[10px] disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-3 bg-cred-accent/10 text-cred-accent rounded-2xl hover:bg-cred-accent/20 transition-all font-black uppercase tracking-widest text-[10px] disabled:opacity-50 border border-cred-accent/20"
           >
             <Upload className="w-4 h-4" />
             Upload Product
@@ -365,22 +365,22 @@ export default function GroceryForm({ onAdd, onAddMultiple, inventory, onUpdateQ
           </div>
 
           <div className="space-y-4 col-span-full">
-            <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-2">Category</label>
+            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-2">Category</label>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
               {CATEGORIES.map(cat => {
                 const isActive = category === cat;
                 const color = CATEGORY_COLORS[cat] || 'gray';
                 const colorClasses: Record<string, string> = {
-                  emerald: 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400',
-                  blue: 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400',
-                  amber: 'border-amber-500 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400',
-                  red: 'border-red-500 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400',
-                  orange: 'border-orange-500 bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400',
-                  sky: 'border-sky-500 bg-sky-50 dark:bg-sky-900/20 text-sky-600 dark:text-sky-400',
-                  indigo: 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400',
-                  purple: 'border-purple-500 bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400',
-                  pink: 'border-pink-500 bg-pink-50 dark:bg-pink-900/20 text-pink-600 dark:text-pink-400',
-                  gray: 'border-gray-500 bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
+                  emerald: 'border-emerald-500/50 bg-emerald-500/10 text-emerald-400',
+                  blue: 'border-blue-500/50 bg-blue-500/10 text-blue-400',
+                  amber: 'border-amber-500/50 bg-amber-500/10 text-amber-400',
+                  red: 'border-red-500/50 bg-red-500/10 text-red-400',
+                  orange: 'border-orange-500/50 bg-orange-500/10 text-orange-400',
+                  sky: 'border-sky-500/50 bg-sky-500/10 text-sky-400',
+                  indigo: 'border-indigo-500/50 bg-indigo-500/10 text-indigo-400',
+                  purple: 'border-purple-500/50 bg-purple-500/10 text-purple-400',
+                  pink: 'border-pink-500/50 bg-pink-500/10 text-pink-400',
+                  gray: 'border-white/20 bg-white/5 text-gray-400'
                 };
 
                 return (
@@ -388,17 +388,18 @@ export default function GroceryForm({ onAdd, onAddMultiple, inventory, onUpdateQ
                     key={cat}
                     type="button"
                     onClick={() => setCategory(cat)}
-                    className={`flex flex-col items-center gap-2 p-3 rounded-2xl border-2 transition-all hover:scale-105 ${
+                    className={`flex flex-col items-center gap-3 p-4 rounded-[2rem] border-2 transition-all hover:scale-105 group/cat ${
                       isActive 
                         ? colorClasses[color]
-                        : 'border-gray-100 dark:border-cred-gray bg-white dark:bg-cred-dark text-gray-500 dark:text-gray-400'
+                        : 'border-white/5 bg-white/[0.02] text-gray-500'
                     }`}
                   >
-                    <div className="w-10 h-10 rounded-xl overflow-hidden shadow-sm">
+                    <div className="relative w-14 h-14 rounded-2xl overflow-hidden shadow-lg border border-white/10">
+                      <div className="absolute inset-0 bg-gradient-to-tr from-black/40 to-transparent z-10" />
                       <img 
                         src={CATEGORY_IMAGES[cat]} 
                         alt="" 
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover/cat:scale-110"
                         referrerPolicy="no-referrer"
                       />
                     </div>
@@ -480,7 +481,7 @@ export default function GroceryForm({ onAdd, onAddMultiple, inventory, onUpdateQ
           </div>
 
           <div className="space-y-2">
-            <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-2">Expiry Date (Optional)</label>
+            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-2">Expiry Date (Optional)</label>
             <div className="flex gap-2">
               <input
                 type="date"
@@ -507,7 +508,7 @@ export default function GroceryForm({ onAdd, onAddMultiple, inventory, onUpdateQ
                   }
                 }}
                 disabled={isPredictingExpiry}
-                className="px-4 bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 rounded-2xl hover:bg-purple-100 transition-all font-black uppercase tracking-widest text-[10px] disabled:opacity-50"
+                className="px-6 bg-cred-accent/10 text-cred-accent rounded-2xl hover:bg-cred-accent/20 transition-all font-black uppercase tracking-widest text-[10px] disabled:opacity-50 border border-cred-accent/20"
               >
                 {isPredictingExpiry ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Predict'}
               </button>
