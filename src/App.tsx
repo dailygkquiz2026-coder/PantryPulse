@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, Component, ErrorInfo, ReactNode } from 'react';
+import React, { useState, useEffect, useRef, Component, ErrorInfo, ReactNode } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   LayoutDashboard, 
@@ -142,8 +142,38 @@ function AppContent() {
   const [savedRecipes, setSavedRecipes] = useState<SavedRecipe[]>([]);
   const [deletedItems, setDeletedItems] = useState<DeletedItem[]>([]);
   const [isBinOpen, setIsBinOpen] = useState(false);
+  const [isMarketingOpen, setIsMarketingOpen] = useState(false);
+  const [isAuthReady, setIsAuthReady] = useState(false);
+  const [userLocation, setUserLocation] = useState<string | null>(null);
+  const settingsMenuRef = useRef<HTMLDivElement>(null);
   
-  // Recipe Caching State
+  // Close settings menu on outside click
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (settingsMenuRef.current && !settingsMenuRef.current.contains(event.target as Node)) {
+        setIsSettingsMenuOpen(false);
+      }
+    }
+    
+    if (isSettingsMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isSettingsMenuOpen]);
+
+  // Registering initial view
+  useEffect(() => {
+    if (isAuthReady) {
+      setIsMarketingOpen(true);
+    }
+  }, [isAuthReady]);
+
+  const handleCloseMarketing = () => {
+    setIsMarketingOpen(false);
+  };
   const [cachedRecipes, setCachedRecipes] = useState<any[]>([]);
   const [cachedSearchResults, setCachedSearchResults] = useState<any[]>([]);
   const [lastRecipeFetch, setLastRecipeFetch] = useState<number>(0);
@@ -182,8 +212,6 @@ function AppContent() {
       });
     }
   }, [inventory, predictions, notifiedItems]);
-  const [isAuthReady, setIsAuthReady] = useState(false);
-  const [userLocation, setUserLocation] = useState<string | null>(null);
 
   // New Modal States
   const [isRestockModalOpen, setIsRestockModalOpen] = useState(false);
@@ -1151,7 +1179,7 @@ function AppContent() {
               <Settings className="w-5 h-5" />
             </button>
             
-            <div className="relative">
+            <div className="relative" ref={settingsMenuRef}>
               <button 
                 onClick={() => setIsSettingsMenuOpen(!isSettingsMenuOpen)}
                 className="w-8 h-8 rounded-full bg-cred-gray border border-white/10 flex items-center justify-center text-[10px] font-black uppercase tracking-widest overflow-hidden hover:border-white/20 transition-all"
@@ -1579,6 +1607,10 @@ function AppContent() {
         onClose={() => setIsUpgradeModalOpen(false)} 
         uid={user?.uid || ''} 
       />
+
+      {isMarketingOpen && (
+        <MarketingIntro onClose={handleCloseMarketing} />
+      )}
     </div>
   );
 }

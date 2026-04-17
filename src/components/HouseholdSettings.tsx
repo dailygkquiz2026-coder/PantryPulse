@@ -64,9 +64,9 @@ export default function HouseholdSettings({ info, onUpdate, inventory }: Househo
     setIsSubmittingFeedback(true);
     try {
       await addDoc(collection(db, 'feedback'), {
-        userId: auth.currentUser.uid,
-        userEmail: auth.currentUser.email,
-        userName: name || auth.currentUser.displayName,
+        uid: auth.currentUser.uid,
+        email: auth.currentUser.email,
+        name: name || auth.currentUser.displayName,
         message: feedback,
         timestamp: new Date().toISOString(),
         appVersion: '1.0.0'

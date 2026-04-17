@@ -41,21 +41,23 @@ service cloud.firestore {
     // Domain Validators
     // ===============================================================
     function isValidGroceryItem(data) {
-      return hasOnlyAllowedFields(['id', 'name', 'category', 'quantity', 'unit', 'purchaseDate', 'usageFrequency', 'lastUpdated', 'uid', 'imageUrl', 'expiryDate', 'restockHistory']) &&
+      return hasOnlyAllowedFields(['id', 'name', 'category', 'quantity', 'unit', 'purchaseDate', 'usageFrequency', 'lastUpdated', 'uid', 'imageUrl', 'expiryDate', 'restockHistory', 'price']) &&
              data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
              data.category is string && data.category.size() < 50 &&
              data.quantity is number &&
              data.unit is string && data.unit.size() < 20 &&
+             (!('price' in data) || data.price is number) &&
              data.usageFrequency is number &&
              isValidDateString(data.purchaseDate) &&
              isValidDateString(data.lastUpdated) &&
              (!('imageUrl' in data) || isValidUrl(data.imageUrl)) &&
              (!('expiryDate' in data) || isValidDateString(data.expiryDate)) &&
+             (!('restockHistory' in data) || (data.restockHistory is list && data.restockHistory.size() < 10)) &&
              data.uid == request.auth.uid;
     }
 
     function isValidShoppingItem(data) {
-      return hasOnlyAllowedFields(['id', 'name', 'quantity', 'unit', 'status', 'uid', 'category', 'price', 'imageUrl', 'addedAt']) &&
+      return hasOnlyAllowedFields(['id', 'name', 'quantity', 'unit', 'status', 'uid', 'category', 'price', 'imageUrl', 'addedAt', 'usageFrequency', 'suggestedSource']) &&
              data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
              data.status in ['to-buy', 'bought'] &&
              data.quantity is number &&
@@ -64,28 +66,36 @@ service cloud.firestore {
              (!('price' in data) || data.price is number) &&
              (!('imageUrl' in data) || isValidUrl(data.imageUrl)) &&
              (!('addedAt' in data) || isValidDateString(data.addedAt)) &&
+             (!('usageFrequency' in data) || data.usageFrequency is number) &&
+             (!('suggestedSource' in data) || data.suggestedSource is string) &&
              data.uid == request.auth.uid;
     }
 
     function isValidHousehold(data) {
-      return hasOnlyAllowedFields(['members', 'adults', 'children', 'preferences', 'uid', 'name']) &&
+      return hasOnlyAllowedFields(['members', 'adults', 'children', 'preferences', 'uid', 'name', 'address', 'phone']) &&
              data.members is number && data.members >= 1 && data.members < 100 &&
              data.adults is number && data.children is number &&
              data.preferences is list && data.preferences.size() < 50 &&
              (!('name' in data) || (data.name is string && data.name.size() < 100)) &&
+             (!('address' in data) || (data.address is string && data.address.size() < 200)) &&
+             (!('phone' in data) || (data.phone is string && data.phone.size() < 20)) &&
              data.uid == request.auth.uid;
     }
 
     function isValidSavedRecipe(data) {
-      return hasOnlyAllowedFields(['id', 'title', 'description', 'source', 'imageUrl', 'link', 'ingredients', 'instructions', 'uid', 'createdAt', 'nutrients']) &&
+      return hasOnlyAllowedFields(['id', 'title', 'description', 'source', 'imageUrl', 'link', 'ingredients', 'instructions', 'uid', 'createdAt', 'nutrients', 'prepTime', 'cookTime', 'difficulty', 'tips']) &&
              data.title is string && data.title.size() > 0 && data.title.size() < 200 &&
              data.description is string && data.description.size() < 2000 &&
              data.source is string && data.source.size() < 100 &&
              isValidUrl(data.imageUrl) &&
              (!('link' in data) || isValidUrl(data.link)) &&
              data.ingredients is list && data.ingredients.size() < 100 &&
-             data.instructions is list && data.instructions.size() < 100 &&
+             (!('instructions' in data) || (data.instructions is list && data.instructions.size() < 100)) &&
              isValidDateString(data.createdAt) &&
+             (!('prepTime' in data) || data.prepTime is string) &&
+             (!('cookTime' in data) || data.cookTime is string) &&
+             (!('difficulty' in data) || data.difficulty in ['Easy', 'Medium', 'Hard', 'Expert']) &&
+             (!('tips' in data) || (data.tips is list && data.tips.size() < 20)) &&
              data.uid == request.auth.uid;
     }
 
@@ -100,8 +110,9 @@ service cloud.firestore {
     }
 
     function isValidUserProfile(data) {
-      return hasOnlyAllowedFields(['uid', 'weight', 'height', 'age', 'gender', 'ethnicity', 'bmr', 'tdee', 'shareAnonymousData', 'tier', 'createdAt']) &&
+      return hasOnlyAllowedFields(['uid', 'weight', 'height', 'age', 'gender', 'ethnicity', 'bmr', 'tdee', 'shareAnonymousData', 'tier', 'createdAt', 'email']) &&
              data.uid == request.auth.uid &&
+             (!('email' in data) || isValidEmail(data.email)) &&
              (!('weight' in data) || data.weight is number) &&
              (!('height' in data) || data.height is number) &&
              (!('age' in data) || data.age is number) &&

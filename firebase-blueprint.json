@@ -10,10 +10,14 @@
         "category": { "type": "string" },
         "quantity": { "type": "number" },
         "unit": { "type": "string" },
+        "price": { "type": "number" },
         "purchaseDate": { "type": "string", "format": "date-time" },
         "usageFrequency": { "type": "number" },
         "lastUpdated": { "type": "string", "format": "date-time" },
-        "uid": { "type": "string", "description": "Owner's user ID" }
+        "uid": { "type": "string", "description": "Owner's user ID" },
+        "expiryDate": { "type": "string", "format": "date-time" },
+        "imageUrl": { "type": "string" },
+        "restockHistory": { "type": "array", "items": { "type": "object" } }
       },
       "required": ["id", "name", "quantity", "unit", "purchaseDate", "usageFrequency", "uid"]
     },
@@ -27,7 +31,13 @@
         "quantity": { "type": "number" },
         "unit": { "type": "string" },
         "status": { "type": "string", "enum": ["to-buy", "bought"] },
-        "uid": { "type": "string" }
+        "uid": { "type": "string" },
+        "category": { "type": "string" },
+        "usageFrequency": { "type": "number" },
+        "price": { "type": "number" },
+        "imageUrl": { "type": "string" },
+        "addedAt": { "type": "string", "format": "date-time" },
+        "suggestedSource": { "type": "string" }
       },
       "required": ["id", "name", "quantity", "unit", "status", "uid"]
     },
@@ -40,7 +50,10 @@
         "adults": { "type": "number" },
         "children": { "type": "number" },
         "preferences": { "type": "array", "items": { "type": "string" } },
-        "uid": { "type": "string" }
+        "uid": { "type": "string" },
+        "name": { "type": "string" },
+        "address": { "type": "string" },
+        "phone": { "type": "string" }
       },
       "required": ["members", "adults", "children", "uid"]
     },
@@ -70,8 +83,14 @@
         "imageUrl": { "type": "string" },
         "link": { "type": "string" },
         "ingredients": { "type": "array" },
+        "instructions": { "type": "array" },
+        "prepTime": { "type": "string" },
+        "cookTime": { "type": "string" },
+        "difficulty": { "type": "string" },
+        "tips": { "type": "array" },
         "uid": { "type": "string" },
-        "createdAt": { "type": "string", "format": "date-time" }
+        "createdAt": { "type": "string", "format": "date-time" },
+        "nutrients": { "type": "object" }
       },
       "required": ["title", "description", "source", "imageUrl", "ingredients", "uid", "createdAt"]
     },
@@ -132,6 +151,7 @@
       "type": "object",
       "properties": {
         "uid": { "type": "string" },
+        "email": { "type": "string" },
         "weight": { "type": "number", "description": "Weight in kg" },
         "height": { "type": "number", "description": "Height in cm" },
         "gender": { "type": "string", "enum": ["male", "female", "other"] },
