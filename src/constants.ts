@@ -20,8 +20,8 @@ export const CATEGORY_IMAGES: Record<string, string> = {
   'Beverages': 'https://images.unsplash.com/photo-1621506289937-a8e4df240d0b?auto=format&fit=crop&w=400&h=400&q=80',
   'Frozen Foods': 'https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&w=400&h=400&q=80',
   'Household': 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=400&h=400&q=80',
-  'Personal Care': 'https://img.icons8.com/color/96/toothbrush.png',
-  'Other': 'https://img.icons8.com/color/96/battery.png'
+  'Personal Care': 'https://images.unsplash.com/photo-1556228578-0d85b1a4d571?auto=format&fit=crop&w=400&h=400&q=80',
+  'Other': 'https://images.unsplash.com/photo-1591871937573-74dbba515c4c?auto=format&fit=crop&w=400&h=400&q=80'
 };
 
 export const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1506484334402-40ff22e05a6d?auto=format&fit=crop&w=400&h=400&q=80';

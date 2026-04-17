@@ -14,7 +14,8 @@ interface HouseholdSettingsProps {
 
 export default function HouseholdSettings({ info, onUpdate, inventory }: HouseholdSettingsProps) {
   const [activeTab, setActiveTab] = useState<'profile' | 'household' | 'feedback'>('profile');
-  const [members, setMembers] = React.useState(info.members);
+  const [adults, setAdults] = React.useState(info.adults || 2);
+  const [children, setChildren] = React.useState(info.children || 0);
   const [name, setName] = useState(info.name || '');
   const [address, setAddress] = useState(info.address || '');
   const [phone, setPhone] = useState(info.phone || '');
@@ -52,7 +53,7 @@ export default function HouseholdSettings({ info, onUpdate, inventory }: Househo
 
   const handleUpdate = (e: React.FormEvent) => {
     e.preventDefault();
-    onUpdate({ ...info, members, name, address, phone });
+    onUpdate({ ...info, adults, children, members: adults + children, name, address, phone });
     setShowSuccess(true);
   };
 
@@ -233,26 +234,42 @@ export default function HouseholdSettings({ info, onUpdate, inventory }: Househo
             </div>
 
             <div className="space-y-8">
-              <div className="space-y-3">
-                <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-2 flex items-center gap-2">
-                  <Users className="w-3 h-3" />
-                  Number of People
-                </label>
-                <div className="flex items-center gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div className="space-y-3">
+                  <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-2 flex items-center gap-2">
+                    <UserIcon className="w-3 h-3 text-blue-500" />
+                    Adults
+                  </label>
                   <input
                     type="number"
-                    value={members}
-                    onChange={(e) => setMembers(Number(e.target.value))}
+                    value={adults}
+                    onChange={(e) => setAdults(Number(e.target.value))}
                     min="1"
-                    className="cred-input w-32"
+                    className="cred-input w-full"
                   />
-                  <button
-                    onClick={handleUpdate}
-                    className="px-8 py-4 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-2xl transition-all active:scale-95 shadow-lg shadow-purple-200 dark:shadow-none"
-                  >
-                    Update
-                  </button>
                 </div>
+                <div className="space-y-3">
+                  <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-2 flex items-center gap-2">
+                    <Users className="w-3 h-3 text-pink-500" />
+                    Children
+                  </label>
+                  <input
+                    type="number"
+                    value={children}
+                    onChange={(e) => setChildren(Number(e.target.value))}
+                    min="0"
+                    className="cred-input w-full"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end">
+                <button
+                  onClick={handleUpdate}
+                  className="px-8 py-4 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-2xl transition-all active:scale-95 shadow-lg shadow-purple-200 dark:shadow-none"
+                >
+                  Update Household size
+                </button>
               </div>
 
               <div className="space-y-3">

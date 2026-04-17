@@ -13,78 +13,114 @@ service cloud.firestore {
     function isDocOwner() {
       return isAuthenticated() && request.auth.uid == resource.data.uid;
     }
-    function isRequestOwner() {
-      return isAuthenticated() && request.auth.uid == request.resource.data.uid;
+    function isValidUrl(url) {
+      return url is string && (url.matches("^https://.*") || url.matches("^http://.*")) && url.size() < 2048;
     }
-    function hasRequiredFields(fields) {
-      return request.resource.data.keys().hasAll(fields);
+    function isValidEmail(email) {
+      return email is string && 
+             email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$") &&
+             email.size() < 256;
     }
-    function hasOnlyAllowedFields(fields) {
-      return request.resource.data.keys().hasOnly(fields);
+    function isValidDateString(dateStr) {
+      return dateStr is string && 
+             dateStr.matches("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.*Z?$") &&
+             dateStr.size() < 64;
+    }
+    function isUnchanged(field) {
+      return !(field in request.resource.data) || request.resource.data[field] == resource.data[field];
     }
     function isAdmin() {
       return isAuthenticated() && 
         (request.auth.token.email == "dailygkquiz2026@gmail.com" && request.auth.token.email_verified == true);
+    }
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
     }
 
     // ===============================================================
     // Domain Validators
     // ===============================================================
     function isValidGroceryItem(data) {
-      return data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
-             data.category is string &&
+      return hasOnlyAllowedFields(['id', 'name', 'category', 'quantity', 'unit', 'purchaseDate', 'usageFrequency', 'lastUpdated', 'uid', 'imageUrl', 'expiryDate', 'restockHistory']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.category is string && data.category.size() < 50 &&
              data.quantity is number &&
-             data.unit is string &&
+             data.unit is string && data.unit.size() < 20 &&
              data.usageFrequency is number &&
+             isValidDateString(data.purchaseDate) &&
+             isValidDateString(data.lastUpdated) &&
+             (!('imageUrl' in data) || isValidUrl(data.imageUrl)) &&
+             (!('expiryDate' in data) || isValidDateString(data.expiryDate)) &&
              data.uid == request.auth.uid;
     }
 
     function isValidShoppingItem(data) {
-      return data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+      return hasOnlyAllowedFields(['id', 'name', 'quantity', 'unit', 'status', 'uid', 'category', 'price', 'imageUrl', 'addedAt']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
              data.status in ['to-buy', 'bought'] &&
+             data.quantity is number &&
+             data.unit is string && data.unit.size() < 20 &&
+             (!('category' in data) || data.category is string) &&
+             (!('price' in data) || data.price is number) &&
+             (!('imageUrl' in data) || isValidUrl(data.imageUrl)) &&
+             (!('addedAt' in data) || isValidDateString(data.addedAt)) &&
              data.uid == request.auth.uid;
     }
 
     function isValidHousehold(data) {
-      return data.members is number && data.members > 0 &&
-             data.preferences is list &&
+      return hasOnlyAllowedFields(['members', 'adults', 'children', 'preferences', 'uid', 'name']) &&
+             data.members is number && data.members >= 1 && data.members < 100 &&
+             data.adults is number && data.children is number &&
+             data.preferences is list && data.preferences.size() < 50 &&
+             (!('name' in data) || (data.name is string && data.name.size() < 100)) &&
              data.uid == request.auth.uid;
     }
 
     function isValidSavedRecipe(data) {
-      return data.title is string && data.title.size() > 0 && data.title.size() < 200 &&
-             data.description is string &&
-             data.source is string &&
-             data.imageUrl is string &&
-             (!('link' in data) || data.link is string) &&
-             data.ingredients is list &&
-             data.instructions is list &&
+      return hasOnlyAllowedFields(['id', 'title', 'description', 'source', 'imageUrl', 'link', 'ingredients', 'instructions', 'uid', 'createdAt', 'nutrients']) &&
+             data.title is string && data.title.size() > 0 && data.title.size() < 200 &&
+             data.description is string && data.description.size() < 2000 &&
+             data.source is string && data.source.size() < 100 &&
+             isValidUrl(data.imageUrl) &&
+             (!('link' in data) || isValidUrl(data.link)) &&
+             data.ingredients is list && data.ingredients.size() < 100 &&
+             data.instructions is list && data.instructions.size() < 100 &&
+             isValidDateString(data.createdAt) &&
              data.uid == request.auth.uid;
     }
 
     function isValidCalorieLog(data) {
-      return data.uid == request.auth.uid &&
-             data.date is string &&
+      return hasOnlyAllowedFields(['id', 'uid', 'date', 'mealType', 'items', 'totalCalories', 'photoUrl']) &&
+             data.uid == request.auth.uid &&
+             isValidDateString(data.date) &&
              data.mealType in ['breakfast', 'lunch', 'dinner', 'snack'] &&
-             data.items is list &&
-             data.totalCalories is number;
+             data.items is list && data.items.size() < 50 &&
+             data.totalCalories is number &&
+             (!('photoUrl' in data) || isValidUrl(data.photoUrl));
     }
 
     function isValidUserProfile(data) {
-      return data.uid == request.auth.uid &&
+      return hasOnlyAllowedFields(['uid', 'weight', 'height', 'age', 'gender', 'ethnicity', 'bmr', 'tdee', 'shareAnonymousData', 'tier', 'createdAt']) &&
+             data.uid == request.auth.uid &&
              (!('weight' in data) || data.weight is number) &&
              (!('height' in data) || data.height is number) &&
              (!('age' in data) || data.age is number) &&
              (!('gender' in data) || data.gender in ['male', 'female', 'other']) &&
-             (!('ethnicity' in data) || data.ethnicity is string) &&
+             (!('ethnicity' in data) || (data.ethnicity is string && data.ethnicity.size() < 100)) &&
              (!('bmr' in data) || data.bmr is number) &&
              (!('tdee' in data) || data.tdee is number) &&
-             (!('shareAnonymousData' in data) || data.shareAnonymousData is bool);
+             (!('shareAnonymousData' in data) || data.shareAnonymousData is bool) &&
+             (!('tier' in data) || data.tier in ['vanilla', 'pro']) &&
+             (!('createdAt' in data) || isValidDateString(data.createdAt));
     }
 
     function isValidFeedback(data) {
-      return data.uid == request.auth.uid &&
-             data.message is string && data.message.size() > 0 && data.message.size() < 2000;
+      return hasOnlyAllowedFields(['uid', 'email', 'name', 'message', 'timestamp', 'appVersion']) &&
+             data.uid == request.auth.uid &&
+             (!('email' in data) || isValidEmail(data.email)) &&
+             (!('name' in data) || (data.name is string && data.name.size() < 100)) &&
+             data.message is string && data.message.size() > 0 && data.message.size() < 2000 &&
+             isValidDateString(data.timestamp);
     }
 
     // ===============================================================
@@ -93,21 +129,21 @@ service cloud.firestore {
     match /inventory/{itemId} {
       allow read: if isDocOwner();
       allow create: if isAuthenticated() && isValidGroceryItem(request.resource.data);
-      allow update: if isDocOwner() && isValidGroceryItem(request.resource.data);
+      allow update: if isDocOwner() && isUnchanged('uid') && isValidGroceryItem(request.resource.data);
       allow delete: if isDocOwner();
     }
 
     match /calorieLogs/{logId} {
       allow read: if isDocOwner();
       allow create: if isAuthenticated() && isValidCalorieLog(request.resource.data);
-      allow update: if isDocOwner() && isValidCalorieLog(request.resource.data);
+      allow update: if isDocOwner() && isUnchanged('uid') && isValidCalorieLog(request.resource.data);
       allow delete: if isDocOwner();
     }
 
     match /userProfiles/{userId} {
-      allow read: if isOwner(userId);
+      allow read: if isOwner(userId) || isAdmin();
       allow create: if isOwner(userId) && isValidUserProfile(request.resource.data);
-      allow update: if isOwner(userId) && isValidUserProfile(request.resource.data);
+      allow update: if isOwner(userId) && isUnchanged('uid') && isValidUserProfile(request.resource.data);
       allow delete: if isOwner(userId);
     }
 
@@ -119,27 +155,28 @@ service cloud.firestore {
     match /shoppingList/{itemId} {
       allow read: if isDocOwner();
       allow create: if isAuthenticated() && isValidShoppingItem(request.resource.data);
-      allow update: if isDocOwner() && isValidShoppingItem(request.resource.data);
+      allow update: if isDocOwner() && isUnchanged('uid') && isValidShoppingItem(request.resource.data);
       allow delete: if isDocOwner();
     }
 
     match /households/{userId} {
       allow read: if isOwner(userId);
       allow create: if isOwner(userId) && isValidHousehold(request.resource.data);
-      allow update: if isOwner(userId) && isValidHousehold(request.resource.data);
+      allow update: if isOwner(userId) && isUnchanged('uid') && isValidHousehold(request.resource.data);
       allow delete: if isOwner(userId);
     }
 
     match /savedRecipes/{recipeId} {
       allow read: if isDocOwner();
       allow create: if isAuthenticated() && isValidSavedRecipe(request.resource.data);
-      allow update: if isDocOwner() && isValidSavedRecipe(request.resource.data);
+      allow update: if isDocOwner() && isUnchanged('uid') && isValidSavedRecipe(request.resource.data);
       allow delete: if isDocOwner();
     }
 
     match /fcmTokens/{token} {
       allow read: if isDocOwner();
-      allow create, update: if isAuthenticated() && request.resource.data.uid == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.uid == request.auth.uid;
+      allow update: if isDocOwner() && isUnchanged('uid');
       allow delete: if isDocOwner();
     }
 
@@ -147,22 +184,25 @@ service cloud.firestore {
       allow read: if isDocOwner();
       allow create: if isAuthenticated() && request.resource.data.uid == request.auth.uid;
       allow delete: if isDocOwner();
+      allow update: if false;
     }
 
     match /scanFailures/{failureId} {
       allow read: if isAdmin();
-      allow create: if isAuthenticated();
+      allow create: if isAuthenticated() && request.resource.data.uid == request.auth.uid;
       allow update, delete: if isAdmin();
     }
 
     match /userActivityLogs/{logId} {
       allow read: if isAdmin();
-      allow create, update: if isAuthenticated() && request.resource.data.uid == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.uid == request.auth.uid;
+      allow update, delete: if isAdmin();
     }
 
     match /aiUsageLogs/{logId} {
       allow read: if isAdmin();
       allow create: if isAuthenticated() && request.resource.data.uid == request.auth.uid;
+      allow update, delete: if isAdmin();
     }
   }
 }

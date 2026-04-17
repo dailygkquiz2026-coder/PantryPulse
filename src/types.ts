@@ -15,6 +15,8 @@ export interface GroceryItem {
 
 export interface HouseholdInfo {
   members: number;
+  adults: number;
+  children: number;
   preferences: string[];
   uid: string;
   name?: string;
@@ -70,4 +72,21 @@ export interface PriceComparisonResult {
 
 export interface DeletedItem extends GroceryItem {
   deletedAt: string;
+}
+
+export type UserTier = 'vanilla' | 'pro';
+
+export interface UserProfile {
+  uid: string;
+  email?: string;
+  weight: number;
+  height: number;
+  age: number;
+  gender: 'male' | 'female' | 'other';
+  ethnicity: string;
+  shareAnonymousData: boolean;
+  bmr: number;
+  tdee: number;
+  tier: UserTier;
+  createdAt: string;
 }

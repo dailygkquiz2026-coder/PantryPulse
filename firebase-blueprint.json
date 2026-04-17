@@ -37,10 +37,12 @@
       "type": "object",
       "properties": {
         "members": { "type": "number" },
+        "adults": { "type": "number" },
+        "children": { "type": "number" },
         "preferences": { "type": "array", "items": { "type": "string" } },
         "uid": { "type": "string" }
       },
-      "required": ["members", "uid"]
+      "required": ["members", "adults", "children", "uid"]
     },
     "ScanFailure": {
       "title": "Scan Failure",
@@ -137,7 +139,9 @@
         "age": { "type": "number" },
         "shareAnonymousData": { "type": "boolean" },
         "bmr": { "type": "number" },
-        "tdee": { "type": "number" }
+        "tdee": { "type": "number" },
+        "tier": { "type": "string", "enum": ["vanilla", "pro"] },
+        "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["uid"]
     },

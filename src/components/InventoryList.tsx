@@ -4,6 +4,7 @@ import { Trash2, AlertTriangle, CheckCircle2, Clock, ShoppingBag, Edit2 } from '
 import { motion } from 'motion/react';
 import { formatDistanceToNow } from 'date-fns';
 import { CATEGORY_IMAGES, CATEGORY_COLORS, FALLBACK_IMAGE } from '../constants';
+import ProBadge from './ProBadge';
 
 interface InventoryListProps {
   items: GroceryItem[];
@@ -93,12 +94,15 @@ export default function InventoryList({ items, onDelete, onAddToShopping, onUpda
                       {item.category}
                     </span>
                     {daysRemaining !== undefined && (
-                      <span className={`px-2 py-0.5 rounded-lg text-[8px] font-black uppercase tracking-widest ${
-                        isStockout ? 'bg-cred-primary text-white' :
-                        isLow ? 'bg-amber-500/20 text-amber-500' : 'bg-cred-accent/20 text-cred-accent'
-                      }`}>
-                        {isStockout ? 'Stockout' : `${daysRemaining}d left`}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className={`px-2 py-0.5 rounded-lg text-[8px] font-black uppercase tracking-widest ${
+                          isStockout ? 'bg-cred-primary text-white' :
+                          isLow ? 'bg-amber-500/20 text-amber-500' : 'bg-cred-accent/20 text-cred-accent'
+                        }`}>
+                          {isStockout ? 'Stockout' : `${daysRemaining}d left`}
+                        </span>
+                        <ProBadge className="scale-[0.6] origin-left" />
+                      </div>
                     )}
                   </div>
                   <h3 className="font-black text-lg md:text-xl tracking-tight text-white mb-1 truncate">{item.name}</h3>

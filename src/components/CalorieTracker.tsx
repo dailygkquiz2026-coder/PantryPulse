@@ -36,6 +36,8 @@ import {
 } from 'firebase/firestore';
 import { db, auth, handleFirestoreError, OperationType } from '../firebase';
 import { analyzeMealImage, analyzeMealDescription, calculateRequiredCalories, AnalyzedFoodItem } from '../services/calorieService';
+import { UserProfile } from '../types';
+import ProBadge from './ProBadge';
 import { 
   BarChart, 
   Bar, 
@@ -61,18 +63,6 @@ interface CalorieLog {
   items: AnalyzedFoodItem[];
   totalCalories: number;
   photoUrl?: string;
-}
-
-interface UserProfile {
-  uid: string;
-  weight: number;
-  height: number;
-  age: number;
-  gender: 'male' | 'female' | 'other';
-  ethnicity: string;
-  shareAnonymousData: boolean;
-  bmr: number;
-  tdee: number;
 }
 
 function CalorieLogItem({ log }: { log: CalorieLog }) {
@@ -411,6 +401,7 @@ export default function CalorieTracker({ inventory }: { inventory: any[] }) {
         >
           <TrendingUp className="w-3 h-3" />
           Stats
+          <ProBadge className="ml-1 scale-75 origin-left" />
         </button>
         <button
           onClick={() => setActiveSubTab('profile')}

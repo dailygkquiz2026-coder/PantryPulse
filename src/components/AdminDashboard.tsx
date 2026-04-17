@@ -59,7 +59,7 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     const unsubscribeAuth = auth.onAuthStateChanged((user) => {
-      if (user && user.email === ADMIN_EMAIL) {
+      if (user && user.email === ADMIN_EMAIL && user.emailVerified) {
         setIsAdmin(true);
       } else {
         setIsAdmin(false);

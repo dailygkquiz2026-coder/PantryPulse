@@ -22,6 +22,7 @@ import {
   LogOut,
   Camera,
   X,
+  Zap,
   RefreshCw,
   ChevronDown,
   ChevronUp,
@@ -68,7 +69,9 @@ import UpdateQuantityModal from './components/UpdateQuantityModal';
 import EditItemModal from './components/EditItemModal';
 import ExpiringItemsModal from './components/ExpiringItemsModal';
 import CalorieTracker from './components/CalorieTracker';
-import { GroceryItem, HouseholdInfo, ShoppingListItem, SavedRecipe, PriceComparisonResult, DeletedItem } from './types';
+import UpgradeModal from './components/UpgradeModal';
+import ProBadge from './components/ProBadge';
+import { GroceryItem, HouseholdInfo, ShoppingListItem, SavedRecipe, PriceComparisonResult, DeletedItem, UserProfile } from './types';
 import { predictMultipleRestocks, searchCheapestSource } from './services/geminiService';
 
 // Error Boundary Component
@@ -125,7 +128,7 @@ function AppContent() {
   const [isSettingsMenuOpen, setIsSettingsMenuOpen] = useState(false);
   const [inventory, setInventory] = useState<GroceryItem[]>([]);
   const [shoppingList, setShoppingList] = useState<ShoppingListItem[]>([]);
-  const [household, setHousehold] = useState<HouseholdInfo>({ members: 2, preferences: [], uid: '' });
+  const [household, setHousehold] = useState<HouseholdInfo>({ members: 2, adults: 2, children: 0, preferences: [], uid: '' });
   const [isPriceModalOpen, setIsPriceModalOpen] = useState(false);
   const [searchItem, setSearchItem] = useState('');
   const [searchResults, setSearchResults] = useState<PriceComparisonResult[] | null>(null);
@@ -135,6 +138,7 @@ function AppContent() {
   const [notifiedItems, setNotifiedItems] = useState<Set<string>>(new Set());
   const [hasChanges, setHasChanges] = useState(false);
   const [user, setUser] = useState<User | null>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [savedRecipes, setSavedRecipes] = useState<SavedRecipe[]>([]);
   const [deletedItems, setDeletedItems] = useState<DeletedItem[]>([]);
   const [isBinOpen, setIsBinOpen] = useState(false);
@@ -191,6 +195,7 @@ function AppContent() {
   const [isTroubleshootingOpen, setIsTroubleshootingOpen] = useState(false);
   const [isExpiryModalOpen, setIsExpiryModalOpen] = useState(false);
   const [isStockoutModalOpen, setIsStockoutModalOpen] = useState(false);
+  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
   const [stockoutItems, setStockoutItems] = useState<GroceryItem[]>([]);
   const [lastShoppingActivity, setLastShoppingActivity] = useState(Date.now());
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>(
@@ -253,9 +258,9 @@ function AppContent() {
           const profileRef = doc(db, 'userProfiles', currentUser.uid);
           const profileSnap = await getDocFromServer(profileRef).catch(() => null);
           if (!profileSnap?.exists()) {
-            await setDoc(profileRef, {
+            const initialProfile: UserProfile = {
               uid: currentUser.uid,
-              email: currentUser.email,
+              email: currentUser.email || undefined,
               createdAt: new Date().toISOString(),
               shareAnonymousData: false,
               weight: 0,
@@ -264,8 +269,13 @@ function AppContent() {
               gender: 'male',
               ethnicity: 'Unknown',
               bmr: 0,
-              tdee: 2000
-            });
+              tdee: 2000,
+              tier: 'vanilla'
+            };
+            await setDoc(profileRef, initialProfile);
+            setUserProfile(initialProfile);
+          } else {
+            setUserProfile(profileSnap.data() as UserProfile);
           }
         } catch (error) {
           console.error("Failed to log activity or init profile:", error);
@@ -361,12 +371,23 @@ function AppContent() {
   // Real-time Household
   useEffect(() => {
     if (!user || !isAuthReady) return;
+    const unsubscribe = onSnapshot(doc(db, 'userProfiles', user.uid), (snapshot) => {
+      if (snapshot.exists()) {
+        setUserProfile(snapshot.data() as UserProfile);
+      }
+    }, (error) => handleFirestoreError(error, OperationType.GET, `userProfiles/${user.uid}`));
+    return () => unsubscribe();
+  }, [user, isAuthReady]);
+
+  // Real-time Household
+  useEffect(() => {
+    if (!user || !isAuthReady) return;
     const unsubscribe = onSnapshot(doc(db, 'households', user.uid), (snapshot) => {
       if (snapshot.exists()) {
         setHousehold(snapshot.data() as HouseholdInfo);
       } else {
         // Initialize household for new user
-        const initialHousehold: HouseholdInfo = { members: 2, preferences: [], uid: user.uid };
+        const initialHousehold: HouseholdInfo = { members: 2, adults: 2, children: 0, preferences: [], uid: user.uid };
         setDoc(doc(db, 'households', user.uid), initialHousehold)
           .catch(err => handleFirestoreError(err, OperationType.WRITE, `households/${user.uid}`));
       }
@@ -390,6 +411,14 @@ function AppContent() {
   }, [lastRecipeFetch]);
 
   // Run predictions
+  const [lastPredictionRun, setLastPredictionRun] = useState(0);
+
+  const runPredictionsManually = () => {
+    setPredictions({}); // Force refresh
+    setNotifiedItems(new Set()); // Allow re-notifying if fixed
+    setLastPredictionRun(Date.now());
+  };
+
   useEffect(() => {
     const runPredictions = async () => {
       if (inventory.length === 0) {
@@ -404,8 +433,10 @@ function AppContent() {
       inventory.forEach(item => {
         const qty = Number(item.quantity) || 0;
         const usage = Number(item.usageFrequency) || 0;
-        const members = Number(household.members) || 1;
-        const dailyUsage = usage * members;
+        const adults = Number(household.adults) || (Number(household.members) || 2);
+        const children = Number(household.children) || 0;
+        const effectiveMembers = adults + (children * 0.5);
+        const dailyUsage = usage * effectiveMembers;
         
         // Calculate days passed since last update
         const lastUpdated = new Date(item.lastUpdated || item.purchaseDate).getTime();
@@ -415,6 +446,12 @@ function AppContent() {
         if (dailyUsage > 0) {
           // Total days it would last - days already passed
           localPrediction = (qty / dailyUsage) - daysPassed;
+
+          // CATEGORY-SPECIFIC CAP: Bread/Dairy/Produce usually don't last > 4-7 days total
+          if (['Bakery', 'Produce', 'Dairy'].includes(item.category || '')) {
+            const maxLifespan = (item.category === 'Bakery') ? 4 : 7;
+            localPrediction = Math.min(localPrediction, maxLifespan - daysPassed);
+          }
         }
 
         newPredictions[item.id] = Math.max(-10, Math.ceil(localPrediction));
@@ -429,9 +466,11 @@ function AppContent() {
             quantity: i.quantity,
             unit: i.unit,
             usageFrequency: i.usageFrequency,
+            lastUpdated: i.lastUpdated || i.purchaseDate,
             restockHistory: i.restockHistory
           })),
-          household.members,
+          household.adults || 2,
+          household.children || 0,
           user?.uid
         );
         
@@ -479,7 +518,7 @@ function AppContent() {
       }, 1000);
       return () => clearTimeout(timer);
     }
-  }, [inventory, household, shoppingList, notifiedItems]);
+  }, [inventory, household, shoppingList, notifiedItems, lastPredictionRun]);
 
   // Expiry Warning Logic
   useEffect(() => {
@@ -826,10 +865,11 @@ function AppContent() {
     }
   };
 
-  const handleConfirmStockouts = async (items: GroceryItem[]) => {
+  const handleConfirmStockouts = async (selectedItems: GroceryItem[], unselectedItems: GroceryItem[]) => {
     if (!user) return;
     try {
-      const shoppingPromises = items.map(item => 
+      // 1. Move selected items to shopping list
+      const shoppingPromises = selectedItems.map(item => 
         addDoc(collection(db, 'shoppingList'), {
           name: item.name,
           quantity: 1, // Default to 1 unit for restock
@@ -841,13 +881,24 @@ function AppContent() {
         })
       );
       
-      const deletePromises = items.map(item => 
+      // 2. Delete selected items from inventory
+      const deletePromises = selectedItems.map(item => 
         handleDeleteGrocery(item.id)
       );
 
-      await Promise.all([...shoppingPromises, ...deletePromises]);
+      // 3. Refresh unselected items in pantry to reset prediction
+      const refreshPromises = unselectedItems.map(item =>
+        updateDoc(doc(db, 'inventory', item.id), {
+          lastUpdated: new Date().toISOString()
+        })
+      );
+
+      await Promise.all([...shoppingPromises, ...deletePromises, ...refreshPromises]);
       setIsStockoutModalOpen(false);
-      setActiveTab('shop');
+      
+      if (selectedItems.length > 0) {
+        setActiveTab('shop');
+      }
     } catch (error) {
       handleFirestoreError(error, OperationType.CREATE, 'shoppingList');
     }
@@ -1065,8 +1116,20 @@ function AppContent() {
             <h1 className="text-lg font-black tracking-tighter text-white">PantryPulse</h1>
           </div>
 
-          <div className="flex items-center gap-2">
-            <AnimatePresence>
+          <div className="flex items-center gap-3">
+            {userProfile?.tier === 'pro' ? (
+              <ProBadge />
+            ) : (
+              <button 
+                onClick={() => setIsUpgradeModalOpen(true)}
+                className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-100 dark:bg-amber-900/20 text-amber-600 dark:text-amber-500 text-xs font-black uppercase tracking-widest hover:bg-amber-200 dark:hover:bg-amber-900/40 transition-all"
+              >
+                <Zap className="w-4 h-4 fill-current" />
+                Go Pro
+              </button>
+            )}
+            <div className="flex items-center gap-2">
+              <AnimatePresence>
               {hasChanges && (
                 <motion.button
                   initial={{ opacity: 0, scale: 0.8 }}
@@ -1130,7 +1193,8 @@ function AppContent() {
             </div>
           </div>
         </div>
-      </header>
+      </div>
+    </header>
 
       <StockoutConfirmationModal 
         isOpen={isStockoutModalOpen}
@@ -1237,6 +1301,13 @@ function AppContent() {
                 </div>
                 
                 <div className="flex items-center gap-3">
+                  <button 
+                    onClick={runPredictionsManually}
+                    className="p-3 bg-white/5 border border-white/5 text-gray-500 hover:text-white rounded-2xl hover:bg-white/10 transition-all active:rotate-180 duration-500"
+                    title="Refresh Predictions"
+                  >
+                    <RotateCcw className="w-5 h-5" />
+                  </button>
                   <div className="flex bg-white/5 p-1 rounded-2xl border border-white/5">
                     <button 
                       onClick={() => setInventoryFilter('all')}
@@ -1362,7 +1433,10 @@ function AppContent() {
               className="space-y-10"
             >
               <header>
-                <h2 className="text-4xl font-black tracking-tighter">Shopping List</h2>
+                <div className="flex items-center gap-3">
+                  <h2 className="text-4xl font-black tracking-tighter">Shopping List</h2>
+                  <ProBadge className="mt-1" />
+                </div>
                 <p className="text-gray-500 font-medium text-sm mt-1">Compare prices across platforms</p>
               </header>
 
@@ -1433,7 +1507,7 @@ function AppContent() {
             </motion.div>
           )}
 
-          {activeTab === 'dev' && user?.email === "dailygkquiz2026@gmail.com" && (
+          {activeTab === 'dev' && user?.email === "dailygkquiz2026@gmail.com" && user?.emailVerified && (
             <motion.div
               key="dev"
               initial={{ opacity: 0, y: 20 }}
@@ -1498,6 +1572,12 @@ function AppContent() {
         onClose={() => setIsUpdateQuantityModalOpen(false)}
         item={itemToUpdate}
         onConfirm={handleUpdateInventoryQuantity}
+      />
+
+      <UpgradeModal 
+        isOpen={isUpgradeModalOpen} 
+        onClose={() => setIsUpgradeModalOpen(false)} 
+        uid={user?.uid || ''} 
       />
     </div>
   );
