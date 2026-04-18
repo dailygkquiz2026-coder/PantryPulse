@@ -137,7 +137,23 @@ function AppContent() {
   const [searchError, setSearchError] = useState<string | null>(null);
   const [isSearching, setIsSearching] = useState(false);
   const [predictions, setPredictions] = useState<Record<string, number>>({});
-  const [notifiedItems, setNotifiedItems] = useState<Set<string>>(new Set());
+  // Persistent cooldown map so the stockout/low-stock popup re-prompts at most once per hour per item,
+  // even across page reloads. Keys: `stockout-<id>` or `lowstock-<id>`. Values: epoch ms of last notify.
+  const [notifiedItems, setNotifiedItems] = useState<Record<string, number>>(() => {
+    try {
+      return JSON.parse(localStorage.getItem('pp_stockoutCooldown') || '{}');
+    } catch {
+      return {};
+    }
+  });
+  const STOCKOUT_COOLDOWN_MS = 60 * 60 * 1000; // 1 hour
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('pp_stockoutCooldown', JSON.stringify(notifiedItems));
+    } catch {}
+  }, [notifiedItems]);
+
   const [hasChanges, setHasChanges] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
@@ -194,10 +210,12 @@ function AppContent() {
   useEffect(() => {
     if (!('Notification' in window) || Notification.permission !== 'granted') return;
 
+    const now = Date.now();
     const itemsToNotify = inventory.filter(item => {
       const days = predictions[item.id];
-      // Notify if 1 day left or out of stock, and not notified yet
-      return days !== undefined && days <= 1 && !notifiedItems.has(item.id);
+      if (days === undefined || days > 1) return false;
+      const last = notifiedItems[`lowstock-${item.id}`] ?? 0;
+      return now - last > STOCKOUT_COOLDOWN_MS;
     });
 
     if (itemsToNotify.length > 0) {
@@ -208,8 +226,8 @@ function AppContent() {
       });
 
       setNotifiedItems(prev => {
-        const next = new Set(prev);
-        itemsToNotify.forEach(i => next.add(i.id));
+        const next = { ...prev };
+        itemsToNotify.forEach(i => { next[`lowstock-${i.id}`] = now; });
         return next;
       });
     }
@@ -445,7 +463,7 @@ function AppContent() {
 
   const runPredictionsManually = () => {
     setPredictions({}); // Force refresh
-    setNotifiedItems(new Set()); // Allow re-notifying if fixed
+    setNotifiedItems({}); // Allow re-notifying if fixed
     setLastPredictionRun(Date.now());
   };
 
@@ -456,10 +474,10 @@ function AppContent() {
         return;
       }
 
-      const newPredictions: Record<string, number> = {};
+      const localMap: Record<string, number> = {};
       const now = Date.now();
-      
-      // Local fallback calculation
+
+      // Local math: authoritative. Deterministic given the same inventory + household.
       inventory.forEach(item => {
         const qty = Number(item.quantity) || 0;
         const usage = Number(item.usageFrequency) || 0;
@@ -467,27 +485,24 @@ function AppContent() {
         const children = Number(household.children) || 0;
         const effectiveMembers = adults + (children * 0.5);
         const dailyUsage = usage * effectiveMembers;
-        
-        // Calculate days passed since last update
+
         const lastUpdated = new Date(item.lastUpdated || item.purchaseDate).getTime();
         const daysPassed = (now - lastUpdated) / (1000 * 60 * 60 * 24);
-        
+
         let localPrediction = 30;
         if (dailyUsage > 0) {
-          // Total days it would last - days already passed
           localPrediction = (qty / dailyUsage) - daysPassed;
-
-          // CATEGORY-SPECIFIC CAP: Bread/Dairy/Produce usually don't last > 4-7 days total
           if (['Bakery', 'Produce', 'Dairy'].includes(item.category || '')) {
             const maxLifespan = (item.category === 'Bakery') ? 4 : 7;
             localPrediction = Math.min(localPrediction, maxLifespan - daysPassed);
           }
         }
-
-        newPredictions[item.id] = Math.max(-10, Math.ceil(localPrediction));
+        localMap[item.id] = Math.max(-10, Math.ceil(localPrediction));
       });
 
-      // AI refinement
+      // AI refinement (deterministic — temperature 0 on the server).
+      let aiMap: Record<string, number> = {};
+      let aiAvailable = false;
       try {
         const aiPredictions = await predictMultipleRestocks(
           inventory.map(i => ({
@@ -503,39 +518,57 @@ function AppContent() {
           household.children || 0,
           user?.uid
         );
-        
         Object.entries(aiPredictions).forEach(([id, days]) => {
           if (typeof days === 'number' && !isNaN(days)) {
-            newPredictions[id] = Math.max(-10, Math.ceil(days));
+            aiMap[id] = Math.max(-10, Math.ceil(days));
           }
         });
+        aiAvailable = Object.keys(aiMap).length > 0;
       } catch (error) {
         console.warn("AI Prediction failed, using local fallback:", error);
       }
-      
-      setPredictions(newPredictions);
 
-      // Check for new stockouts to show modal
-      const potentialStockouts = inventory.filter(item => {
-        const days = newPredictions[item.id];
-        if (days !== undefined && days <= 0) {
-          // Check if already in shopping list to avoid duplicates
-          const inShoppingList = shoppingList.some(si => si.name.toLowerCase() === item.name.toLowerCase());
-          // Check if we already asked about this item in this session
-          const alreadyAsked = notifiedItems.has(`stockout-${item.id}`);
-          return !inShoppingList && !alreadyAsked;
-        }
-        return false;
+      // Merge with hysteresis so sub-day jitter doesn't re-render a different number
+      // every run. Local is authoritative; AI only wins when it shifts by >=1 day.
+      setPredictions(prev => {
+        const merged: Record<string, number> = {};
+        inventory.forEach(item => {
+          const local = localMap[item.id];
+          const ai = aiMap[item.id];
+          let chosen = local;
+          if (typeof ai === 'number' && Math.abs(ai - local) >= 1) {
+            chosen = ai;
+          }
+          const previous = prev[item.id];
+          if (typeof previous === 'number' && Math.abs(chosen - previous) < 1) {
+            chosen = previous;
+          }
+          merged[item.id] = chosen;
+        });
+        return merged;
       });
 
-      if (potentialStockouts.length > 0) {
-        setStockoutItems(potentialStockouts);
+      // Confidence-gated stockout popup.
+      // Fire only when we're sure: both local & AI agree days <= 0, or AI unavailable and local <= -1.
+      const confidentStockouts = inventory.filter(item => {
+        const local = localMap[item.id];
+        const ai = aiMap[item.id];
+        const confident = aiAvailable
+          ? (typeof ai === 'number' && ai <= 0 && local <= 0)
+          : local <= -1;
+        if (!confident) return false;
+        const inShoppingList = shoppingList.some(si => si.name.toLowerCase() === item.name.toLowerCase());
+        if (inShoppingList) return false;
+        const last = notifiedItems[`stockout-${item.id}`] ?? 0;
+        return now - last > STOCKOUT_COOLDOWN_MS;
+      });
+
+      if (confidentStockouts.length > 0) {
+        setStockoutItems(confidentStockouts);
         setIsStockoutModalOpen(true);
-        
-        // Mark as notified so we don't show it again immediately
         setNotifiedItems(prev => {
-          const next = new Set(prev);
-          potentialStockouts.forEach(i => next.add(`stockout-${i.id}`));
+          const next = { ...prev };
+          confidentStockouts.forEach(i => { next[`stockout-${i.id}`] = now; });
           return next;
         });
       }

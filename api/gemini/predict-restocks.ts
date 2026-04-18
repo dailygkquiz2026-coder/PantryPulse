@@ -48,6 +48,9 @@ export default withErrorHandling(async (req: any, res: any) => {
 
     Return JSON: { "ITEM_ID": days_remaining_from_today (number) }`,
     config: {
+      // Deterministic output so the displayed days-left doesn't fluctuate between runs.
+      temperature: 0,
+      topK: 1,
       responseMimeType: 'application/json',
       responseSchema: {
         type: Type.OBJECT,
