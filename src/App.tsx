@@ -959,8 +959,8 @@ function AppContent() {
       setSearchResults(results);
     } catch (error: any) {
       console.error('Search failed:', error);
-      let message = "Search failed. Please try again later.";
-      if (error.message?.includes('RESOURCE_EXHAUSTED')) {
+      let message = error?.message || "Search failed. Please try again later.";
+      if (error?.message?.includes('RESOURCE_EXHAUSTED')) {
         message = "AI Search quota exceeded. Google Search grounding is currently unavailable. Please try again in a few minutes.";
       }
       setSearchError(message);
