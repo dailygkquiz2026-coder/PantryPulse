@@ -8,6 +8,22 @@ export function getAI(): GoogleGenAI {
   return new GoogleGenAI({ apiKey });
 }
 
+export function withErrorHandling(
+  fn: (req: any, res: any) => Promise<any>
+) {
+  return async (req: any, res: any) => {
+    try {
+      await fn(req, res);
+    } catch (err: any) {
+      const message = err?.message || 'Internal server error';
+      console.error('[api]', req.url, message, err?.stack);
+      if (!res.headersSent) {
+        res.status(500).json({ error: message });
+      }
+    }
+  };
+}
+
 export function parseGeminiResponse(text: string): any {
   try {
     return JSON.parse(text);

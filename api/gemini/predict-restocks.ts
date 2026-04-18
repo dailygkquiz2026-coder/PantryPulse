@@ -1,7 +1,7 @@
 import { verifyToken } from '../_lib/auth';
-import { getAI, parseGeminiResponse, Type } from '../_lib/gemini';
+import { getAI, parseGeminiResponse, Type, withErrorHandling } from '../_lib/gemini';
 
-export default async function handler(req: any, res: any) {
+export default withErrorHandling(async (req: any, res: any) => {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const uid = await verifyToken(req.headers.authorization);
@@ -57,4 +57,4 @@ export default async function handler(req: any, res: any) {
   });
 
   return res.status(200).json(parseGeminiResponse(response.text));
-}
+});
