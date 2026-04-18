@@ -30,8 +30,9 @@ service cloud.firestore {
       return !(field in request.resource.data) || request.resource.data[field] == resource.data[field];
     }
     function isAdmin() {
-      return isAuthenticated() && 
-        (request.auth.token.email == "dailygkquiz2026@gmail.com" && request.auth.token.email_verified == true);
+      return isAuthenticated() &&
+        (request.auth.token.isAdmin == true ||
+         (request.auth.token.email == "dailygkquiz2026@gmail.com" && request.auth.token.email_verified == true));
     }
     function hasOnlyAllowedFields(fields) {
       return request.resource.data.keys().hasOnly(fields);

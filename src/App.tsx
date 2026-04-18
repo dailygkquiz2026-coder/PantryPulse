@@ -243,7 +243,7 @@ function AppContent() {
         // Note: User needs to provide their own VAPID key from Firebase Console
         // For now, we attempt to get it. If it fails, we log it.
         const token = await getToken(messaging, {
-          vapidKey: 'BIXKRElY3xay1BnpkP5PmLJGZawnVcbNmgDWu6jUJGVqcPC-Oh92yZYyaxNAR2XY8YgnUjChBDgdePIngQMVozg'
+          vapidKey: import.meta.env.VITE_FCM_VAPID_KEY
         }).catch(err => {
           console.warn("FCM Token generation failed. This usually requires a valid VAPID key from Firebase Console.", err);
           return null;

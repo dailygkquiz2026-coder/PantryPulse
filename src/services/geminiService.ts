@@ -4,6 +4,28 @@ import { collection, addDoc } from "firebase/firestore";
 
 let aiInstance: any = null;
 
+const PRIVATE_IP_PATTERN = /^https?:\/\/(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/i;
+
+function isSafeImageUrl(url: unknown): boolean {
+  if (typeof url !== 'string' || !url) return false;
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== 'https:') return false;
+    if (PRIVATE_IP_PATTERN.test(url)) return false;
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function sanitizeRecipeImageUrls(recipes: any): any {
+  if (!Array.isArray(recipes)) return recipes;
+  return recipes.map((r: any) => ({
+    ...r,
+    imageUrl: isSafeImageUrl(r.imageUrl) ? r.imageUrl : null
+  }));
+}
+
 async function logAIUsage(uid: string | undefined, type: string, model: string = "gemini-3-flash-preview") {
   if (!uid) return;
   try {
@@ -263,7 +285,7 @@ export async function fetchProductImage(itemName: string) {
     }
   });
   const data = parseGeminiResponse(response.text);
-  return data.imageUrl;
+  return isSafeImageUrl(data.imageUrl) ? data.imageUrl : null;
 }
 
 export async function getItemSuggestions(prefix: string) {
@@ -471,7 +493,8 @@ export async function getTrendingRecipes(location?: string, uid?: string) {
       tools: [{ googleSearch: {} }]
     }
   });
-  return parseGeminiResponse(response.text);
+  const recipes = parseGeminiResponse(response.text);
+  return sanitizeRecipeImageUrls(recipes);
 }
 
 export async function searchRecipes(query: string, uid?: string) {
@@ -543,5 +566,6 @@ export async function searchRecipes(query: string, uid?: string) {
       tools: [{ googleSearch: {} }]
     }
   });
-  return parseGeminiResponse(response.text);
+  const recipeResults = parseGeminiResponse(response.text);
+  return sanitizeRecipeImageUrls(recipeResults);
 }
