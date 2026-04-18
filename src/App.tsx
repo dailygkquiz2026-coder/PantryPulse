@@ -73,6 +73,7 @@ import UpgradeModal from './components/UpgradeModal';
 import ProBadge from './components/ProBadge';
 import { GroceryItem, HouseholdInfo, ShoppingListItem, SavedRecipe, PriceComparisonResult, DeletedItem, UserProfile } from './types';
 import { predictMultipleRestocks, searchCheapestSource } from './services/geminiService';
+import { toIsoDateString } from './lib/utils';
 
 // Error Boundary Component
 class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean, error: Error | null }> {
@@ -641,8 +642,11 @@ function AppContent() {
       return null;
     }
     try {
-      console.log("Adding grocery item:", item);
-      const ref = await addDoc(collection(db, 'inventory'), { ...item, uid: user.uid });
+      const payload: any = { ...item, uid: user.uid };
+      if (payload.expiryDate) payload.expiryDate = toIsoDateString(payload.expiryDate);
+      if (!payload.expiryDate) delete payload.expiryDate;
+      console.log("Adding grocery item:", payload);
+      const ref = await addDoc(collection(db, 'inventory'), payload);
       console.log("Successfully added item to inventory");
       setHasChanges(true);
       setIsAddModalOpen(false);
@@ -657,7 +661,9 @@ function AppContent() {
 
   const handlePatchExpiry = async (id: string, expiryDate: string) => {
     try {
-      await updateDoc(doc(db, 'inventory', id), { expiryDate });
+      const iso = toIsoDateString(expiryDate);
+      if (!iso) return;
+      await updateDoc(doc(db, 'inventory', id), { expiryDate: iso });
     } catch (error) {
       console.error("Failed to patch expiry:", error);
     }
@@ -666,9 +672,12 @@ function AppContent() {
   const handleAddMultipleGrocery = async (items: any[]) => {
     if (!user) return;
     try {
-      const batch = items.map(item => 
-        addDoc(collection(db, 'inventory'), { ...item, uid: user.uid })
-      );
+      const batch = items.map(item => {
+        const payload: any = { ...item, uid: user.uid };
+        if (payload.expiryDate) payload.expiryDate = toIsoDateString(payload.expiryDate);
+        if (!payload.expiryDate) delete payload.expiryDate;
+        return addDoc(collection(db, 'inventory'), payload);
+      });
       await Promise.all(batch);
       setHasChanges(true);
       setIsAddModalOpen(false);
@@ -706,7 +715,10 @@ function AppContent() {
     if (!user) return null;
     if (restoreContext) {
       try {
-        const ref = await addDoc(collection(db, 'inventory'), { ...item, uid: user.uid });
+        const payload: any = { ...item, uid: user.uid };
+        if (payload.expiryDate) payload.expiryDate = toIsoDateString(payload.expiryDate);
+        if (!payload.expiryDate) delete payload.expiryDate;
+        const ref = await addDoc(collection(db, 'inventory'), payload);
         await deleteDoc(doc(db, 'deletedItems', restoreContext.id));
         setHasChanges(true);
         setIsAddModalOpen(false);
@@ -903,7 +915,10 @@ function AppContent() {
 
   const handleEditInventory = async (id: string, updates: Partial<GroceryItem>) => {
     try {
-      await updateDoc(doc(db, 'inventory', id), updates);
+      const normalized: any = { ...updates };
+      if (normalized.expiryDate) normalized.expiryDate = toIsoDateString(normalized.expiryDate);
+      if ('expiryDate' in normalized && !normalized.expiryDate) delete normalized.expiryDate;
+      await updateDoc(doc(db, 'inventory', id), normalized);
       setHasChanges(true);
       setIsEditModalOpen(false);
       setItemToEdit(null);

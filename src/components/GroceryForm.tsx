@@ -9,6 +9,7 @@ import DuplicateCheckModal from './DuplicateCheckModal';
 import { GroceryItem } from '../types';
 import { db, auth } from '../firebase';
 import { collection, addDoc } from 'firebase/firestore';
+import { toIsoDateString } from '../lib/utils';
 
 interface GroceryFormPrefill {
   name: string;
@@ -106,7 +107,8 @@ export default function GroceryForm({ onAdd, onAddMultiple, inventory, onUpdateQ
     };
 
     if (expiryDate) {
-      newItem.expiryDate = expiryDate;
+      const iso = toIsoDateString(expiryDate);
+      if (iso) newItem.expiryDate = iso;
     }
 
     // Add the item immediately; do not block on AI expiry prediction.
