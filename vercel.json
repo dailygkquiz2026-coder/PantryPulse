@@ -1,8 +1,10 @@
 {
   "functions": {
-    "api/gemini/analyze-invoice.ts": { "maxDuration": 30 },
-    "api/gemini/search-price.ts": { "maxDuration": 30 },
-    "api/calorie/analyze-meal.ts": { "maxDuration": 30 }
+    "api/gemini/analyze-invoice.ts": { "maxDuration": 60 },
+    "api/gemini/search-price.ts": { "maxDuration": 60 },
+    "api/gemini/trending-recipes.ts": { "maxDuration": 60 },
+    "api/gemini/search-recipes.ts": { "maxDuration": 60 },
+    "api/calorie/analyze-meal.ts": { "maxDuration": 60 }
   },
   "headers": [
     {
