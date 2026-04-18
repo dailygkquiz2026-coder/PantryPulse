@@ -19,14 +19,15 @@ interface GroceryFormPrefill {
 }
 
 interface GroceryFormProps {
-  onAdd: (item: any) => void;
+  onAdd: (item: any) => Promise<string | null> | void;
   onAddMultiple: (items: any[]) => void;
   inventory: GroceryItem[];
   onUpdateQuantity: (id: string, newQuantity: number) => void;
+  onPatchExpiry?: (id: string, expiryDate: string) => Promise<void> | void;
   prefill?: GroceryFormPrefill | null;
 }
 
-export default function GroceryForm({ onAdd, onAddMultiple, inventory, onUpdateQuantity, prefill }: GroceryFormProps) {
+export default function GroceryForm({ onAdd, onAddMultiple, inventory, onUpdateQuantity, onPatchExpiry, prefill }: GroceryFormProps) {
   const [name, setName] = useState(prefill?.name ?? '');
   const [category, setCategory] = useState(prefill?.category ?? CATEGORIES[0]);
   const [quantity, setQuantity] = useState<string | number>(1);
@@ -92,22 +93,6 @@ export default function GroceryForm({ onAdd, onAddMultiple, inventory, onUpdateQ
       alert("Please enter a valid usage frequency");
       return;
     }
-    
-    let finalExpiryDate = expiryDate;
-
-    // Auto-predict expiry if not provided
-    if (!finalExpiryDate) {
-      try {
-        setIsPredictingExpiry(true);
-        const prediction = await predictExpiryDate(name, category);
-        finalExpiryDate = prediction.predictedExpiryDate;
-        console.log("Predicted expiry date:", prediction);
-      } catch (error) {
-        console.error("Expiry prediction failed:", error);
-      } finally {
-        setIsPredictingExpiry(false);
-      }
-    }
 
     const newItem: any = {
       name,
@@ -120,12 +105,28 @@ export default function GroceryForm({ onAdd, onAddMultiple, inventory, onUpdateQ
       lastUpdated: new Date().toISOString()
     };
 
-    if (finalExpiryDate) {
-      newItem.expiryDate = finalExpiryDate;
+    if (expiryDate) {
+      newItem.expiryDate = expiryDate;
     }
 
-    onAdd(newItem);
-    
+    // Add the item immediately; do not block on AI expiry prediction.
+    const addedId = await Promise.resolve(onAdd(newItem));
+
+    // If the user didn't provide an expiry, predict it in the background
+    // and patch the newly-created doc once the prediction returns.
+    if (!expiryDate && addedId && onPatchExpiry) {
+      (async () => {
+        try {
+          const prediction = await predictExpiryDate(name, category);
+          if (prediction?.predictedExpiryDate) {
+            await onPatchExpiry(addedId, prediction.predictedExpiryDate);
+          }
+        } catch (err) {
+          console.error("Background expiry prediction failed:", err);
+        }
+      })();
+    }
+
     setName('');
     setQuantity(1);
     setPrice(0);
@@ -530,15 +531,10 @@ export default function GroceryForm({ onAdd, onAddMultiple, inventory, onUpdateQ
 
         <button
           type="submit"
-          disabled={isPredictingExpiry}
-          className="cred-button-primary w-full flex items-center justify-center gap-3 mt-4 disabled:opacity-50"
+          className="cred-button-primary w-full flex items-center justify-center gap-3 mt-4"
         >
-          {isPredictingExpiry ? (
-            <Loader2 className="w-6 h-6 animate-spin" />
-          ) : (
-            <ShoppingCart className="w-6 h-6" />
-          )}
-          {isPredictingExpiry ? 'Predicting Expiry...' : 'Add to Inventory'}
+          <ShoppingCart className="w-6 h-6" />
+          Add to Inventory
         </button>
       </form>
     </motion.div>

@@ -635,21 +635,31 @@ function AppContent() {
     window.location.reload();
   };
 
-  const handleAddGrocery = async (item: Omit<GroceryItem, 'id'>) => {
+  const handleAddGrocery = async (item: Omit<GroceryItem, 'id'>): Promise<string | null> => {
     if (!user) {
       console.error("No user found in handleAddGrocery");
-      return;
+      return null;
     }
     try {
       console.log("Adding grocery item:", item);
-      await addDoc(collection(db, 'inventory'), { ...item, uid: user.uid });
+      const ref = await addDoc(collection(db, 'inventory'), { ...item, uid: user.uid });
       console.log("Successfully added item to inventory");
       setHasChanges(true);
       setIsAddModalOpen(false);
       setActiveTab('pantry');
+      return ref.id;
     } catch (error) {
       console.error("Error in handleAddGrocery:", error);
       handleFirestoreError(error, OperationType.CREATE, 'inventory');
+      return null;
+    }
+  };
+
+  const handlePatchExpiry = async (id: string, expiryDate: string) => {
+    try {
+      await updateDoc(doc(db, 'inventory', id), { expiryDate });
+    } catch (error) {
+      console.error("Failed to patch expiry:", error);
     }
   };
 
@@ -692,22 +702,23 @@ function AppContent() {
     setIsAddModalOpen(true);
   };
 
-  const handleAddOrRestoreGrocery = async (item: Omit<GroceryItem, 'id'>) => {
-    if (!user) return;
+  const handleAddOrRestoreGrocery = async (item: Omit<GroceryItem, 'id'>): Promise<string | null> => {
+    if (!user) return null;
     if (restoreContext) {
       try {
-        await addDoc(collection(db, 'inventory'), { ...item, uid: user.uid });
+        const ref = await addDoc(collection(db, 'inventory'), { ...item, uid: user.uid });
         await deleteDoc(doc(db, 'deletedItems', restoreContext.id));
         setHasChanges(true);
         setIsAddModalOpen(false);
         setRestoreContext(null);
         setActiveTab('pantry');
+        return ref.id;
       } catch (error) {
         handleFirestoreError(error, OperationType.CREATE, 'inventory');
+        return null;
       }
-      return;
     }
-    await handleAddGrocery(item);
+    return handleAddGrocery(item);
   };
 
   const closeAddModal = () => {
@@ -1324,6 +1335,7 @@ function AppContent() {
                 onAddMultiple={handleAddMultipleGrocery}
                 inventory={inventory}
                 onUpdateQuantity={handleUpdateInventoryQuantity}
+                onPatchExpiry={handlePatchExpiry}
                 prefill={restoreContext ? {
                   name: restoreContext.name,
                   category: restoreContext.category,

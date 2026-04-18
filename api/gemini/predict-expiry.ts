@@ -37,7 +37,6 @@ export default withErrorHandling(async (req: any, res: any) => {
         },
         required: ['predictedExpiryDate', 'typicalShelfLifeDays', 'reasoning'],
       },
-      tools: [{ googleSearch: {} }],
     },
   });
 
