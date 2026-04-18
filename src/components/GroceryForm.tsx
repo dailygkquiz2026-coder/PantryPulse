@@ -10,20 +10,29 @@ import { GroceryItem } from '../types';
 import { db, auth } from '../firebase';
 import { collection, addDoc } from 'firebase/firestore';
 
+interface GroceryFormPrefill {
+  name: string;
+  category: string;
+  unit: string;
+  usageFrequency?: number;
+  price?: number;
+}
+
 interface GroceryFormProps {
   onAdd: (item: any) => void;
   onAddMultiple: (items: any[]) => void;
   inventory: GroceryItem[];
   onUpdateQuantity: (id: string, newQuantity: number) => void;
+  prefill?: GroceryFormPrefill | null;
 }
 
-export default function GroceryForm({ onAdd, onAddMultiple, inventory, onUpdateQuantity }: GroceryFormProps) {
-  const [name, setName] = useState('');
-  const [category, setCategory] = useState(CATEGORIES[0]);
+export default function GroceryForm({ onAdd, onAddMultiple, inventory, onUpdateQuantity, prefill }: GroceryFormProps) {
+  const [name, setName] = useState(prefill?.name ?? '');
+  const [category, setCategory] = useState(prefill?.category ?? CATEGORIES[0]);
   const [quantity, setQuantity] = useState<string | number>(1);
-  const [unit, setUnit] = useState(UNITS[0]);
-  const [price, setPrice] = useState<string | number>(0);
-  const [usageFrequency, setUsageFrequency] = useState<string | number>(1);
+  const [unit, setUnit] = useState(prefill?.unit ?? UNITS[0]);
+  const [price, setPrice] = useState<string | number>(prefill?.price ?? 0);
+  const [usageFrequency, setUsageFrequency] = useState<string | number>(prefill?.usageFrequency ?? 1);
   const [expiryDate, setExpiryDate] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isScanningInvoice, setIsScanningInvoice] = useState(false);

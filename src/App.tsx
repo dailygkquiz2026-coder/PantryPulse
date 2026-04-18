@@ -125,6 +125,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
 function AppContent() {
   const [activeTab, setActiveTab] = useState<'pantry' | 'shop' | 'cook' | 'health' | 'settings' | 'dev'>('pantry');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [restoreContext, setRestoreContext] = useState<DeletedItem | null>(null);
   const [isSettingsMenuOpen, setIsSettingsMenuOpen] = useState(false);
   const [inventory, setInventory] = useState<GroceryItem[]>([]);
   const [shoppingList, setShoppingList] = useState<ShoppingListItem[]>([]);
@@ -686,20 +687,32 @@ function AppContent() {
     }
   };
 
-  const handleRestoreGrocery = async (item: DeletedItem) => {
+  const handleRestoreGrocery = (item: DeletedItem) => {
+    setRestoreContext(item);
+    setIsAddModalOpen(true);
+  };
+
+  const handleAddOrRestoreGrocery = async (item: Omit<GroceryItem, 'id'>) => {
     if (!user) return;
-    try {
-      const { id, deletedAt, ...groceryData } = item;
-      await addDoc(collection(db, 'inventory'), {
-        ...groceryData,
-        uid: user.uid,
-        lastUpdated: new Date().toISOString()
-      });
-      await deleteDoc(doc(db, 'deletedItems', id));
-      setHasChanges(true);
-    } catch (error) {
-      handleFirestoreError(error, OperationType.CREATE, 'inventory');
+    if (restoreContext) {
+      try {
+        await addDoc(collection(db, 'inventory'), { ...item, uid: user.uid });
+        await deleteDoc(doc(db, 'deletedItems', restoreContext.id));
+        setHasChanges(true);
+        setIsAddModalOpen(false);
+        setRestoreContext(null);
+        setActiveTab('pantry');
+      } catch (error) {
+        handleFirestoreError(error, OperationType.CREATE, 'inventory');
+      }
+      return;
     }
+    await handleAddGrocery(item);
+  };
+
+  const closeAddModal = () => {
+    setIsAddModalOpen(false);
+    setRestoreContext(null);
   };
 
   const handlePermanentDelete = async (id: string) => {
@@ -1294,17 +1307,30 @@ function AppContent() {
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
               className="w-full max-w-4xl max-h-[90vh] overflow-y-auto no-scrollbar relative"
             >
-              <button 
-                onClick={() => setIsAddModalOpen(false)}
+              <button
+                onClick={closeAddModal}
                 className="absolute top-6 right-6 p-2 bg-white/10 hover:bg-white/20 text-white rounded-full z-10 transition-all"
               >
                 <X className="w-6 h-6" />
               </button>
-              <GroceryForm 
-                onAdd={handleAddGrocery} 
-                onAddMultiple={handleAddMultipleGrocery} 
+              {restoreContext && (
+                <div className="mb-3 p-3 rounded-xl bg-blue-500/10 border border-blue-400/30 text-blue-200 text-sm">
+                  Restoring <span className="font-semibold">{restoreContext.name}</span> — please enter the latest quantity, purchase date and expiry.
+                </div>
+              )}
+              <GroceryForm
+                key={restoreContext?.id ?? 'new'}
+                onAdd={handleAddOrRestoreGrocery}
+                onAddMultiple={handleAddMultipleGrocery}
                 inventory={inventory}
                 onUpdateQuantity={handleUpdateInventoryQuantity}
+                prefill={restoreContext ? {
+                  name: restoreContext.name,
+                  category: restoreContext.category,
+                  unit: restoreContext.unit,
+                  usageFrequency: restoreContext.usageFrequency,
+                  price: restoreContext.price,
+                } : null}
               />
             </motion.div>
           </div>
@@ -1434,7 +1460,7 @@ function AppContent() {
                                 <button
                                   onClick={() => handleRestoreGrocery(item)}
                                   className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-all"
-                                  title="Restore to Inventory"
+                                  title="Restore to Inventory (enter latest details)"
                                 >
                                   <RotateCcw className="w-4 h-4" />
                                 </button>
