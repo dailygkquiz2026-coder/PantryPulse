@@ -123,6 +123,117 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
   }
 }
 
+// Returns the fraction of 1 stored-unit consumed per single use, and whether
+// consumption should be multiplied by household members (per-person) or not.
+// This is a realistic lookup table that mirrors the AI prompt's reasoning so
+// the local fallback stays aligned with AI predictions.
+function estimatePerUseVolume(name: string, unit: string, category: string): { perUse: number; perPerson: boolean } {
+  const n = name.toLowerCase();
+  const u = unit.toLowerCase();
+  const c = category.toLowerCase();
+
+  // ── Household / cleaning — NOT per-person ──────────────────────────────────
+  const isHousehold = c === 'household' || c === 'cleaning';
+  if (isHousehold || n.includes('detergent') || n.includes('surf') || n.includes('ariel') || n.includes('tide')) {
+    // Liquid detergent ~45ml (0.045L) per wash; powder ~50g (0.05kg)
+    if (u === 'l' || u === 'litre' || u === 'liter') return { perUse: 0.045, perPerson: false };
+    if (u === 'ml') return { perUse: 45, perPerson: false };
+    if (u === 'kg' || u === 'g') return { perUse: u === 'kg' ? 0.05 : 50, perPerson: false };
+  }
+  if (n.includes('dishwash') || n.includes('vim') || n.includes('pril')) {
+    if (u === 'ml') return { perUse: 8, perPerson: false };
+    if (u === 'l' || u === 'litre') return { perUse: 0.008, perPerson: false };
+  }
+  if (n.includes('floor cleaner') || n.includes('phenyl') || n.includes('lizol') || n.includes('colin') || n.includes('harpic')) {
+    if (u === 'ml') return { perUse: 25, perPerson: false };
+    if (u === 'l' || u === 'litre') return { perUse: 0.025, perPerson: false };
+  }
+  if (n.includes('hand wash') || n.includes('handwash') || n.includes('dettol')) {
+    if (u === 'ml') return { perUse: 3, perPerson: true };
+    if (u === 'l' || u === 'litre') return { perUse: 0.003, perPerson: true };
+  }
+  if (n.includes('cooking oil') || n.includes('sunflower oil') || n.includes('mustard oil') || n.includes('olive oil') || (c === 'cooking' && (u === 'l' || u === 'litre'))) {
+    return { perUse: 0.020, perPerson: false }; // 20ml per meal, household-level
+  }
+  if (n.includes('ghee') || n.includes('butter')) {
+    if (u === 'kg' || u === 'g') return { perUse: u === 'kg' ? 0.015 : 15, perPerson: false };
+    if (u === 'l' || u === 'ml') return { perUse: u === 'l' ? 0.015 : 15, perPerson: false };
+  }
+  if (n.includes('salt')) {
+    return { perUse: u === 'kg' ? 0.004 : 4, perPerson: false }; // ~4g per meal
+  }
+
+  // ── Personal care — per-person ─────────────────────────────────────────────
+  if (n.includes('shampoo') || n.includes('head & shoulders') || n.includes('dove') || n.includes('pantene')) {
+    if (u === 'ml') return { perUse: 8, perPerson: true };
+    if (u === 'l' || u === 'litre') return { perUse: 0.008, perPerson: true };
+  }
+  if (n.includes('toothpaste') || n.includes('colgate') || n.includes('pepsodent') || n.includes('sensodyne')) {
+    if (u === 'g') return { perUse: 2, perPerson: true };
+    if (u === 'ml') return { perUse: 2, perPerson: true };
+  }
+  if (n.includes('soap') && (u === 'pcs' || u === 'pc' || u === 'pack')) {
+    // 1 soap bar lasts ~25 days per person; 1 use = 1/25 of a bar
+    return { perUse: 1 / 25, perPerson: true };
+  }
+
+  // ── Dairy ──────────────────────────────────────────────────────────────────
+  if (c === 'dairy' || n.includes('milk')) {
+    if (u === 'l' || u === 'litre') return { perUse: 0.2, perPerson: true }; // 200ml/serving
+    if (u === 'ml') return { perUse: 200, perPerson: true };
+  }
+  if (n.includes('curd') || n.includes('yogurt') || n.includes('dahi')) {
+    if (u === 'kg' || u === 'g') return { perUse: u === 'kg' ? 0.1 : 100, perPerson: true };
+  }
+  if (n.includes('paneer') || n.includes('cheese')) {
+    if (u === 'kg' || u === 'g') return { perUse: u === 'kg' ? 0.05 : 50, perPerson: true };
+  }
+
+  // ── Grains & staples ───────────────────────────────────────────────────────
+  if (n.includes('rice') || n.includes('basmati') || n.includes('chawal')) {
+    if (u === 'kg') return { perUse: 0.07, perPerson: true }; // 70g/meal
+    if (u === 'g') return { perUse: 70, perPerson: true };
+  }
+  if (n.includes('atta') || n.includes('wheat flour') || n.includes('maida')) {
+    if (u === 'kg') return { perUse: 0.08, perPerson: true };
+    if (u === 'g') return { perUse: 80, perPerson: true };
+  }
+  if (n.includes('dal') || n.includes('lentil') || n.includes('chana') || n.includes('moong') || n.includes('toor')) {
+    if (u === 'kg') return { perUse: 0.06, perPerson: true };
+    if (u === 'g') return { perUse: 60, perPerson: true };
+  }
+  if (n.includes('sugar') || n.includes('cheeni')) {
+    if (u === 'kg') return { perUse: 0.010, perPerson: true }; // ~10g per cup of tea
+    if (u === 'g') return { perUse: 10, perPerson: true };
+  }
+  if (n.includes('tea') || n.includes('chai') || n.includes('coffee')) {
+    if (u === 'g') return { perUse: 3, perPerson: true };
+    if (u === 'kg') return { perUse: 0.003, perPerson: true };
+  }
+
+  // ── Bakery ─────────────────────────────────────────────────────────────────
+  if (c === 'bakery' || n.includes('bread') || n.includes('bun') || n.includes('rusk')) {
+    if (u === 'pcs' || u === 'pc' || u === 'loaf') return { perUse: 1, perPerson: true }; // 1 piece/use
+    if (u === 'g') return { perUse: 60, perPerson: true };
+  }
+
+  // ── Eggs ───────────────────────────────────────────────────────────────────
+  if (n.includes('egg')) {
+    return { perUse: 2, perPerson: true }; // 2 eggs per use per person
+  }
+
+  // ── Beverages ──────────────────────────────────────────────────────────────
+  if (c === 'beverages' || n.includes('juice') || n.includes('water')) {
+    if (u === 'l' || u === 'litre') return { perUse: 0.25, perPerson: true };
+    if (u === 'ml') return { perUse: 250, perPerson: true };
+  }
+
+  // ── Generic fallback ───────────────────────────────────────────────────────
+  // For unknown items, assume 1 full unit per use but apply household scope
+  // only to household category items, per-person for everything else.
+  return { perUse: 1, perPerson: !isHousehold };
+}
+
 function AppContent() {
   const [activeTab, setActiveTab] = useState<'pantry' | 'shop' | 'cook' | 'health' | 'settings' | 'dev'>('pantry');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -484,16 +595,20 @@ function AppContent() {
         const adults = Number(household.adults) || (Number(household.members) || 2);
         const children = Number(household.children) || 0;
         const effectiveMembers = adults + (children * 0.5);
-        const dailyUsage = usage * effectiveMembers;
 
         const lastUpdated = new Date(item.lastUpdated || item.purchaseDate).getTime();
         const daysPassed = (now - lastUpdated) / (1000 * 60 * 60 * 24);
+
+        // Estimate realistic per-use volume and consumption scope.
+        // This mirrors the AI prompt logic so the fallback stays sane without AI.
+        const { perUse, perPerson } = estimatePerUseVolume(item.name, item.unit, item.category || '');
+        const dailyUsage = perUse * usage * (perPerson ? effectiveMembers : 1);
 
         let localPrediction = 30;
         if (dailyUsage > 0) {
           localPrediction = (qty / dailyUsage) - daysPassed;
           if (['Bakery', 'Produce', 'Dairy'].includes(item.category || '')) {
-            const maxLifespan = (item.category === 'Bakery') ? 4 : 7;
+            const maxLifespan = item.category === 'Bakery' ? 4 : 7;
             localPrediction = Math.min(localPrediction, maxLifespan - daysPassed);
           }
         }
