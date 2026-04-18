@@ -611,14 +611,19 @@ function AppContent() {
       await signInWithPopup(auth, provider);
     } catch (error: any) {
       console.error("Login failed", error);
+      const serverResponse = error?.customData?.serverResponse;
+      if (serverResponse) console.error("Server response:", serverResponse);
       if (error.code === 'auth/unauthorized-domain') {
         setLoginError("This domain is not authorized in Firebase. Please add your Vercel URL to 'Authorized Domains' in the Firebase Console.");
       } else if (error.code === 'auth/popup-closed-by-user') {
         setLoginError("Login popup was closed before completion.");
       } else if (error.code === 'auth/cancelled-popup-request') {
         // Ignore this one, it happens when multiple clicks occur
+      } else if (error.code === 'auth/internal-error') {
+        const detail = serverResponse ? `: ${JSON.stringify(serverResponse)}` : '';
+        setLoginError(`Internal auth error${detail}. Check browser Console for details.`);
       } else {
-        setLoginError(error.message || "An unexpected error occurred during login.");
+        setLoginError(`${error.code ? `[${error.code}] ` : ''}${error.message || "An unexpected error occurred during login."}`);
       }
     }
   };
