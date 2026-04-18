@@ -21,8 +21,15 @@ async function apiPost(endpoint: string, body: object): Promise<any> {
   });
 
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: 'Unknown error' }));
-    throw new Error(err.error || `API error ${res.status}`);
+    const raw = await res.text();
+    let detail = raw;
+    try {
+      const parsed = JSON.parse(raw);
+      detail = parsed.error || raw;
+    } catch {
+      detail = raw.slice(0, 200).replace(/<[^>]+>/g, '').trim() || `status ${res.status}`;
+    }
+    throw new Error(`[${endpoint} ${res.status}] ${detail}`);
   }
 
   return res.json();
