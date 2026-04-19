@@ -1,14 +1,21 @@
-import { verifyToken } from '../_lib/auth';
+import { verifyToken, checkRateLimit } from '../_lib/auth';
 import { getAI, parseGeminiResponse, Type, withErrorHandling } from '../_lib/gemini';
+
+const ALLOWED_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'application/pdf']);
+const MAX_BASE64_LEN = 20 * 1024 * 1024; // 20 MB encoded (PDFs can be larger)
 
 export default withErrorHandling(async (req: any, res: any) => {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const uid = await verifyToken(req.headers.authorization);
   if (!uid) return res.status(401).json({ error: 'Unauthorized' });
+  if (!checkRateLimit(uid, { maxRequests: 10, windowMs: 60_000 }))
+    return res.status(429).json({ error: 'Too many requests. Please slow down.' });
 
   const { base64Data, mimeType } = req.body ?? {};
   if (!base64Data || !mimeType) return res.status(400).json({ error: 'base64Data and mimeType required' });
+  if (!ALLOWED_MIME_TYPES.has(mimeType)) return res.status(400).json({ error: 'Unsupported file type' });
+  if (typeof base64Data !== 'string' || base64Data.length > MAX_BASE64_LEN) return res.status(413).json({ error: 'File too large' });
 
   const ai = getAI();
   const response = await ai.models.generateContent({

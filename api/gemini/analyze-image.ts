@@ -1,14 +1,19 @@
-import { verifyToken } from '../_lib/auth';
+import { verifyToken, checkRateLimit } from '../_lib/auth';
 import { getAI, parseGeminiResponse, Type, withErrorHandling } from '../_lib/gemini';
+
+const MAX_BASE64_LEN = 10 * 1024 * 1024; // 10 MB encoded
 
 export default withErrorHandling(async (req: any, res: any) => {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const uid = await verifyToken(req.headers.authorization);
   if (!uid) return res.status(401).json({ error: 'Unauthorized' });
+  if (!checkRateLimit(uid, { maxRequests: 15, windowMs: 60_000 }))
+    return res.status(429).json({ error: 'Too many requests. Please slow down.' });
 
   const { base64Image } = req.body ?? {};
-  if (!base64Image) return res.status(400).json({ error: 'base64Image required' });
+  if (!base64Image || typeof base64Image !== 'string') return res.status(400).json({ error: 'base64Image required' });
+  if (base64Image.length > MAX_BASE64_LEN) return res.status(413).json({ error: 'Image too large' });
 
   const ai = getAI();
   const response = await ai.models.generateContent({

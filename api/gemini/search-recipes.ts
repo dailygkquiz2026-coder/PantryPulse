@@ -1,5 +1,5 @@
-import { verifyToken } from '../_lib/auth';
-import { getAI, parseGeminiResponse, sanitizeRecipeImageUrls, Type, withErrorHandling } from '../_lib/gemini';
+import { verifyToken, checkRateLimit } from '../_lib/auth';
+import { getAI, parseGeminiResponse, sanitizeInput, sanitizeRecipeImageUrls, Type, withErrorHandling } from '../_lib/gemini';
 
 const recipeSchema = {
   type: Type.ARRAY,
@@ -36,14 +36,19 @@ export default withErrorHandling(async (req: any, res: any) => {
 
   const uid = await verifyToken(req.headers.authorization);
   if (!uid) return res.status(401).json({ error: 'Unauthorized' });
+  if (!checkRateLimit(uid, { maxRequests: 10, windowMs: 60_000 }))
+    return res.status(429).json({ error: 'Too many requests. Please slow down.' });
 
   const { query } = req.body ?? {};
   if (!query) return res.status(400).json({ error: 'query required' });
 
+  const safeQuery = sanitizeInput(query, 150);
+  if (!safeQuery) return res.status(400).json({ error: 'Invalid query' });
+
   const ai = getAI();
   const response = await ai.models.generateContent({
     model: 'gemini-3-flash-preview',
-    contents: `Search for the top 3 best recipes for: "${query}".
+    contents: `Search for the top 3 best recipes for: "${safeQuery}".
     For each recipe provide title, description, source, imageUrl (direct https link), ingredients, instructions, prepTime, cookTime, difficulty, and tips.
     Return the result as a JSON array of objects.`,
     config: {

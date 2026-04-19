@@ -1,5 +1,5 @@
-import { verifyToken } from '../_lib/auth';
-import { getAI, parseGeminiResponse, sanitizeRecipeImageUrls, Type, withErrorHandling } from '../_lib/gemini';
+import { verifyToken, checkRateLimit } from '../_lib/auth';
+import { getAI, parseGeminiResponse, sanitizeInput, sanitizeRecipeImageUrls, Type, withErrorHandling } from '../_lib/gemini';
 
 const recipeSchema = {
   type: Type.ARRAY,
@@ -36,9 +36,14 @@ export default withErrorHandling(async (req: any, res: any) => {
 
   const uid = await verifyToken(req.headers.authorization);
   if (!uid) return res.status(401).json({ error: 'Unauthorized' });
+  if (!checkRateLimit(uid, { maxRequests: 5, windowMs: 60_000 }))
+    return res.status(429).json({ error: 'Too many requests. Please slow down.' });
 
   const { location } = req.body ?? {};
-  const locationContext = location ? ` for the location: ${location}` : ' (assume a general search in India)';
+  const safeLocation = sanitizeInput(location, 100);
+  const locationContext = safeLocation
+    ? ` for the location: ${safeLocation}`
+    : ' (assume a general search in India)';
 
   const ai = getAI();
   const response = await ai.models.generateContent({

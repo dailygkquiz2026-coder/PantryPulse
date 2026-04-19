@@ -1494,7 +1494,7 @@ function AppContent() {
           icon={<Activity className="w-5 h-5" />}
           label="Health"
         />
-        {user?.email === "dailygkquiz2026@gmail.com" && (
+        {user?.email === import.meta.env.VITE_ADMIN_EMAIL && (
           <NavButton 
             active={activeTab === 'dev'} 
             onClick={() => setActiveTab('dev')}
@@ -1782,7 +1782,7 @@ function AppContent() {
             </motion.div>
           )}
 
-          {activeTab === 'dev' && user?.email === "dailygkquiz2026@gmail.com" && user?.emailVerified && (
+          {activeTab === 'dev' && user?.email === import.meta.env.VITE_ADMIN_EMAIL && user?.emailVerified && (
             <motion.div
               key="dev"
               initial={{ opacity: 0, y: 20 }}

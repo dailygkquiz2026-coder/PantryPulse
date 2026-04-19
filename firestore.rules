@@ -45,10 +45,10 @@ service cloud.firestore {
       return hasOnlyAllowedFields(['id', 'name', 'category', 'quantity', 'unit', 'purchaseDate', 'usageFrequency', 'lastUpdated', 'uid', 'imageUrl', 'expiryDate', 'restockHistory', 'price']) &&
              data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
              data.category is string && data.category.size() < 50 &&
-             data.quantity is number &&
+             data.quantity is number && data.quantity >= 0 && data.quantity < 100000 &&
              data.unit is string && data.unit.size() < 20 &&
              (!('price' in data) || data.price is number) &&
-             data.usageFrequency is number &&
+             data.usageFrequency is number && data.usageFrequency > 0 && data.usageFrequency <= 100 &&
              isValidDateString(data.purchaseDate) &&
              isValidDateString(data.lastUpdated) &&
              (!('imageUrl' in data) || isValidUrl(data.imageUrl)) &&
@@ -75,7 +75,8 @@ service cloud.firestore {
     function isValidHousehold(data) {
       return hasOnlyAllowedFields(['members', 'adults', 'children', 'preferences', 'uid', 'name', 'address', 'phone']) &&
              data.members is number && data.members >= 1 && data.members < 100 &&
-             data.adults is number && data.children is number &&
+             data.adults is number && data.adults >= 0 && data.adults < 50 &&
+             data.children is number && data.children >= 0 && data.children < 50 &&
              data.preferences is list && data.preferences.size() < 50 &&
              (!('name' in data) || (data.name is string && data.name.size() < 100)) &&
              (!('address' in data) || (data.address is string && data.address.size() < 200)) &&
@@ -155,7 +156,7 @@ service cloud.firestore {
     match /userProfiles/{userId} {
       allow read: if isOwner(userId) || isAdmin();
       allow create: if isOwner(userId) && isValidUserProfile(request.resource.data);
-      allow update: if isOwner(userId) && isUnchanged('uid') && isValidUserProfile(request.resource.data);
+      allow update: if isOwner(userId) && isUnchanged('uid') && isUnchanged('tier') && isValidUserProfile(request.resource.data);
       allow delete: if isOwner(userId);
     }
 

@@ -15,13 +15,24 @@ export function withErrorHandling(
     try {
       await fn(req, res);
     } catch (err: any) {
-      const message = err?.message || 'Internal server error';
-      console.error('[api]', req.url, message, err?.stack);
+      // Log full detail server-side only — never send internal errors to the client.
+      console.error('[api]', req.url, err?.message, err?.stack);
       if (!res.headersSent) {
-        res.status(500).json({ error: message });
+        res.status(500).json({ error: 'AI request failed. Please try again.' });
       }
     }
   };
+}
+
+// Strip characters that enable prompt injection before interpolating into AI prompts.
+// Removes newlines, null bytes, and non-printable ASCII. Enforces a max length.
+export function sanitizeInput(value: unknown, maxLen = 200): string {
+  if (typeof value !== 'string') return '';
+  return value
+    .replace(/[\x00-\x1F\x7F]/g, ' ') // control chars (newlines, tabs, etc.) → space
+    .replace(/\s+/g, ' ')              // collapse whitespace
+    .slice(0, maxLen)
+    .trim();
 }
 
 export function parseGeminiResponse(text: string): any {

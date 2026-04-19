@@ -49,7 +49,7 @@ interface AnalyticsData {
   fetchedAt: number;
 }
 
-const ADMIN_EMAIL = "dailygkquiz2026@gmail.com";
+const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL as string;
 const COLORS = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
 // Analytics are cached for 5 minutes — no need for sub-minute refreshes.
 const ANALYTICS_TTL_MS = 5 * 60 * 1000;

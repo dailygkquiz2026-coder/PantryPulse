@@ -1,25 +1,32 @@
-import { verifyToken } from '../_lib/auth';
-import { getAI, parseGeminiResponse, Type, withErrorHandling } from '../_lib/gemini';
+import { verifyToken, checkRateLimit } from '../_lib/auth';
+import { getAI, parseGeminiResponse, sanitizeInput, Type, withErrorHandling } from '../_lib/gemini';
 
 export default withErrorHandling(async (req: any, res: any) => {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const uid = await verifyToken(req.headers.authorization);
   if (!uid) return res.status(401).json({ error: 'Unauthorized' });
+  if (!checkRateLimit(uid, { maxRequests: 10, windowMs: 60_000 }))
+    return res.status(429).json({ error: 'Too many requests. Please slow down.' });
 
   const { itemName, location, previousPurchase } = req.body ?? {};
   if (!itemName) return res.status(400).json({ error: 'itemName required' });
 
+  const safeItem = sanitizeInput(itemName, 100);
+  if (!safeItem) return res.status(400).json({ error: 'Invalid itemName' });
+  const safeLocation = sanitizeInput(location, 100);
+  const safePrevPurchase = sanitizeInput(previousPurchase, 150);
+
   const ai = getAI();
-  const locationContext = location
-    ? ` for the location/pincode associated with coordinates: ${location}`
+  const locationContext = safeLocation
+    ? ` for the location/pincode associated with coordinates: ${safeLocation}`
     : ' (assume a general search in India)';
-  const purchaseContext = previousPurchase ? `The user previously bought "${previousPurchase}".` : '';
+  const purchaseContext = safePrevPurchase ? `The user previously bought "${safePrevPurchase}".` : '';
 
   const response = await ai.models.generateContent({
     model: 'gemini-3.1-pro-preview',
     contents: `You are a highly accurate real-time shopping assistant for the Indian market.
-    Find and compare current prices for ${itemName}${locationContext}.
+    Find and compare current prices for ${safeItem}${locationContext}.
     ${purchaseContext}
 
     Your task:

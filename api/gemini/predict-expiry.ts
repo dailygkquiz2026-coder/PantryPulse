@@ -1,19 +1,25 @@
-import { verifyToken } from '../_lib/auth';
-import { getAI, parseGeminiResponse, Type, withErrorHandling } from '../_lib/gemini';
+import { verifyToken, checkRateLimit } from '../_lib/auth';
+import { getAI, parseGeminiResponse, sanitizeInput, Type, withErrorHandling } from '../_lib/gemini';
 
 export default withErrorHandling(async (req: any, res: any) => {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const uid = await verifyToken(req.headers.authorization);
   if (!uid) return res.status(401).json({ error: 'Unauthorized' });
+  if (!checkRateLimit(uid, { maxRequests: 20, windowMs: 60_000 }))
+    return res.status(429).json({ error: 'Too many requests. Please slow down.' });
 
   const { itemName, category } = req.body ?? {};
   if (!itemName || !category) return res.status(400).json({ error: 'itemName and category required' });
 
+  const safeItem = sanitizeInput(itemName, 100);
+  const safeCategory = sanitizeInput(category, 50);
+  if (!safeItem || !safeCategory) return res.status(400).json({ error: 'Invalid input' });
+
   const ai = getAI();
   const response = await ai.models.generateContent({
     model: 'gemini-3-flash-preview',
-    contents: `Research the typical shelf life and expiry duration for the grocery item: "${itemName}" in the category: "${category}".
+    contents: `Research the typical shelf life and expiry duration for the grocery item: "${safeItem}" in the category: "${safeCategory}".
 
     Consider factors like:
     - Packaging (e.g., Tetra pack vs. Pouch, Canned vs. Fresh).
