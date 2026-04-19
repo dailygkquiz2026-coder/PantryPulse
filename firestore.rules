@@ -112,7 +112,7 @@ service cloud.firestore {
     }
 
     function isValidUserProfile(data) {
-      return hasOnlyAllowedFields(['uid', 'weight', 'height', 'age', 'gender', 'ethnicity', 'bmr', 'tdee', 'shareAnonymousData', 'tier', 'createdAt', 'email', 'hasSeenIntro']) &&
+      return hasOnlyAllowedFields(['uid', 'weight', 'height', 'age', 'gender', 'ethnicity', 'bmr', 'tdee', 'shareAnonymousData', 'tier', 'createdAt', 'email', 'hasSeenIntro', 'introViewCount']) &&
              data.uid == request.auth.uid &&
              (!('email' in data) || isValidEmail(data.email)) &&
              (!('weight' in data) || data.weight is number) &&
@@ -125,7 +125,8 @@ service cloud.firestore {
              (!('shareAnonymousData' in data) || data.shareAnonymousData is bool) &&
              (!('tier' in data) || data.tier in ['vanilla', 'pro']) &&
              (!('createdAt' in data) || isValidDateString(data.createdAt)) &&
-             (!('hasSeenIntro' in data) || data.hasSeenIntro is bool);
+             (!('hasSeenIntro' in data) || data.hasSeenIntro is bool) &&
+             (!('introViewCount' in data) || (data.introViewCount is number && data.introViewCount >= 0 && data.introViewCount <= 10));
     }
 
     function isValidFeedback(data) {

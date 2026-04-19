@@ -90,4 +90,5 @@ export interface UserProfile {
   tier: UserTier;
   createdAt: string;
   hasSeenIntro?: boolean;
+  introViewCount?: number;
 }

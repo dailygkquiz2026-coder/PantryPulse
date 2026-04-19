@@ -1,15 +1,19 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, ArrowRight } from 'lucide-react';
+import { X, ArrowRight, PlayCircle } from 'lucide-react';
 
 interface IntroVideoModalProps {
   isOpen: boolean;
   onClose: () => void;
+  viewCount: number;
 }
 
 const VIDEO_ID = '5wqJIKIwB9Q';
+export const INTRO_MAX_VIEWS = 10;
 
-export default function IntroVideoModal({ isOpen, onClose }: IntroVideoModalProps) {
+export default function IntroVideoModal({ isOpen, onClose, viewCount }: IntroVideoModalProps) {
+  const remaining = INTRO_MAX_VIEWS - viewCount;
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -34,7 +38,9 @@ export default function IntroVideoModal({ isOpen, onClose }: IntroVideoModalProp
                   <div className="w-6 h-6 bg-red-600 rounded-md flex items-center justify-center">
                     <span className="text-white font-black text-[10px] italic">PP</span>
                   </div>
-                  <span className="text-xs font-black text-red-500 uppercase tracking-widest">Welcome</span>
+                  <span className="text-xs font-black text-red-500 uppercase tracking-widest">
+                    Welcome
+                  </span>
                 </div>
                 <h2 className="text-xl font-black text-white leading-tight">
                   See how PantryPulse works
@@ -51,19 +57,25 @@ export default function IntroVideoModal({ isOpen, onClose }: IntroVideoModalProp
             {/* Video */}
             <div className="relative w-full aspect-video bg-black">
               <iframe
-                src={`https://www.youtube-nocookie.com/embed/${VIDEO_ID}?autoplay=1&rel=0&modestbranding=1&color=white`}
+                src={`https://www.youtube.com/embed/${VIDEO_ID}?rel=0&modestbranding=1&showinfo=0`}
                 title="PantryPulse Introduction"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 allowFullScreen
+                referrerPolicy="strict-origin-when-cross-origin"
                 className="absolute inset-0 w-full h-full"
               />
             </div>
 
             {/* Footer */}
             <div className="px-6 py-5 flex items-center justify-between gap-4">
-              <p className="text-sm text-gray-500">
-                Watch the full video or dive straight in — your call.
-              </p>
+              <div className="flex items-center gap-2 text-gray-500 text-sm">
+                <PlayCircle className="w-4 h-4 shrink-0" />
+                <span>
+                  {remaining > 1
+                    ? `You can replay this ${remaining - 1} more time${remaining - 1 === 1 ? '' : 's'}`
+                    : 'Last time this will appear'}
+                </span>
+              </div>
               <button
                 onClick={onClose}
                 className="flex items-center gap-2 px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded-xl transition-all whitespace-nowrap shadow-lg shadow-red-900/40"

@@ -313,8 +313,9 @@ function AppContent() {
     setIsIntroVideoOpen(false);
     if (!user) return;
     try {
-      await updateDoc(doc(db, 'userProfiles', user.uid), { hasSeenIntro: true });
-      setUserProfile(prev => prev ? { ...prev, hasSeenIntro: true } : prev);
+      const newCount = (userProfile?.introViewCount ?? 0) + 1;
+      await updateDoc(doc(db, 'userProfiles', user.uid), { introViewCount: newCount });
+      setUserProfile(prev => prev ? { ...prev, introViewCount: newCount } : prev);
     } catch {
       // Non-critical — modal is already closed
     }
@@ -446,7 +447,7 @@ function AppContent() {
               bmr: 0,
               tdee: 2000,
               tier: 'vanilla',
-              hasSeenIntro: false,
+              introViewCount: 0,
             };
             await setDoc(profileRef, initialProfile);
             setUserProfile(initialProfile);
@@ -454,7 +455,8 @@ function AppContent() {
           } else {
             const profile = profileSnap.data() as UserProfile;
             setUserProfile(profile);
-            if (!profile.hasSeenIntro) setIsIntroVideoOpen(true);
+            const views = profile.introViewCount ?? (profile.hasSeenIntro ? 10 : 0);
+            if (views < 10) setIsIntroVideoOpen(true);
           }
         } catch (error) {
           console.error("Failed to log activity or init profile:", error);
@@ -1876,7 +1878,7 @@ function AppContent() {
         <MarketingIntro onClose={handleCloseMarketing} />
       )}
 
-      <IntroVideoModal isOpen={isIntroVideoOpen} onClose={handleCloseIntroVideo} />
+      <IntroVideoModal isOpen={isIntroVideoOpen} onClose={handleCloseIntroVideo} viewCount={userProfile?.introViewCount ?? 0} />
     </div>
   );
 }
