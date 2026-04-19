@@ -111,13 +111,11 @@ export default function MarketingIntro({ onClose }: MarketingIntroProps) {
             transition={{ duration: 0.6, delay: 0.1 }}
             className="relative rounded-3xl overflow-hidden shadow-2xl border border-gray-100 dark:border-white/10 aspect-video"
           >
-            <iframe
-              src="https://www.youtube.com/embed/5wqJIKIwB9Q?rel=0&modestbranding=1&showinfo=0"
-              title="PantryPulse Walkthrough"
-              allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-              allowFullScreen
-              referrerPolicy="strict-origin-when-cross-origin"
-              className="absolute inset-0 w-full h-full"
+            <video
+              src="https://firebasestorage.googleapis.com/v0/b/dailygkquiz-490312.firebasestorage.app/o/Video%20Project.mp4?alt=media&token=c46f4f46-aa52-4261-a5eb-f653cfae0d00"
+              controls
+              playsInline
+              className="absolute inset-0 w-full h-full object-cover"
             />
           </motion.div>
         </div>
