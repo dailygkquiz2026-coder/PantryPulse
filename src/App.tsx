@@ -65,6 +65,7 @@ import HouseholdSettings from './components/HouseholdSettings';
 import PriceComparison from './components/PriceComparison';
 import TrendingRecipes from './components/TrendingRecipes';
 import MarketingIntro from './components/MarketingIntro';
+import IntroVideoModal from './components/IntroVideoModal';
 import AdminDashboard from './components/AdminDashboard';
 import StockoutConfirmationModal from './components/StockoutConfirmationModal';
 import RestockModal from './components/RestockModal';
@@ -275,6 +276,7 @@ function AppContent() {
   const [deletedItems, setDeletedItems] = useState<DeletedItem[]>([]);
   const [isBinOpen, setIsBinOpen] = useState(false);
   const [isMarketingOpen, setIsMarketingOpen] = useState(false);
+  const [isIntroVideoOpen, setIsIntroVideoOpen] = useState(false);
   const [isAuthReady, setIsAuthReady] = useState(false);
   const [userLocation, setUserLocation] = useState<string | null>(null);
   const settingsMenuRef = useRef<HTMLDivElement>(null);
@@ -305,6 +307,17 @@ function AppContent() {
 
   const handleCloseMarketing = () => {
     setIsMarketingOpen(false);
+  };
+
+  const handleCloseIntroVideo = async () => {
+    setIsIntroVideoOpen(false);
+    if (!user) return;
+    try {
+      await updateDoc(doc(db, 'userProfiles', user.uid), { hasSeenIntro: true });
+      setUserProfile(prev => prev ? { ...prev, hasSeenIntro: true } : prev);
+    } catch {
+      // Non-critical — modal is already closed
+    }
   };
   const [cachedRecipes, setCachedRecipes] = useState<any[]>([]);
   const [cachedSearchResults, setCachedSearchResults] = useState<any[]>([]);
@@ -432,12 +445,16 @@ function AppContent() {
               ethnicity: 'Unknown',
               bmr: 0,
               tdee: 2000,
-              tier: 'vanilla'
+              tier: 'vanilla',
+              hasSeenIntro: false,
             };
             await setDoc(profileRef, initialProfile);
             setUserProfile(initialProfile);
+            setIsIntroVideoOpen(true);
           } else {
-            setUserProfile(profileSnap.data() as UserProfile);
+            const profile = profileSnap.data() as UserProfile;
+            setUserProfile(profile);
+            if (!profile.hasSeenIntro) setIsIntroVideoOpen(true);
           }
         } catch (error) {
           console.error("Failed to log activity or init profile:", error);
@@ -1858,6 +1875,8 @@ function AppContent() {
       {isMarketingOpen && (
         <MarketingIntro onClose={handleCloseMarketing} />
       )}
+
+      <IntroVideoModal isOpen={isIntroVideoOpen} onClose={handleCloseIntroVideo} />
     </div>
   );
 }

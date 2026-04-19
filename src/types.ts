@@ -89,4 +89,5 @@ export interface UserProfile {
   tdee: number;
   tier: UserTier;
   createdAt: string;
+  hasSeenIntro?: boolean;
 }
