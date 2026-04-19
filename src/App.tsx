@@ -455,7 +455,7 @@ function AppContent() {
           } else {
             const profile = profileSnap.data() as UserProfile;
             setUserProfile(profile);
-            const views = profile.introViewCount ?? (profile.hasSeenIntro ? 10 : 0);
+            const views = profile.introViewCount ?? 0;
             if (views < 10) setIsIntroVideoOpen(true);
           }
         } catch (error) {
