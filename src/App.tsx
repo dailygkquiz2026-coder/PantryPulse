@@ -65,7 +65,6 @@ import HouseholdSettings from './components/HouseholdSettings';
 import PriceComparison from './components/PriceComparison';
 import TrendingRecipes from './components/TrendingRecipes';
 import MarketingIntro from './components/MarketingIntro';
-import IntroVideoModal from './components/IntroVideoModal';
 import AdminDashboard from './components/AdminDashboard';
 import StockoutConfirmationModal from './components/StockoutConfirmationModal';
 import RestockModal from './components/RestockModal';
@@ -276,7 +275,6 @@ function AppContent() {
   const [deletedItems, setDeletedItems] = useState<DeletedItem[]>([]);
   const [isBinOpen, setIsBinOpen] = useState(false);
   const [isMarketingOpen, setIsMarketingOpen] = useState(false);
-  const [isIntroVideoOpen, setIsIntroVideoOpen] = useState(false);
   const [isAuthReady, setIsAuthReady] = useState(false);
   const [userLocation, setUserLocation] = useState<string | null>(null);
   const settingsMenuRef = useRef<HTMLDivElement>(null);
@@ -309,17 +307,6 @@ function AppContent() {
     setIsMarketingOpen(false);
   };
 
-  const handleCloseIntroVideo = async () => {
-    setIsIntroVideoOpen(false);
-    if (!user) return;
-    try {
-      const newCount = (userProfile?.introViewCount ?? 0) + 1;
-      await updateDoc(doc(db, 'userProfiles', user.uid), { introViewCount: newCount });
-      setUserProfile(prev => prev ? { ...prev, introViewCount: newCount } : prev);
-    } catch {
-      // Non-critical — modal is already closed
-    }
-  };
   const [cachedRecipes, setCachedRecipes] = useState<any[]>([]);
   const [cachedSearchResults, setCachedSearchResults] = useState<any[]>([]);
   const [lastRecipeFetch, setLastRecipeFetch] = useState<number>(0);
@@ -447,16 +434,11 @@ function AppContent() {
               bmr: 0,
               tdee: 2000,
               tier: 'vanilla',
-              introViewCount: 0,
             };
             await setDoc(profileRef, initialProfile);
             setUserProfile(initialProfile);
-            setIsIntroVideoOpen(true);
           } else {
-            const profile = profileSnap.data() as UserProfile;
-            setUserProfile(profile);
-            const views = profile.introViewCount ?? 0;
-            if (views < 10) setIsIntroVideoOpen(true);
+            setUserProfile(profileSnap.data() as UserProfile);
           }
         } catch (error) {
           console.error("Failed to log activity or init profile:", error);
@@ -1878,7 +1860,6 @@ function AppContent() {
         <MarketingIntro onClose={handleCloseMarketing} />
       )}
 
-      <IntroVideoModal isOpen={isIntroVideoOpen} onClose={handleCloseIntroVideo} viewCount={userProfile?.introViewCount ?? 0} />
     </div>
   );
 }
