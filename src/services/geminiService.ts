@@ -22,9 +22,10 @@ function sanitizeRecipeImageUrls(recipes: any): any {
   }));
 }
 
-// Client-side cache for price and recipe results (5 min TTL)
+// Client-side cache for price/recipe results.
 const searchCache: Record<string, { data: any; timestamp: number }> = {};
-const CACHE_TTL = 5 * 60 * 1000;
+const CACHE_TTL = 5 * 60 * 1000;        // 5 min for search results
+const TRENDING_CACHE_TTL = 60 * 60 * 1000; // 1 hour for trending recipes
 
 async function apiPost(endpoint: string, body: object): Promise<any> {
   const user = auth.currentUser;
@@ -114,8 +115,17 @@ export async function searchCheapestSource(itemName: string, location?: string, 
 }
 
 export async function getTrendingRecipes(location?: string, uid?: string) {
+  const cacheKey = `trending-${location || 'global'}`;
+  const now = Date.now();
+  if (searchCache[cacheKey] && now - searchCache[cacheKey].timestamp < TRENDING_CACHE_TTL) {
+    return searchCache[cacheKey].data;
+  }
   const recipes = await apiPost('/api/gemini/trending-recipes', { location, uid });
-  return sanitizeRecipeImageUrls(recipes);
+  const sanitized = sanitizeRecipeImageUrls(recipes);
+  if (sanitized?.length > 0) {
+    searchCache[cacheKey] = { data: sanitized, timestamp: now };
+  }
+  return sanitized;
 }
 
 export async function searchRecipes(query: string, uid?: string) {

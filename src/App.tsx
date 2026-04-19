@@ -40,18 +40,21 @@ import {
   signOut,
   User
 } from 'firebase/auth';
-import { 
-  collection, 
-  onSnapshot, 
-  query, 
-  where, 
-  addDoc, 
-  updateDoc, 
-  deleteDoc, 
-  doc, 
+import {
+  collection,
+  onSnapshot,
+  query,
+  where,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  doc,
   setDoc,
   getDocFromServer,
-  orderBy
+  orderBy,
+  getDocs,
+  limit,
+  writeBatch
 } from 'firebase/firestore';
 import { db, auth, handleFirestoreError, OperationType, messaging } from './firebase';
 import { getToken } from 'firebase/messaging';
@@ -516,9 +519,10 @@ function AppContent() {
   useEffect(() => {
     if (!user || !isAuthReady) return;
     const q = query(
-      collection(db, 'deletedItems'), 
+      collection(db, 'deletedItems'),
       where('uid', '==', user.uid),
-      orderBy('deletedAt', 'desc')
+      orderBy('deletedAt', 'desc'),
+      limit(100)
     );
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const items = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as DeletedItem));
@@ -571,10 +575,14 @@ function AppContent() {
 
   // Run predictions
   const [lastPredictionRun, setLastPredictionRun] = useState(0);
+  // Fingerprint of the last inventory payload sent to Gemini.
+  // We skip the AI call when nothing meaningful changed (same items, quantities, timestamps).
+  const lastInventoryHash = React.useRef<string>('');
 
   const runPredictionsManually = () => {
-    setPredictions({}); // Force refresh
-    setNotifiedItems({}); // Allow re-notifying if fixed
+    setPredictions({});
+    setNotifiedItems({});
+    lastInventoryHash.current = '';
     setLastPredictionRun(Date.now());
   };
 
@@ -616,31 +624,44 @@ function AppContent() {
       });
 
       // AI refinement (deterministic — temperature 0 on the server).
+      // Skip the API call if the inventory fingerprint hasn't changed since last run.
+      const inventoryPayload = inventory.map(i => ({
+        id: i.id,
+        name: i.name,
+        quantity: i.quantity,
+        unit: i.unit,
+        usageFrequency: i.usageFrequency,
+        lastUpdated: i.lastUpdated || i.purchaseDate,
+        restockHistory: i.restockHistory
+      }));
+      const inventoryHash = JSON.stringify(
+        inventoryPayload.map(i => `${i.id}:${i.quantity}:${i.lastUpdated}`)
+      );
+
       let aiMap: Record<string, number> = {};
       let aiAvailable = false;
-      try {
-        const aiPredictions = await predictMultipleRestocks(
-          inventory.map(i => ({
-            id: i.id,
-            name: i.name,
-            quantity: i.quantity,
-            unit: i.unit,
-            usageFrequency: i.usageFrequency,
-            lastUpdated: i.lastUpdated || i.purchaseDate,
-            restockHistory: i.restockHistory
-          })),
-          household.adults || 2,
-          household.children || 0,
-          user?.uid
-        );
-        Object.entries(aiPredictions).forEach(([id, days]) => {
-          if (typeof days === 'number' && !isNaN(days)) {
-            aiMap[id] = Math.max(-10, Math.ceil(days));
-          }
-        });
-        aiAvailable = Object.keys(aiMap).length > 0;
-      } catch (error) {
-        console.warn("AI Prediction failed, using local fallback:", error);
+
+      if (inventoryHash !== lastInventoryHash.current) {
+        lastInventoryHash.current = inventoryHash;
+        try {
+          const aiPredictions = await predictMultipleRestocks(
+            inventoryPayload,
+            household.adults || 2,
+            household.children || 0,
+            user?.uid
+          );
+          Object.entries(aiPredictions).forEach(([id, days]) => {
+            if (typeof days === 'number' && !isNaN(days)) {
+              aiMap[id] = Math.max(-10, Math.ceil(days));
+            }
+          });
+          aiAvailable = Object.keys(aiMap).length > 0;
+        } catch (error) {
+          console.warn("AI Prediction failed, using local fallback:", error);
+        }
+      } else {
+        // Inventory unchanged — reuse previous AI predictions from current state.
+        aiAvailable = false;
       }
 
       // Merge with hysteresis so sub-day jitter doesn't re-render a different number
@@ -696,7 +717,10 @@ function AppContent() {
       }, 1000);
       return () => clearTimeout(timer);
     }
-  }, [inventory, household, shoppingList, notifiedItems, lastPredictionRun]);
+  // notifiedItems intentionally excluded — updating it must not re-trigger predictions
+  // (that would create a feedback loop: stockout found → notify → re-predict → repeat).
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inventory, household, shoppingList, lastPredictionRun]);
 
   // Expiry Warning Logic
   useEffect(() => {
@@ -728,27 +752,44 @@ function AppContent() {
 
   // Cleanup old deleted items (older than 2 days)
   useEffect(() => {
-    if (!user || deletedItems.length === 0) return;
-    
+    if (!user) return;
+
     const cleanup = async () => {
-      const now = new Date().getTime();
-      const twoDaysInMs = 2 * 24 * 60 * 60 * 1000;
-      
-      const itemsToDelete = deletedItems.filter(item => {
-        const deletedAt = new Date(item.deletedAt).getTime();
-        return now - deletedAt > twoDaysInMs;
-      });
-      
-      if (itemsToDelete.length > 0) {
-        console.log(`Cleaning up ${itemsToDelete.length} old deleted items`);
-        const batch = itemsToDelete.map(item => deleteDoc(doc(db, 'deletedItems', item.id)));
-        await Promise.all(batch);
+      const now = Date.now();
+      const TWO_DAYS = 2 * 24 * 60 * 60 * 1000;
+      const THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000;
+
+      // 1. Expired deletedItems (> 2 days old)
+      const expiredDeleted = deletedItems.filter(
+        item => now - new Date(item.deletedAt).getTime() > TWO_DAYS
+      );
+      if (expiredDeleted.length > 0) {
+        const batch = writeBatch(db);
+        expiredDeleted.forEach(item => batch.delete(doc(db, 'deletedItems', item.id)));
+        await batch.commit();
+      }
+
+      // 2. Old aiUsageLogs (> 30 days) — bounded fetch so we don't full-scan
+      const logCutoff = new Date(now - THIRTY_DAYS).toISOString();
+      const oldLogsSnap = await getDocs(
+        query(
+          collection(db, 'aiUsageLogs'),
+          where('uid', '==', user.uid),
+          where('timestamp', '<', logCutoff),
+          limit(500)
+        )
+      );
+      if (!oldLogsSnap.empty) {
+        const batch = writeBatch(db);
+        oldLogsSnap.docs.forEach(d => batch.delete(d.ref));
+        await batch.commit();
       }
     };
-    
-    const timer = setTimeout(cleanup, 5000); // Run cleanup 5 seconds after load
+
+    // Run once 10 seconds after load — non-blocking housekeeping.
+    const timer = setTimeout(cleanup, 10000);
     return () => clearTimeout(timer);
-  }, [deletedItems, user]);
+  }, [user]); // deletedItems deliberately excluded — cleanup reads it from closure via state snapshot
 
   const [loginError, setLoginError] = useState<string | null>(null);
 
@@ -1722,7 +1763,7 @@ function AppContent() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
             >
-              <CalorieTracker inventory={inventory} />
+              <CalorieTracker inventory={inventory} userProfile={userProfile} />
             </motion.div>
           )}
 

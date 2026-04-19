@@ -1,27 +1,28 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { db, auth } from '../firebase';
-import { collection, query, orderBy, onSnapshot, limit, getDocs, writeBatch, where } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, limit, getDocs, writeBatch, where, Timestamp } from 'firebase/firestore';
 import { motion } from 'motion/react';
-import { 
-  AlertTriangle, 
-  Clock, 
-  Mail, 
-  FileType, 
-  Trash2, 
-  Users, 
-  Activity, 
-  DollarSign, 
-  Globe, 
+import {
+  AlertTriangle,
+  Clock,
+  Mail,
+  FileType,
+  Trash2,
+  Users,
+  Activity,
+  DollarSign,
+  Globe,
   TrendingUp,
-  BarChart3
+  BarChart3,
+  RefreshCw
 } from 'lucide-react';
-import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
   ResponsiveContainer,
   PieChart,
   Pie,
@@ -45,16 +46,22 @@ interface AnalyticsData {
   avgCostPerUser: number;
   geoDistribution: { name: string; value: number }[];
   dailyUsage: { date: string; count: number; cost: number }[];
+  fetchedAt: number;
 }
 
 const ADMIN_EMAIL = "dailygkquiz2026@gmail.com";
 const COLORS = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
+// Analytics are cached for 5 minutes — no need for sub-minute refreshes.
+const ANALYTICS_TTL_MS = 5 * 60 * 1000;
+// AI log scan limited to last 30 days to prevent full-collection reads.
+const AI_LOG_WINDOW_DAYS = 30;
 
 export default function AdminDashboard() {
   const [failures, setFailures] = useState<ScanFailure[]>([]);
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [isFetching, setIsFetching] = useState(false);
   const [activeTab, setActiveTab] = useState<'analytics' | 'logs'>('analytics');
 
   useEffect(() => {
@@ -66,89 +73,93 @@ export default function AdminDashboard() {
       }
       setLoading(false);
     });
-
     return () => unsubscribeAuth();
   }, []);
+
+  const fetchAnalytics = useCallback(async (force = false) => {
+    if (isFetching) return;
+    // Serve cached result if fresh enough and not a forced refresh.
+    if (!force && analytics && Date.now() - analytics.fetchedAt < ANALYTICS_TTL_MS) return;
+
+    setIsFetching(true);
+    try {
+      const today = new Date().toISOString().split('T')[0];
+
+      // 1. Total users — bounded at 5000; replace with a counter doc for larger scale.
+      const usersSnap = await getDocs(query(collection(db, 'userProfiles'), limit(5000)));
+      const totalUsers = usersSnap.size;
+      const newUsersToday = usersSnap.docs.filter(d => {
+        const data = d.data();
+        return data.createdAt && data.createdAt.startsWith(today);
+      }).length;
+
+      // 2. DAU — already filtered by date so cost is O(DAU), not O(total users).
+      const activitySnap = await getDocs(
+        query(collection(db, 'userActivityLogs'), where('date', '==', today), limit(2000))
+      );
+      const dau = activitySnap.size;
+
+      // 3. AI costs — last 30 days only, not a full collection scan.
+      const windowStart = new Date();
+      windowStart.setDate(windowStart.getDate() - AI_LOG_WINDOW_DAYS);
+      const windowISO = windowStart.toISOString();
+      const aiLogsSnap = await getDocs(
+        query(
+          collection(db, 'aiUsageLogs'),
+          where('timestamp', '>=', windowISO),
+          orderBy('timestamp', 'desc'),
+          limit(50000)
+        )
+      );
+      let totalCost = 0;
+      const usageByDay: Record<string, { count: number; cost: number }> = {};
+      aiLogsSnap.docs.forEach(d => {
+        const data = d.data();
+        const cost = data.estimatedCost || 0;
+        totalCost += cost;
+        const date = data.timestamp?.split('T')[0] || 'Unknown';
+        if (!usageByDay[date]) usageByDay[date] = { count: 0, cost: 0 };
+        usageByDay[date].count++;
+        usageByDay[date].cost += cost;
+      });
+
+      // 4. Geo distribution from today's activity (already fetched above).
+      const geoMap: Record<string, number> = {};
+      activitySnap.docs.forEach(d => {
+        const loc = d.data().location || 'Unknown';
+        geoMap[loc] = (geoMap[loc] || 0) + 1;
+      });
+
+      setAnalytics({
+        dau,
+        newUsersToday,
+        totalUsers,
+        totalAICost: totalCost,
+        avgCostPerUser: totalUsers > 0 ? totalCost / totalUsers : 0,
+        geoDistribution: Object.entries(geoMap).map(([name, value]) => ({ name, value })),
+        dailyUsage: Object.entries(usageByDay)
+          .map(([date, data]) => ({ date, count: data.count, cost: Number(data.cost.toFixed(4)) }))
+          .sort((a, b) => a.date.localeCompare(b.date))
+          .slice(-7),
+        fetchedAt: Date.now(),
+      });
+    } catch (error) {
+      console.error("Failed to fetch analytics:", error);
+    } finally {
+      setIsFetching(false);
+    }
+  }, [analytics, isFetching]);
 
   useEffect(() => {
     if (!isAdmin) return;
 
-    // Fetch Analytics
-    const fetchAnalytics = async () => {
-      try {
-        const today = new Date().toISOString().split('T')[0];
-        
-        // 1. Total Users
-        const usersSnap = await getDocs(collection(db, 'userProfiles'));
-        const totalUsers = usersSnap.size;
-        
-        // 2. New Users Today
-        const newUsersToday = usersSnap.docs.filter(d => {
-          const data = d.data();
-          return data.createdAt && data.createdAt.startsWith(today);
-        }).length;
-
-        // 3. DAU (Daily Active Users)
-        const activitySnap = await getDocs(query(collection(db, 'userActivityLogs'), where('date', '==', today)));
-        const dau = activitySnap.size;
-
-        // 4. AI Costs
-        const aiLogsSnap = await getDocs(collection(db, 'aiUsageLogs'));
-        let totalCost = 0;
-        const usageByDay: Record<string, { count: number; cost: number }> = {};
-        
-        aiLogsSnap.docs.forEach(d => {
-          const data = d.data();
-          const cost = data.estimatedCost || 0;
-          totalCost += cost;
-          
-          const date = data.timestamp?.split('T')[0] || 'Unknown';
-          if (!usageByDay[date]) usageByDay[date] = { count: 0, cost: 0 };
-          usageByDay[date].count++;
-          usageByDay[date].cost += cost;
-        });
-
-        // 5. Geo Distribution
-        const geoMap: Record<string, number> = {};
-        activitySnap.docs.forEach(d => {
-          const loc = d.data().location || 'Unknown';
-          geoMap[loc] = (geoMap[loc] || 0) + 1;
-        });
-
-        setAnalytics({
-          dau,
-          newUsersToday,
-          totalUsers,
-          totalAICost: totalCost,
-          avgCostPerUser: totalUsers > 0 ? totalCost / totalUsers : 0,
-          geoDistribution: Object.entries(geoMap).map(([name, value]) => ({ name, value })),
-          dailyUsage: Object.entries(usageByDay).map(([date, data]) => ({ 
-            date, 
-            count: data.count, 
-            cost: Number(data.cost.toFixed(4)) 
-          })).sort((a, b) => a.date.localeCompare(b.date)).slice(-7)
-        });
-      } catch (error) {
-        console.error("Failed to fetch analytics:", error);
-      }
-    };
-
     fetchAnalytics();
-    const interval = setInterval(fetchAnalytics, 60000); // Refresh every minute
+    // Refresh every 5 minutes instead of every 60 seconds — reduces reads by 5×.
+    const interval = setInterval(() => fetchAnalytics(), ANALYTICS_TTL_MS);
 
-    // Fetch Failures
-    const q = query(
-      collection(db, 'scanFailures'),
-      orderBy('timestamp', 'desc'),
-      limit(50)
-    );
-
+    const q = query(collection(db, 'scanFailures'), orderBy('timestamp', 'desc'), limit(50));
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const docs = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as ScanFailure[];
-      setFailures(docs);
+      setFailures(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as ScanFailure[]);
     });
 
     return () => {
@@ -159,14 +170,10 @@ export default function AdminDashboard() {
 
   const handleClearLogs = async () => {
     if (!window.confirm("Are you sure you want to clear all scan failure logs?")) return;
-    
     try {
-      const q = query(collection(db, 'scanFailures'));
-      const snapshot = await getDocs(q);
+      const snapshot = await getDocs(query(collection(db, 'scanFailures')));
       const batch = writeBatch(db);
-      snapshot.docs.forEach((d) => {
-        batch.delete(d.ref);
-      });
+      snapshot.docs.forEach((d) => batch.delete(d.ref));
       await batch.commit();
     } catch (error) {
       console.error("Failed to clear logs:", error);
@@ -190,29 +197,40 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        <div className="flex bg-gray-100 dark:bg-cred-gray p-1 rounded-xl">
-          <button
-            onClick={() => setActiveTab('analytics')}
-            className={`px-6 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
-              activeTab === 'analytics' ? 'bg-white dark:bg-cred-dark text-red-600 shadow-sm' : 'text-gray-500'
-            }`}
-          >
-            Analytics
-          </button>
-          <button
-            onClick={() => setActiveTab('logs')}
-            className={`px-6 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
-              activeTab === 'logs' ? 'bg-white dark:bg-cred-dark text-red-600 shadow-sm' : 'text-gray-500'
-            }`}
-          >
-            Error Logs
-          </button>
+        <div className="flex items-center gap-3">
+          {activeTab === 'analytics' && (
+            <button
+              onClick={() => fetchAnalytics(true)}
+              disabled={isFetching}
+              className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-cred-gray text-gray-600 dark:text-gray-400 rounded-xl hover:bg-gray-200 dark:hover:bg-white/10 transition-all font-black uppercase tracking-widest text-[10px] disabled:opacity-50"
+            >
+              <RefreshCw className={`w-3 h-3 ${isFetching ? 'animate-spin' : ''}`} />
+              {isFetching ? 'Refreshing...' : analytics ? `Updated ${Math.round((Date.now() - analytics.fetchedAt) / 60000)}m ago` : 'Refresh'}
+            </button>
+          )}
+          <div className="flex bg-gray-100 dark:bg-cred-gray p-1 rounded-xl">
+            <button
+              onClick={() => setActiveTab('analytics')}
+              className={`px-6 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
+                activeTab === 'analytics' ? 'bg-white dark:bg-cred-dark text-red-600 shadow-sm' : 'text-gray-500'
+              }`}
+            >
+              Analytics
+            </button>
+            <button
+              onClick={() => setActiveTab('logs')}
+              className={`px-6 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
+                activeTab === 'logs' ? 'bg-white dark:bg-cred-dark text-red-600 shadow-sm' : 'text-gray-500'
+              }`}
+            >
+              Error Logs
+            </button>
+          </div>
         </div>
       </div>
 
       {activeTab === 'analytics' && analytics && (
         <div className="space-y-8">
-          {/* Stats Grid */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="cred-card p-6 space-y-2">
               <div className="flex items-center justify-between">
@@ -235,7 +253,7 @@ export default function AdminDashboard() {
                 <DollarSign className="w-5 h-5 text-red-500" />
               </div>
               <p className="text-3xl font-black tracking-tighter">${analytics.totalAICost.toFixed(2)}</p>
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Total AI Cost</p>
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">AI Cost (30d)</p>
             </div>
             <div className="cred-card p-6 space-y-2">
               <div className="flex items-center justify-between">
@@ -247,7 +265,6 @@ export default function AdminDashboard() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* AI Usage Chart */}
             <div className="cred-card p-8">
               <h3 className="text-sm font-black uppercase tracking-widest mb-8 flex items-center gap-2">
                 <TrendingUp className="w-4 h-4 text-red-600" />
@@ -257,27 +274,15 @@ export default function AdminDashboard() {
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={analytics.dailyUsage}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
-                    <XAxis 
-                      dataKey="date" 
-                      axisLine={false} 
-                      tickLine={false} 
-                      tick={{ fontSize: 10, fontWeight: 700 }}
-                    />
-                    <YAxis 
-                      axisLine={false} 
-                      tickLine={false} 
-                      tick={{ fontSize: 10, fontWeight: 700 }}
-                    />
-                    <Tooltip 
-                      contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                    />
+                    <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700 }} />
+                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700 }} />
+                    <Tooltip contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} />
                     <Bar dataKey="count" fill="#ef4444" radius={[4, 4, 0, 0]} name="API Calls" />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
             </div>
 
-            {/* Geo Distribution */}
             <div className="cred-card p-8">
               <h3 className="text-sm font-black uppercase tracking-widest mb-8 flex items-center gap-2">
                 <Globe className="w-4 h-4 text-blue-600" />
@@ -286,15 +291,7 @@ export default function AdminDashboard() {
               <div className="h-64 flex items-center">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
-                    <Pie
-                      data={analytics.geoDistribution}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={80}
-                      paddingAngle={5}
-                      dataKey="value"
-                    >
+                    <Pie data={analytics.geoDistribution} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
                       {analytics.geoDistribution.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
