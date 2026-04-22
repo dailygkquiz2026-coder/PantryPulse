@@ -24,7 +24,7 @@ function sanitizeRecipeImageUrls(recipes: any): any {
 
 // Client-side cache for price/recipe results.
 const searchCache: Record<string, { data: any; timestamp: number }> = {};
-const CACHE_TTL = 5 * 60 * 1000;        // 5 min for search results
+const CACHE_TTL = 30 * 60 * 1000;       // 30 min for price results (prices don't change that fast)
 const TRENDING_CACHE_TTL = 60 * 60 * 1000; // 1 hour for trending recipes
 
 async function apiPost(endpoint: string, body: object): Promise<any> {
