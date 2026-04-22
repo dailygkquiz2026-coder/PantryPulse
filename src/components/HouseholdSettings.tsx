@@ -13,7 +13,15 @@ interface HouseholdSettingsProps {
 }
 
 export default function HouseholdSettings({ info, onUpdate, inventory }: HouseholdSettingsProps) {
-  const [activeTab, setActiveTab] = useState<'profile' | 'household' | 'feedback'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'household' | 'feedback'>(() => {
+    const saved = localStorage.getItem('activeSettingsTab');
+    return (saved as any) || 'profile';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('activeSettingsTab', activeTab);
+  }, [activeTab]);
+
   const [adults, setAdults] = React.useState(info.adults || 2);
   const [children, setChildren] = React.useState(info.children || 0);
   const [name, setName] = useState(info.name || '');

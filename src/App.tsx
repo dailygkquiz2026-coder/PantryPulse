@@ -123,7 +123,15 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
 }
 
 function AppContent() {
-  const [activeTab, setActiveTab] = useState<'pantry' | 'shop' | 'cook' | 'health' | 'settings' | 'dev'>('pantry');
+  const [activeTab, setActiveTab] = useState<'pantry' | 'shop' | 'cook' | 'health' | 'settings' | 'dev'>(() => {
+    const saved = localStorage.getItem('activeTab');
+    return (saved as any) || 'pantry';
+  });
+  
+  useEffect(() => {
+    localStorage.setItem('activeTab', activeTab);
+  }, [activeTab]);
+
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isSettingsMenuOpen, setIsSettingsMenuOpen] = useState(false);
   const [inventory, setInventory] = useState<GroceryItem[]>([]);
@@ -159,9 +167,23 @@ function AppContent() {
   const [cachedRecipes, setCachedRecipes] = useState<any[]>([]);
   const [cachedSearchResults, setCachedSearchResults] = useState<any[]>([]);
   const [lastRecipeFetch, setLastRecipeFetch] = useState<number>(0);
-  const [recipeView, setRecipeView] = useState<'trending' | 'saved' | 'search'>('trending');
+  const [recipeView, setRecipeView] = useState<'trending' | 'saved' | 'search'>(() => {
+    const saved = localStorage.getItem('recipeView');
+    return (saved as any) || 'trending';
+  });
   const [isRecipeLoading, setIsRecipeLoading] = useState(false);
-  const [inventoryFilter, setInventoryFilter] = useState<'all' | 'low-stock'>('all');
+  const [inventoryFilter, setInventoryFilter] = useState<'all' | 'low-stock'>(() => {
+    const saved = localStorage.getItem('inventoryFilter');
+    return (saved as any) || 'all';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('recipeView', recipeView);
+  }, [recipeView]);
+
+  useEffect(() => {
+    localStorage.setItem('inventoryFilter', inventoryFilter);
+  }, [inventoryFilter]);
 
   const lowStockItems = inventory.filter(item => {
     const days = predictions[item.id];
@@ -211,6 +233,15 @@ function AppContent() {
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>(
     (typeof window !== 'undefined' && 'Notification' in window) ? Notification.permission : 'default'
   );
+  
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const showToast = (message: string) => {
+    setToastMessage(message);
+    setTimeout(() => {
+      setToastMessage(null);
+    }, 3000);
+  };
 
   // Push Notification Logic
   const requestNotificationPermission = async () => {
@@ -498,7 +529,17 @@ function AppContent() {
       // Check for new stockouts to show modal
       const potentialStockouts = inventory.filter(item => {
         const days = newPredictions[item.id];
-        if (days !== undefined && days <= 0) {
+        
+        // Calculate hours since the item was last added/updated
+        const updateTime = Math.max(
+          new Date(item.lastUpdated || item.purchaseDate).getTime(),
+          new Date(item.purchaseDate).getTime()
+        );
+        const hoursSinceUpdate = (new Date().getTime() - updateTime) / (1000 * 60 * 60);
+
+        // Smarter trigger: Only warn if it's been in the pantry for >24h (so we don't annoy users who just added it)
+        // OR the quantity is actually zero. Warn if it predicts it will be out in <= 2 days
+        if (days !== undefined && days <= 2 && (hoursSinceUpdate > 24 || item.quantity <= 0)) {
           // Check if already in shopping list to avoid duplicates
           const inShoppingList = shoppingList.some(si => si.name.toLowerCase() === item.name.toLowerCase());
           // Check if we already asked about this item in this session
@@ -623,6 +664,7 @@ function AppContent() {
       setHasChanges(true);
       setIsAddModalOpen(false);
       setActiveTab('pantry');
+      showToast(`${item.name} added to pantry`);
     } catch (error) {
       console.error("Error in handleAddGrocery:", error);
       handleFirestoreError(error, OperationType.CREATE, 'inventory');
@@ -639,6 +681,7 @@ function AppContent() {
       setHasChanges(true);
       setIsAddModalOpen(false);
       setActiveTab('pantry');
+      showToast(`${items.length} items added to pantry`);
     } catch (error) {
       handleFirestoreError(error, OperationType.CREATE, 'inventory');
     }
@@ -689,6 +732,19 @@ function AppContent() {
 
   const handleAddShoppingItem = async (name: string, details?: Partial<GroceryItem>, preventTabSwitch = false) => {
     if (!user) return;
+    
+    // Check if the item already exists in the "to-buy" shopping list
+    const existingItem = shoppingList.find(i => i.name.toLowerCase() === name.toLowerCase() && i.status === 'to-buy');
+    if (existingItem) {
+      const confirmAdd = window.confirm(`You already have "${name}" in your shopping list. Do you want to add it again?`);
+      if (!confirmAdd) {
+        if (!preventTabSwitch) {
+          setActiveTab('shop');
+        }
+        return; // User canceled adding the duplicate
+      }
+    }
+
     setLastShoppingActivity(Date.now());
     try {
       await addDoc(collection(db, 'shoppingList'), {
@@ -1593,6 +1649,23 @@ function AppContent() {
       {isMarketingOpen && (
         <MarketingIntro onClose={handleCloseMarketing} />
       )}
+
+      {/* Toast Notification */}
+      <AnimatePresence>
+        {toastMessage && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.9 }}
+            className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 pointer-events-none"
+          >
+            <div className="bg-white dark:bg-cred-gray text-black dark:text-white px-6 py-4 rounded-2xl shadow-2xl border border-gray-200 dark:border-white/10 flex items-center gap-3">
+              <CheckCircle2 className="w-6 h-6 text-emerald-500" />
+              <p className="font-bold text-sm">{toastMessage}</p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

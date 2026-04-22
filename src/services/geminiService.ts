@@ -21,7 +21,7 @@ async function logAIUsage(uid: string | undefined, type: string, model: string =
 
 // Simple in-memory cache for search results to mitigate quota issues
 const searchCache: Record<string, { data: any, timestamp: number }> = {};
-const CACHE_TTL = 30 * 60 * 1000; // 30 minutes — prices don't change that fast
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 function getAI() {
   if (!aiInstance) {
@@ -326,29 +326,50 @@ export async function searchCheapestSource(itemName: string, location?: string, 
     return searchCache[cacheKey].data;
   }
 
-  if (uid) logAIUsage(uid, 'price_comparison', "gemini-3-flash-preview");
+  if (uid) logAIUsage(uid, 'price_comparison', "gemini-3.1-pro-preview");
   const ai = getAI();
-  const locationContext = location ? ` for the location/pincode: ${location}` : " (assume India)";
-  const purchaseContext = previousPurchase ? `Previously bought: "${previousPurchase}".` : "";
-
+  const locationContext = location ? ` for the location/pincode associated with coordinates: ${location}` : " (if location is not provided, assume a general search in India)";
+  const purchaseContext = previousPurchase ? `The user previously bought "${previousPurchase}".` : "";
+  
   const response = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
-    contents: `You are a shopping assistant for the Indian market. Find the best current prices for "${itemName}"${locationContext}. ${purchaseContext}
-
-Search across Zepto, Blinkit, Swiggy Instamart, BigBasket, Amazon Fresh, and Flipkart Grocery.
-Return the top 4 best-value results ranked by price per unit (cheapest first).
-
-For each result provide:
-- productName: full product name as shown on the store
-- storeName: one of (Zepto, Blinkit, Swiggy Instamart, BigBasket, Amazon Fresh, Flipkart Grocery)
-- price: current price in INR as a number
-- quantity: pack size e.g. "500g", "1kg", "Pack of 6"
-- pricePerUnit: price per 100g or per unit as a number
-- unit: unit used e.g. "100g" or "1 unit"
-- link: direct product URL or store search URL
-- sourceVerification: short string like "Google Shopping" or "Blinkit listing"
-- sourceUrl: URL where price was verified (empty string if unavailable)
-- productImage: direct image URL (empty string if unavailable)`,
+    model: "gemini-3.1-pro-preview",
+    contents: `You are a highly accurate real-time shopping assistant for the Indian market. 
+    Find and compare current prices for ${itemName}${locationContext}. 
+    ${purchaseContext}
+    
+    Your task:
+    1. Search across Zepto, Blinkit, Swiggy Instamart, BigBasket, Amazon Fresh, and Flipkart Grocery.
+    2. CRITICAL: You MUST use Google Search to find the ACTUAL CURRENT PRICES. 
+       - Use specific search queries like: 'site:blinkit.com [item] price', 'site:zepto.com [item] price', etc.
+       - Do not guess or use old data. If you cannot find a real-time price for a store, do NOT include it.
+    3. NORMALIZE VALUE: Calculate the price per 100g (for weight-based items like nuts, grains, vegetables) or per unit (for count-based items like eggs, soap). This is the most important metric for comparison.
+    4. BRAND MATCHING: If the user specifies a brand (e.g., "Tata Sampann"), prioritize that brand. If they search for a general item (e.g., "Walnut"), show the best value options across all reputable brands.
+    5. Verify availability for the specific location/pincode if provided. If an item is out of stock or not available in that area, do NOT include it.
+    6. For each result, provide:
+       - productName: The exact full name of the product as shown on the store.
+       - storeName: Exact Store Name (Zepto, Blinkit, Swiggy Instamart, BigBasket, Amazon Fresh, Flipkart Grocery).
+       - price: The current price in INR (number only).
+       - link: A direct link to the product page or a highly specific search URL. 
+         - PREFER direct product URLs (e.g., https://blinkit.com/prn/[product-id]) if found in search results.
+         - FALLBACK to these search formats ONLY if a direct link is unavailable:
+           - The search query in the URL MUST match the 'productName' EXACTLY.
+           - Zepto: https://www.zepto.com/search?query=[EXACT_PRODUCT_NAME]
+           - Blinkit: https://blinkit.com/s/?q=[EXACT_PRODUCT_NAME]
+           - BigBasket: https://www.bigbasket.com/ps/?q=[EXACT_PRODUCT_NAME]
+           - Swiggy Instamart: https://www.swiggy.com/instamart/search?query=[EXACT_PRODUCT_NAME]
+           - Amazon Fresh: https://www.amazon.in/s?k=[EXACT_PRODUCT_NAME]&i=nowstore
+           - Flipkart Grocery: https://www.flipkart.com/search?q=[EXACT_PRODUCT_NAME]&marketplace=GROCERY
+       - sourceUrl: The EXACT URL from Google Search results where you verified this price. This is MANDATORY for every result.
+       - quantity: The exact pack size (e.g., "500g", "1kg", "Pack of 2").
+       - productImage: A direct, high-quality image URL for this specific product.
+       - sourceVerification: A detailed string: "Verified on [Store] ([Date])" or "Google Shopping Snippet".
+       - pricePerUnit: Calculate the price per 100g or per unit (number only).
+       - unit: The unit used for calculation (e.g., "100g", "1 unit").
+    
+    7. Rank results by total value (lowest price per unit first).
+    8. Provide 5-6 high-quality, verified results.
+    
+    Return the result as a JSON array of objects.`,
     config: {
       responseMimeType: "application/json",
       responseSchema: {
@@ -367,7 +388,7 @@ For each result provide:
             unit: { type: Type.STRING },
             sourceUrl: { type: Type.STRING }
           },
-          required: ["productName", "storeName", "price", "link", "quantity", "pricePerUnit", "unit", "sourceVerification"]
+          required: ["productName", "storeName", "price", "link", "quantity", "productImage", "sourceVerification", "pricePerUnit", "unit", "sourceUrl"]
         }
       },
       tools: [{ googleSearch: {} }]
@@ -523,4 +544,36 @@ export async function searchRecipes(query: string, uid?: string) {
     }
   });
   return parseGeminiResponse(response.text);
+}
+
+export async function generateInventoryInsight(inventory: any[], uid?: string) {
+  if (inventory.length < 5) return 'Not enough data to create insight. Add more items to your pantry to receive AI consumption insights.';
+  
+  if (uid) logAIUsage(uid, 'inventory_insight', 'gemini-3-flash-preview');
+  
+  const ai = getAI();
+  const minimalInventory = inventory.map(i => ({ name: i.name, category: i.category, quantity: i.quantity, usage: i.usageFrequency }));
+  
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: `Analyze this household pantry inventory and provide a single, cohesive, highly insightful paragraph (about 3-4 sentences) about their dietary habits and consumption patterns. Notice what they have a lot of, what they lack, and suggest one practical improvement. Make it read like a seamless paragraph. \n\nInventory: ${JSON.stringify(minimalInventory)}`,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            insight: { type: Type.STRING }
+          },
+          required: ["insight"]
+        }
+      }
+    });
+
+    const parsed = parseGeminiResponse(response.text);
+    return parsed?.insight || 'Not enough data to create insight.';
+  } catch (error) {
+    console.error("AI Insight Error:", error);
+    return "Unable to generate AI insight at the moment.";
+  }
 }

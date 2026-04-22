@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   BarChart, 
   Bar, 
@@ -15,7 +15,9 @@ import {
   Legend
 } from 'recharts';
 import { GroceryItem } from '../types';
-import { PieChart as PieIcon, BarChart3, TrendingUp, Zap, AlertCircle } from 'lucide-react';
+import { PieChart as PieIcon, BarChart3, TrendingUp, Zap, AlertCircle, Loader2 } from 'lucide-react';
+import { generateInventoryInsight } from '../services/geminiService';
+import { auth } from '../firebase';
 
 interface AnalyticsDashboardProps {
   inventory: GroceryItem[];
@@ -24,6 +26,33 @@ interface AnalyticsDashboardProps {
 const COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#10b981', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316'];
 
 export default function AnalyticsDashboard({ inventory }: AnalyticsDashboardProps) {
+  const [aiInsight, setAiInsight] = useState<string | null>(null);
+  const [isInsightLoading, setIsInsightLoading] = useState(false);
+
+  useEffect(() => {
+    if (inventory.length === 0) return;
+    
+    // Only fetch insight if we have 5 or more items, otherwise use standard message
+    if (inventory.length < 5) {
+      setAiInsight("Not enough data to create insight. Add more items to your pantry to receive AI consumption insights.");
+      return;
+    }
+
+    const fetchInsight = async () => {
+      setIsInsightLoading(true);
+      try {
+        const insight = await generateInventoryInsight(inventory, auth.currentUser?.uid);
+        setAiInsight(insight);
+      } catch (err) {
+        console.error("Failed to fetch insight", err);
+        setAiInsight("Unable to generate AI insight at the moment.");
+      } finally {
+        setIsInsightLoading(false);
+      }
+    };
+    fetchInsight();
+  }, [inventory]);
+
   // 1. Category Distribution
   const categoryData = inventory.reduce((acc: any[], item) => {
     const existing = acc.find(a => a.name === item.category);
@@ -130,12 +159,20 @@ export default function AnalyticsDashboard({ inventory }: AnalyticsDashboardProp
           ))}
         </div>
 
-        <div className="mt-8 p-6 bg-blue-50 dark:bg-blue-900/20 rounded-2xl border border-blue-100 dark:border-blue-900/40">
-          <h4 className="font-bold text-blue-900 dark:text-blue-300 mb-2">AI Consumption Insight</h4>
-          <p className="text-sm text-blue-700 dark:text-blue-400 leading-relaxed">
-            Based on your inventory, your household is consuming {inventory.filter(i => i.category === 'Produce').length > 0 ? 'a good amount of fresh produce' : 'fewer fresh vegetables than recommended'}. 
-            {inventory.filter(i => i.name.toLowerCase().includes('bread')).length > 2 ? ' Consider reducing bread intake to manage carbohydrate levels.' : ''}
-          </p>
+        <div className="mt-8 p-6 bg-blue-50 dark:bg-blue-900/20 rounded-2xl border border-blue-100 dark:border-blue-900/40 relative overflow-hidden">
+          {isInsightLoading ? (
+            <div className="flex flex-col items-center justify-center p-4">
+              <Loader2 className="w-6 h-6 text-blue-500 animate-spin mb-2" />
+              <p className="text-xs font-black uppercase tracking-widest text-blue-700 dark:text-blue-400">Analyzing Pantry Data...</p>
+            </div>
+          ) : (
+            <>
+              <h4 className="font-bold text-blue-900 dark:text-blue-300 mb-2">AI Consumption Insight</h4>
+              <p className="text-sm text-blue-700 dark:text-blue-400 leading-relaxed">
+                {aiInsight || 'Add items to your pantry to receive AI consumption insights based on your actual grocery data.'}
+              </p>
+            </>
+          )}
         </div>
       </div>
     </div>

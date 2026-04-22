@@ -75,7 +75,7 @@ export default function StockoutConfirmationModal({ isOpen, onClose, items, onCo
 
             <div className="space-y-6 mb-8">
               <p className="text-sm text-gray-600 dark:text-gray-400 font-medium leading-relaxed">
-                Our AI predicts these items are <span className="text-amber-500 font-bold uppercase tracking-tight">out of stock</span>. 
+                Our AI predicts these items are <span className="text-amber-500 font-bold uppercase tracking-tight">running extremely low</span> or <span className="text-red-500 font-bold uppercase tracking-tight">out of stock</span>. 
                 Check items to move them to your <span className="text-blue-500 font-bold uppercase tracking-tight">shopping list</span>.
               </p>
 

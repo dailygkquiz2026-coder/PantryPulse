@@ -55,7 +55,14 @@ export default function AdminDashboard() {
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'analytics' | 'logs'>('analytics');
+  const [activeTab, setActiveTab] = useState<'analytics' | 'logs'>(() => {
+    const saved = localStorage.getItem('activeAdminTab');
+    return (saved as any) || 'analytics';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('activeAdminTab', activeTab);
+  }, [activeTab]);
 
   useEffect(() => {
     const unsubscribeAuth = auth.onAuthStateChanged((user) => {

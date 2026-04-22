@@ -112,7 +112,16 @@ export default function GroceryForm({ onAdd, onAddMultiple, inventory, onUpdateQ
     };
 
     if (finalExpiryDate) {
-      newItem.expiryDate = finalExpiryDate;
+      try {
+        const dateObj = new Date(finalExpiryDate);
+        if (!isNaN(dateObj.getTime())) {
+          newItem.expiryDate = dateObj.toISOString();
+        } else {
+          newItem.expiryDate = finalExpiryDate;
+        }
+      } catch (e) {
+        newItem.expiryDate = finalExpiryDate;
+      }
     }
 
     onAdd(newItem);

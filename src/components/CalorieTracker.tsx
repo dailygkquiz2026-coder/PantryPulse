@@ -65,17 +65,20 @@ interface CalorieLog {
   photoUrl?: string;
 }
 
-function CalorieLogItem({ log }: { log: CalorieLog }) {
+function CalorieLogItem({ log, isPro, onUpdateLog }: { log: CalorieLog, isPro: boolean, onUpdateLog?: (id: string, updates: Partial<CalorieLog>) => void }) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const logDate = new Date(log.date);
+  const twoDaysAgo = subDays(new Date(), 2);
+  const isRecent = logDate >= twoDaysAgo;
   
   return (
     <div className="cred-card overflow-hidden group transition-all border-white/5 hover:border-white/10">
       <div 
         onClick={() => setIsExpanded(!isExpanded)}
-        className="p-6 flex items-center justify-between cursor-pointer hover:bg-white/[0.02] transition-all"
+        className="p-6 flex items-center justify-between cursor-pointer hover:bg-white/[0.02] transition-all flex-wrap gap-4"
       >
         <div className="flex items-center gap-4">
-          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${
+          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${
             log.mealType === 'breakfast' ? 'bg-amber-100/10 text-amber-500' :
             log.mealType === 'lunch' ? 'bg-blue-100/10 text-blue-500' :
             log.mealType === 'dinner' ? 'bg-purple-100/10 text-purple-500' :
@@ -84,8 +87,26 @@ function CalorieLogItem({ log }: { log: CalorieLog }) {
             <Zap className="w-6 h-6" />
           </div>
           <div>
-            <h4 className="font-black text-lg capitalize text-white">{log.mealType}</h4>
-            <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest">
+            <div className="flex items-center gap-2">
+              <h4 className="font-black text-lg capitalize text-white">{log.mealType}</h4>
+              {isPro && isRecent && onUpdateLog && (
+                <select 
+                  value={log.mealType}
+                  onChange={(e) => {
+                    e.stopPropagation();
+                    onUpdateLog(log.id, { mealType: e.target.value as any });
+                  }}
+                  onClick={e => e.stopPropagation()}
+                  className="bg-gray-100 dark:bg-white/10 border-none text-[10px] uppercase font-black tracking-widest text-gray-900 dark:text-white rounded-md py-1 px-2 focus:ring-0 outline-none cursor-pointer"
+                >
+                  <option value="breakfast" className="text-gray-900">Breakfast</option>
+                  <option value="lunch" className="text-gray-900">Lunch</option>
+                  <option value="dinner" className="text-gray-900">Dinner</option>
+                  <option value="snack" className="text-gray-900">Snack</option>
+                </select>
+              )}
+            </div>
+            <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest mt-1">
               {format(new Date(log.date), 'MMM d, h:mm a')} • {log.items.length} items
             </p>
           </div>
@@ -141,7 +162,15 @@ function CalorieLogItem({ log }: { log: CalorieLog }) {
 }
 
 export default function CalorieTracker({ inventory }: { inventory: any[] }) {
-  const [activeSubTab, setActiveSubTab] = useState<'track' | 'history' | 'analytics' | 'profile'>('track');
+  const [activeSubTab, setActiveSubTab] = useState<'track' | 'history' | 'analytics' | 'profile'>(() => {
+    const saved = localStorage.getItem('activeHealthSubTab');
+    return (saved as any) || 'track';
+  });
+  
+  useEffect(() => {
+    localStorage.setItem('activeHealthSubTab', activeSubTab);
+  }, [activeSubTab]);
+
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [logs, setLogs] = useState<CalorieLog[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -359,14 +388,20 @@ export default function CalorieTracker({ inventory }: { inventory: any[] }) {
     };
   }).reverse();
 
-  const weeklyAverage = last7DaysData.reduce((sum, d) => sum + d.calories, 0) / 7;
+  const daysWithDataLast7Days = last7DaysData.filter(d => d.calories > 0).length;
+  const hasMissingDaysWeekly = daysWithDataLast7Days < 7 && daysWithDataLast7Days > 0;
+  const weeklyAverage = daysWithDataLast7Days > 0 ? (last7DaysData.reduce((sum, d) => sum + d.calories, 0) / daysWithDataLast7Days) : 0;
   
   const monthlyLogs = logs.filter(l => {
     const logDate = new Date(l.date);
     const thirtyDaysAgo = subDays(new Date(), 30);
     return logDate >= thirtyDaysAgo;
   });
-  const monthlyAverage = monthlyLogs.reduce((sum, l) => sum + l.totalCalories, 0) / 30;
+
+  const monthlyDaysWithData = new Set(monthlyLogs.map(l => format(new Date(l.date), 'yyyy-MM-dd'))).size;
+  const hasMissingDaysMonthly = monthlyDaysWithData < 30 && monthlyDaysWithData > 0;
+  const notEnoughDataMonthly = monthlyDaysWithData < 7;
+  const monthlyAverage = monthlyDaysWithData > 0 ? monthlyLogs.reduce((sum, l) => sum + l.totalCalories, 0) / monthlyDaysWithData : 0;
 
   // Mock community data (since we can't easily aggregate across all users without a backend or heavy client-side fetch)
   const communityAverage = 2150; 
@@ -645,7 +680,19 @@ export default function CalorieTracker({ inventory }: { inventory: any[] }) {
                   return logDate >= oneWeekAgo;
                 })
                 .map(log => (
-                  <CalorieLogItem key={log.id} log={log} />
+                  <CalorieLogItem 
+                    key={log.id} 
+                    log={log} 
+                    isPro={profile?.tier === 'pro'}
+                    onUpdateLog={async (id, updates) => {
+                      try {
+                        await updateDoc(doc(db, 'calorieLogs', id), updates);
+                      } catch (err) {
+                        console.error('Failed to update log', err);
+                        handleFirestoreError(err, OperationType.UPDATE, 'calorieLogs');
+                      }
+                    }}
+                  />
                 ))
             )}
           </motion.div>
@@ -715,24 +762,42 @@ export default function CalorieTracker({ inventory }: { inventory: any[] }) {
                 </div>
               </div>
 
-              <div className="space-y-6">
-                <div className="cred-card p-6 flex items-center justify-between">
-                  <div>
-                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Weekly Average</p>
-                    <p className="text-3xl font-black tracking-tighter">{Math.round(weeklyAverage)} <span className="text-xs font-medium">kcal</span></p>
+              <div className="space-y-6 flex flex-col justify-between">
+                <div className="cred-card p-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Weekly Average</p>
+                      <p className="text-3xl font-black tracking-tighter">{Math.round(weeklyAverage)} <span className="text-xs font-medium">kcal</span></p>
+                    </div>
+                    <div className={`p-2 rounded-lg ${weeklyAverage > (profile?.tdee || 2000) ? 'bg-red-500/10 text-red-500' : 'bg-emerald-500/10 text-emerald-500'}`}>
+                      <TrendingUp className="w-5 h-5" />
+                    </div>
                   </div>
-                  <div className={`p-2 rounded-lg ${weeklyAverage > (profile?.tdee || 2000) ? 'bg-red-500/10 text-red-500' : 'bg-emerald-500/10 text-emerald-500'}`}>
-                    <TrendingUp className="w-5 h-5" />
-                  </div>
+                  {hasMissingDaysWeekly && (
+                    <p className="text-[10px] text-amber-500 mt-2 font-medium">
+                      Note: You have missing days this week. Shown average is pro-rata excluding those dates.
+                    </p>
+                  )}
                 </div>
-                <div className="cred-card p-6 flex items-center justify-between">
-                  <div>
-                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Monthly Average</p>
-                    <p className="text-3xl font-black tracking-tighter">{Math.round(monthlyAverage)} <span className="text-xs font-medium">kcal</span></p>
+                <div className="cred-card p-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Monthly Average</p>
+                      {notEnoughDataMonthly ? (
+                        <p className="text-sm font-bold text-gray-500 mt-2">Not enough data (needs 7 days)</p>
+                      ) : (
+                        <p className="text-3xl font-black tracking-tighter">{Math.round(monthlyAverage)} <span className="text-xs font-medium">kcal</span></p>
+                      )}
+                    </div>
+                    <div className="p-2 bg-blue-500/10 text-blue-500 rounded-lg">
+                      <Calendar className="w-5 h-5" />
+                    </div>
                   </div>
-                  <div className="p-2 bg-blue-500/10 text-blue-500 rounded-lg">
-                    <Calendar className="w-5 h-5" />
-                  </div>
+                  {!notEnoughDataMonthly && hasMissingDaysMonthly && (
+                    <p className="text-[10px] text-amber-500 mt-2 font-medium">
+                      Note: You have missing days this month. Shown average is pro-rata excluding those dates.
+                    </p>
+                  )}
                 </div>
                 {profile?.shareAnonymousData && (
                   <div className="cred-card p-6 bg-gradient-to-br from-purple-600/10 to-blue-600/10 border-purple-500/20">
