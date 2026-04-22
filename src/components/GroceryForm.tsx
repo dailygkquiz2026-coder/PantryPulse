@@ -9,32 +9,21 @@ import DuplicateCheckModal from './DuplicateCheckModal';
 import { GroceryItem } from '../types';
 import { db, auth } from '../firebase';
 import { collection, addDoc } from 'firebase/firestore';
-import { toIsoDateString } from '../lib/utils';
-
-interface GroceryFormPrefill {
-  name: string;
-  category: string;
-  unit: string;
-  usageFrequency?: number;
-  price?: number;
-}
 
 interface GroceryFormProps {
-  onAdd: (item: any) => Promise<string | null> | void;
+  onAdd: (item: any) => void;
   onAddMultiple: (items: any[]) => void;
   inventory: GroceryItem[];
   onUpdateQuantity: (id: string, newQuantity: number) => void;
-  onPatchExpiry?: (id: string, expiryDate: string) => Promise<void> | void;
-  prefill?: GroceryFormPrefill | null;
 }
 
-export default function GroceryForm({ onAdd, onAddMultiple, inventory, onUpdateQuantity, onPatchExpiry, prefill }: GroceryFormProps) {
-  const [name, setName] = useState(prefill?.name ?? '');
-  const [category, setCategory] = useState(prefill?.category ?? CATEGORIES[0]);
+export default function GroceryForm({ onAdd, onAddMultiple, inventory, onUpdateQuantity }: GroceryFormProps) {
+  const [name, setName] = useState('');
+  const [category, setCategory] = useState(CATEGORIES[0]);
   const [quantity, setQuantity] = useState<string | number>(1);
-  const [unit, setUnit] = useState(prefill?.unit ?? UNITS[0]);
-  const [price, setPrice] = useState<string | number>(prefill?.price ?? 0);
-  const [usageFrequency, setUsageFrequency] = useState<string | number>(prefill?.usageFrequency ?? 1);
+  const [unit, setUnit] = useState(UNITS[0]);
+  const [price, setPrice] = useState<string | number>(0);
+  const [usageFrequency, setUsageFrequency] = useState<string | number>(1);
   const [expiryDate, setExpiryDate] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isScanningInvoice, setIsScanningInvoice] = useState(false);
@@ -94,6 +83,22 @@ export default function GroceryForm({ onAdd, onAddMultiple, inventory, onUpdateQ
       alert("Please enter a valid usage frequency");
       return;
     }
+    
+    let finalExpiryDate = expiryDate;
+
+    // Auto-predict expiry if not provided
+    if (!finalExpiryDate) {
+      try {
+        setIsPredictingExpiry(true);
+        const prediction = await predictExpiryDate(name, category);
+        finalExpiryDate = prediction.predictedExpiryDate;
+        console.log("Predicted expiry date:", prediction);
+      } catch (error) {
+        console.error("Expiry prediction failed:", error);
+      } finally {
+        setIsPredictingExpiry(false);
+      }
+    }
 
     const newItem: any = {
       name,
@@ -106,29 +111,12 @@ export default function GroceryForm({ onAdd, onAddMultiple, inventory, onUpdateQ
       lastUpdated: new Date().toISOString()
     };
 
-    if (expiryDate) {
-      const iso = toIsoDateString(expiryDate);
-      if (iso) newItem.expiryDate = iso;
+    if (finalExpiryDate) {
+      newItem.expiryDate = finalExpiryDate;
     }
 
-    // Add the item immediately; do not block on AI expiry prediction.
-    const addedId = await Promise.resolve(onAdd(newItem));
-
-    // If the user didn't provide an expiry, predict it in the background
-    // and patch the newly-created doc once the prediction returns.
-    if (!expiryDate && addedId && onPatchExpiry) {
-      (async () => {
-        try {
-          const prediction = await predictExpiryDate(name, category);
-          if (prediction?.predictedExpiryDate) {
-            await onPatchExpiry(addedId, prediction.predictedExpiryDate);
-          }
-        } catch (err) {
-          console.error("Background expiry prediction failed:", err);
-        }
-      })();
-    }
-
+    onAdd(newItem);
+    
     setName('');
     setQuantity(1);
     setPrice(0);
@@ -533,10 +521,15 @@ export default function GroceryForm({ onAdd, onAddMultiple, inventory, onUpdateQ
 
         <button
           type="submit"
-          className="cred-button-primary w-full flex items-center justify-center gap-3 mt-4"
+          disabled={isPredictingExpiry}
+          className="cred-button-primary w-full flex items-center justify-center gap-3 mt-4 disabled:opacity-50"
         >
-          <ShoppingCart className="w-6 h-6" />
-          Add to Inventory
+          {isPredictingExpiry ? (
+            <Loader2 className="w-6 h-6 animate-spin" />
+          ) : (
+            <ShoppingCart className="w-6 h-6" />
+          )}
+          {isPredictingExpiry ? 'Predicting Expiry...' : 'Add to Inventory'}
         </button>
       </form>
     </motion.div>

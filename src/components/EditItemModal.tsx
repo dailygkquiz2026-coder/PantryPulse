@@ -3,7 +3,6 @@ import { GroceryItem } from '../types';
 import { CATEGORIES, UNITS } from '../constants';
 import { X, Save } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { toIsoDateString } from '../lib/utils';
 
 interface EditItemModalProps {
   isOpen: boolean;
@@ -27,7 +26,7 @@ export default function EditItemModal({ isOpen, onClose, item, onUpdate }: EditI
       setQuantity(item.quantity);
       setUnit(item.unit);
       setUsageFrequency(item.usageFrequency);
-      setExpiryDate(item.expiryDate ? item.expiryDate.slice(0, 10) : '');
+      setExpiryDate(item.expiryDate || '');
     }
   }, [item]);
 
@@ -58,8 +57,7 @@ export default function EditItemModal({ isOpen, onClose, item, onUpdate }: EditI
     };
     
     if (expiryDate) {
-      const iso = toIsoDateString(expiryDate);
-      if (iso) updates.expiryDate = iso;
+      updates.expiryDate = expiryDate;
     }
 
     onUpdate(item.id, updates);

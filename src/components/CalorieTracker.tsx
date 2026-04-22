@@ -140,9 +140,9 @@ function CalorieLogItem({ log }: { log: CalorieLog }) {
   );
 }
 
-export default function CalorieTracker({ inventory, userProfile: profileProp }: { inventory: any[]; userProfile?: UserProfile | null }) {
+export default function CalorieTracker({ inventory }: { inventory: any[] }) {
   const [activeSubTab, setActiveSubTab] = useState<'track' | 'history' | 'analytics' | 'profile'>('track');
-  const [profile, setProfile] = useState<UserProfile | null>(profileProp ?? null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [logs, setLogs] = useState<CalorieLog[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<AnalyzedFoodItem[] | null>(null);
@@ -157,10 +157,16 @@ export default function CalorieTracker({ inventory, userProfile: profileProp }: 
 
   const user = auth.currentUser;
 
-  // Sync profile from parent prop — App.tsx already holds the live listener.
+  // Real-time Profile
   useEffect(() => {
-    if (profileProp !== undefined) setProfile(profileProp);
-  }, [profileProp]);
+    if (!user) return;
+    const unsubscribe = onSnapshot(doc(db, 'userProfiles', user.uid), (doc) => {
+      if (doc.exists()) {
+        setProfile(doc.data() as UserProfile);
+      }
+    });
+    return () => unsubscribe();
+  }, [user]);
 
   // Real-time Logs
   useEffect(() => {
