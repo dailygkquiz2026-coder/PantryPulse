@@ -85,42 +85,6 @@ export default function MarketingIntro({ onClose }: MarketingIntroProps) {
         </motion.div>
       </section>
 
-      {/* Video Section */}
-      <section className="py-24 px-6">
-        <div className="max-w-4xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="text-center mb-10"
-          >
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-full text-xs font-black uppercase tracking-widest mb-4">
-              <Zap className="w-3 h-3" />
-              2 minute walkthrough
-            </div>
-            <h2 className="text-4xl md:text-5xl font-black text-gray-900 dark:text-white">
-              See it in action
-            </h2>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6, delay: 0.1 }}
-            className="relative rounded-3xl overflow-hidden shadow-2xl border border-gray-100 dark:border-white/10 aspect-video"
-          >
-            <video
-              src="https://firebasestorage.googleapis.com/v0/b/dailygkquiz-490312.firebasestorage.app/o/Video%20Project.mp4?alt=media&token=c46f4f46-aa52-4261-a5eb-f653cfae0d00"
-              controls
-              playsInline
-              className="absolute inset-0 w-full h-full object-cover"
-            />
-          </motion.div>
-        </div>
-      </section>
-
       {/* Feature Grid */}
       <section className="py-24 px-6 bg-gray-50 dark:bg-cred-gray/20">
         <div className="max-w-7xl mx-auto">

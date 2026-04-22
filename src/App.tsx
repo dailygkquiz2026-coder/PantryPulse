@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, useRef, Component, ErrorInfo, ReactNode } from 'react';
+import React, { useState, useEffect, Component, ErrorInfo, ReactNode } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   LayoutDashboard, 
@@ -40,21 +40,18 @@ import {
   signOut,
   User
 } from 'firebase/auth';
-import {
-  collection,
-  onSnapshot,
-  query,
-  where,
-  addDoc,
-  updateDoc,
-  deleteDoc,
-  doc,
+import { 
+  collection, 
+  onSnapshot, 
+  query, 
+  where, 
+  addDoc, 
+  updateDoc, 
+  deleteDoc, 
+  doc, 
   setDoc,
   getDocFromServer,
-  orderBy,
-  getDocs,
-  limit,
-  writeBatch
+  orderBy
 } from 'firebase/firestore';
 import { db, auth, handleFirestoreError, OperationType, messaging } from './firebase';
 import { getToken } from 'firebase/messaging';
@@ -76,7 +73,6 @@ import UpgradeModal from './components/UpgradeModal';
 import ProBadge from './components/ProBadge';
 import { GroceryItem, HouseholdInfo, ShoppingListItem, SavedRecipe, PriceComparisonResult, DeletedItem, UserProfile } from './types';
 import { predictMultipleRestocks, searchCheapestSource } from './services/geminiService';
-import { toIsoDateString } from './lib/utils';
 
 // Error Boundary Component
 class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean, error: Error | null }> {
@@ -126,121 +122,9 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
   }
 }
 
-// Returns the fraction of 1 stored-unit consumed per single use, and whether
-// consumption should be multiplied by household members (per-person) or not.
-// This is a realistic lookup table that mirrors the AI prompt's reasoning so
-// the local fallback stays aligned with AI predictions.
-function estimatePerUseVolume(name: string, unit: string, category: string): { perUse: number; perPerson: boolean } {
-  const n = name.toLowerCase();
-  const u = unit.toLowerCase();
-  const c = category.toLowerCase();
-
-  // ── Household / cleaning — NOT per-person ──────────────────────────────────
-  const isHousehold = c === 'household' || c === 'cleaning';
-  if (isHousehold || n.includes('detergent') || n.includes('surf') || n.includes('ariel') || n.includes('tide')) {
-    // Liquid detergent ~45ml (0.045L) per wash; powder ~50g (0.05kg)
-    if (u === 'l' || u === 'litre' || u === 'liter') return { perUse: 0.045, perPerson: false };
-    if (u === 'ml') return { perUse: 45, perPerson: false };
-    if (u === 'kg' || u === 'g') return { perUse: u === 'kg' ? 0.05 : 50, perPerson: false };
-  }
-  if (n.includes('dishwash') || n.includes('vim') || n.includes('pril')) {
-    if (u === 'ml') return { perUse: 8, perPerson: false };
-    if (u === 'l' || u === 'litre') return { perUse: 0.008, perPerson: false };
-  }
-  if (n.includes('floor cleaner') || n.includes('phenyl') || n.includes('lizol') || n.includes('colin') || n.includes('harpic')) {
-    if (u === 'ml') return { perUse: 25, perPerson: false };
-    if (u === 'l' || u === 'litre') return { perUse: 0.025, perPerson: false };
-  }
-  if (n.includes('hand wash') || n.includes('handwash') || n.includes('dettol')) {
-    if (u === 'ml') return { perUse: 3, perPerson: true };
-    if (u === 'l' || u === 'litre') return { perUse: 0.003, perPerson: true };
-  }
-  if (n.includes('cooking oil') || n.includes('sunflower oil') || n.includes('mustard oil') || n.includes('olive oil') || (c === 'cooking' && (u === 'l' || u === 'litre'))) {
-    return { perUse: 0.020, perPerson: false }; // 20ml per meal, household-level
-  }
-  if (n.includes('ghee') || n.includes('butter')) {
-    if (u === 'kg' || u === 'g') return { perUse: u === 'kg' ? 0.015 : 15, perPerson: false };
-    if (u === 'l' || u === 'ml') return { perUse: u === 'l' ? 0.015 : 15, perPerson: false };
-  }
-  if (n.includes('salt')) {
-    return { perUse: u === 'kg' ? 0.004 : 4, perPerson: false }; // ~4g per meal
-  }
-
-  // ── Personal care — per-person ─────────────────────────────────────────────
-  if (n.includes('shampoo') || n.includes('head & shoulders') || n.includes('dove') || n.includes('pantene')) {
-    if (u === 'ml') return { perUse: 8, perPerson: true };
-    if (u === 'l' || u === 'litre') return { perUse: 0.008, perPerson: true };
-  }
-  if (n.includes('toothpaste') || n.includes('colgate') || n.includes('pepsodent') || n.includes('sensodyne')) {
-    if (u === 'g') return { perUse: 2, perPerson: true };
-    if (u === 'ml') return { perUse: 2, perPerson: true };
-  }
-  if (n.includes('soap') && (u === 'pcs' || u === 'pc' || u === 'pack')) {
-    // 1 soap bar lasts ~25 days per person; 1 use = 1/25 of a bar
-    return { perUse: 1 / 25, perPerson: true };
-  }
-
-  // ── Dairy ──────────────────────────────────────────────────────────────────
-  if (c === 'dairy' || n.includes('milk')) {
-    if (u === 'l' || u === 'litre') return { perUse: 0.2, perPerson: true }; // 200ml/serving
-    if (u === 'ml') return { perUse: 200, perPerson: true };
-  }
-  if (n.includes('curd') || n.includes('yogurt') || n.includes('dahi')) {
-    if (u === 'kg' || u === 'g') return { perUse: u === 'kg' ? 0.1 : 100, perPerson: true };
-  }
-  if (n.includes('paneer') || n.includes('cheese')) {
-    if (u === 'kg' || u === 'g') return { perUse: u === 'kg' ? 0.05 : 50, perPerson: true };
-  }
-
-  // ── Grains & staples ───────────────────────────────────────────────────────
-  if (n.includes('rice') || n.includes('basmati') || n.includes('chawal')) {
-    if (u === 'kg') return { perUse: 0.07, perPerson: true }; // 70g/meal
-    if (u === 'g') return { perUse: 70, perPerson: true };
-  }
-  if (n.includes('atta') || n.includes('wheat flour') || n.includes('maida')) {
-    if (u === 'kg') return { perUse: 0.08, perPerson: true };
-    if (u === 'g') return { perUse: 80, perPerson: true };
-  }
-  if (n.includes('dal') || n.includes('lentil') || n.includes('chana') || n.includes('moong') || n.includes('toor')) {
-    if (u === 'kg') return { perUse: 0.06, perPerson: true };
-    if (u === 'g') return { perUse: 60, perPerson: true };
-  }
-  if (n.includes('sugar') || n.includes('cheeni')) {
-    if (u === 'kg') return { perUse: 0.010, perPerson: true }; // ~10g per cup of tea
-    if (u === 'g') return { perUse: 10, perPerson: true };
-  }
-  if (n.includes('tea') || n.includes('chai') || n.includes('coffee')) {
-    if (u === 'g') return { perUse: 3, perPerson: true };
-    if (u === 'kg') return { perUse: 0.003, perPerson: true };
-  }
-
-  // ── Bakery ─────────────────────────────────────────────────────────────────
-  if (c === 'bakery' || n.includes('bread') || n.includes('bun') || n.includes('rusk')) {
-    if (u === 'pcs' || u === 'pc' || u === 'loaf') return { perUse: 1, perPerson: true }; // 1 piece/use
-    if (u === 'g') return { perUse: 60, perPerson: true };
-  }
-
-  // ── Eggs ───────────────────────────────────────────────────────────────────
-  if (n.includes('egg')) {
-    return { perUse: 2, perPerson: true }; // 2 eggs per use per person
-  }
-
-  // ── Beverages ──────────────────────────────────────────────────────────────
-  if (c === 'beverages' || n.includes('juice') || n.includes('water')) {
-    if (u === 'l' || u === 'litre') return { perUse: 0.25, perPerson: true };
-    if (u === 'ml') return { perUse: 250, perPerson: true };
-  }
-
-  // ── Generic fallback ───────────────────────────────────────────────────────
-  // For unknown items, assume 1 full unit per use but apply household scope
-  // only to household category items, per-person for everything else.
-  return { perUse: 1, perPerson: !isHousehold };
-}
-
 function AppContent() {
   const [activeTab, setActiveTab] = useState<'pantry' | 'shop' | 'cook' | 'health' | 'settings' | 'dev'>('pantry');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [restoreContext, setRestoreContext] = useState<DeletedItem | null>(null);
   const [isSettingsMenuOpen, setIsSettingsMenuOpen] = useState(false);
   const [inventory, setInventory] = useState<GroceryItem[]>([]);
   const [shoppingList, setShoppingList] = useState<ShoppingListItem[]>([]);
@@ -251,23 +135,7 @@ function AppContent() {
   const [searchError, setSearchError] = useState<string | null>(null);
   const [isSearching, setIsSearching] = useState(false);
   const [predictions, setPredictions] = useState<Record<string, number>>({});
-  // Persistent cooldown map so the stockout/low-stock popup re-prompts at most once per hour per item,
-  // even across page reloads. Keys: `stockout-<id>` or `lowstock-<id>`. Values: epoch ms of last notify.
-  const [notifiedItems, setNotifiedItems] = useState<Record<string, number>>(() => {
-    try {
-      return JSON.parse(localStorage.getItem('pp_stockoutCooldown') || '{}');
-    } catch {
-      return {};
-    }
-  });
-  const STOCKOUT_COOLDOWN_MS = 60 * 60 * 1000; // 1 hour
-
-  useEffect(() => {
-    try {
-      localStorage.setItem('pp_stockoutCooldown', JSON.stringify(notifiedItems));
-    } catch {}
-  }, [notifiedItems]);
-
+  const [notifiedItems, setNotifiedItems] = useState<Set<string>>(new Set());
   const [hasChanges, setHasChanges] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
@@ -277,25 +145,7 @@ function AppContent() {
   const [isMarketingOpen, setIsMarketingOpen] = useState(false);
   const [isAuthReady, setIsAuthReady] = useState(false);
   const [userLocation, setUserLocation] = useState<string | null>(null);
-  const settingsMenuRef = useRef<HTMLDivElement>(null);
   
-  // Close settings menu on outside click
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (settingsMenuRef.current && !settingsMenuRef.current.contains(event.target as Node)) {
-        setIsSettingsMenuOpen(false);
-      }
-    }
-    
-    if (isSettingsMenuOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-    
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [isSettingsMenuOpen]);
-
   // Registering initial view
   useEffect(() => {
     if (isAuthReady) {
@@ -306,7 +156,6 @@ function AppContent() {
   const handleCloseMarketing = () => {
     setIsMarketingOpen(false);
   };
-
   const [cachedRecipes, setCachedRecipes] = useState<any[]>([]);
   const [cachedSearchResults, setCachedSearchResults] = useState<any[]>([]);
   const [lastRecipeFetch, setLastRecipeFetch] = useState<number>(0);
@@ -325,12 +174,10 @@ function AppContent() {
   useEffect(() => {
     if (!('Notification' in window) || Notification.permission !== 'granted') return;
 
-    const now = Date.now();
     const itemsToNotify = inventory.filter(item => {
       const days = predictions[item.id];
-      if (days === undefined || days > 1) return false;
-      const last = notifiedItems[`lowstock-${item.id}`] ?? 0;
-      return now - last > STOCKOUT_COOLDOWN_MS;
+      // Notify if 1 day left or out of stock, and not notified yet
+      return days !== undefined && days <= 1 && !notifiedItems.has(item.id);
     });
 
     if (itemsToNotify.length > 0) {
@@ -341,8 +188,8 @@ function AppContent() {
       });
 
       setNotifiedItems(prev => {
-        const next = { ...prev };
-        itemsToNotify.forEach(i => { next[`lowstock-${i.id}`] = now; });
+        const next = new Set(prev);
+        itemsToNotify.forEach(i => next.add(i.id));
         return next;
       });
     }
@@ -378,7 +225,7 @@ function AppContent() {
         // Note: User needs to provide their own VAPID key from Firebase Console
         // For now, we attempt to get it. If it fails, we log it.
         const token = await getToken(messaging, {
-          vapidKey: import.meta.env.VITE_FCM_VAPID_KEY
+          vapidKey: 'BIXKRElY3xay1BnpkP5PmLJGZawnVcbNmgDWu6jUJGVqcPC-Oh92yZYyaxNAR2XY8YgnUjChBDgdePIngQMVozg'
         }).catch(err => {
           console.warn("FCM Token generation failed. This usually requires a valid VAPID key from Firebase Console.", err);
           return null;
@@ -433,7 +280,7 @@ function AppContent() {
               ethnicity: 'Unknown',
               bmr: 0,
               tdee: 2000,
-              tier: 'vanilla',
+              tier: 'vanilla'
             };
             await setDoc(profileRef, initialProfile);
             setUserProfile(initialProfile);
@@ -520,10 +367,9 @@ function AppContent() {
   useEffect(() => {
     if (!user || !isAuthReady) return;
     const q = query(
-      collection(db, 'deletedItems'),
+      collection(db, 'deletedItems'), 
       where('uid', '==', user.uid),
-      orderBy('deletedAt', 'desc'),
-      limit(100)
+      orderBy('deletedAt', 'desc')
     );
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const items = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as DeletedItem));
@@ -576,14 +422,10 @@ function AppContent() {
 
   // Run predictions
   const [lastPredictionRun, setLastPredictionRun] = useState(0);
-  // Fingerprint of the last inventory payload sent to Gemini.
-  // We skip the AI call when nothing meaningful changed (same items, quantities, timestamps).
-  const lastInventoryHash = React.useRef<string>('');
 
   const runPredictionsManually = () => {
-    setPredictions({});
-    setNotifiedItems({});
-    lastInventoryHash.current = '';
+    setPredictions({}); // Force refresh
+    setNotifiedItems(new Set()); // Allow re-notifying if fixed
     setLastPredictionRun(Date.now());
   };
 
@@ -594,118 +436,86 @@ function AppContent() {
         return;
       }
 
-      const localMap: Record<string, number> = {};
+      const newPredictions: Record<string, number> = {};
       const now = Date.now();
-
-      // Local math: authoritative. Deterministic given the same inventory + household.
+      
+      // Local fallback calculation
       inventory.forEach(item => {
         const qty = Number(item.quantity) || 0;
         const usage = Number(item.usageFrequency) || 0;
         const adults = Number(household.adults) || (Number(household.members) || 2);
         const children = Number(household.children) || 0;
         const effectiveMembers = adults + (children * 0.5);
-
+        const dailyUsage = usage * effectiveMembers;
+        
+        // Calculate days passed since last update
         const lastUpdated = new Date(item.lastUpdated || item.purchaseDate).getTime();
         const daysPassed = (now - lastUpdated) / (1000 * 60 * 60 * 24);
-
-        // Estimate realistic per-use volume and consumption scope.
-        // This mirrors the AI prompt logic so the fallback stays sane without AI.
-        const { perUse, perPerson } = estimatePerUseVolume(item.name, item.unit, item.category || '');
-        const dailyUsage = perUse * usage * (perPerson ? effectiveMembers : 1);
-
+        
         let localPrediction = 30;
         if (dailyUsage > 0) {
+          // Total days it would last - days already passed
           localPrediction = (qty / dailyUsage) - daysPassed;
+
+          // CATEGORY-SPECIFIC CAP: Bread/Dairy/Produce usually don't last > 4-7 days total
           if (['Bakery', 'Produce', 'Dairy'].includes(item.category || '')) {
-            const maxLifespan = item.category === 'Bakery' ? 4 : 7;
+            const maxLifespan = (item.category === 'Bakery') ? 4 : 7;
             localPrediction = Math.min(localPrediction, maxLifespan - daysPassed);
           }
         }
-        localMap[item.id] = Math.max(-10, Math.ceil(localPrediction));
+
+        newPredictions[item.id] = Math.max(-10, Math.ceil(localPrediction));
       });
 
-      // AI refinement (deterministic — temperature 0 on the server).
-      // Skip the API call if the inventory fingerprint hasn't changed since last run.
-      const inventoryPayload = inventory.map(i => ({
-        id: i.id,
-        name: i.name,
-        quantity: i.quantity,
-        unit: i.unit,
-        usageFrequency: i.usageFrequency,
-        lastUpdated: i.lastUpdated || i.purchaseDate,
-        restockHistory: i.restockHistory
-      }));
-      const inventoryHash = JSON.stringify(
-        inventoryPayload.map(i => `${i.id}:${i.quantity}:${i.lastUpdated}`)
-      );
-
-      let aiMap: Record<string, number> = {};
-      let aiAvailable = false;
-
-      if (inventoryHash !== lastInventoryHash.current) {
-        lastInventoryHash.current = inventoryHash;
-        try {
-          const aiPredictions = await predictMultipleRestocks(
-            inventoryPayload,
-            household.adults || 2,
-            household.children || 0,
-            user?.uid
-          );
-          Object.entries(aiPredictions).forEach(([id, days]) => {
-            if (typeof days === 'number' && !isNaN(days)) {
-              aiMap[id] = Math.max(-10, Math.ceil(days));
-            }
-          });
-          aiAvailable = Object.keys(aiMap).length > 0;
-        } catch (error) {
-          console.warn("AI Prediction failed, using local fallback:", error);
-        }
-      } else {
-        // Inventory unchanged — reuse previous AI predictions from current state.
-        aiAvailable = false;
-      }
-
-      // Merge with hysteresis so sub-day jitter doesn't re-render a different number
-      // every run. Local is authoritative; AI only wins when it shifts by >=1 day.
-      setPredictions(prev => {
-        const merged: Record<string, number> = {};
-        inventory.forEach(item => {
-          const local = localMap[item.id];
-          const ai = aiMap[item.id];
-          let chosen = local;
-          if (typeof ai === 'number' && Math.abs(ai - local) >= 1) {
-            chosen = ai;
+      // AI refinement
+      try {
+        const aiPredictions = await predictMultipleRestocks(
+          inventory.map(i => ({
+            id: i.id,
+            name: i.name,
+            quantity: i.quantity,
+            unit: i.unit,
+            usageFrequency: i.usageFrequency,
+            lastUpdated: i.lastUpdated || i.purchaseDate,
+            restockHistory: i.restockHistory
+          })),
+          household.adults || 2,
+          household.children || 0,
+          user?.uid
+        );
+        
+        Object.entries(aiPredictions).forEach(([id, days]) => {
+          if (typeof days === 'number' && !isNaN(days)) {
+            newPredictions[id] = Math.max(-10, Math.ceil(days));
           }
-          const previous = prev[item.id];
-          if (typeof previous === 'number' && Math.abs(chosen - previous) < 1) {
-            chosen = previous;
-          }
-          merged[item.id] = chosen;
         });
-        return merged;
+      } catch (error) {
+        console.warn("AI Prediction failed, using local fallback:", error);
+      }
+      
+      setPredictions(newPredictions);
+
+      // Check for new stockouts to show modal
+      const potentialStockouts = inventory.filter(item => {
+        const days = newPredictions[item.id];
+        if (days !== undefined && days <= 0) {
+          // Check if already in shopping list to avoid duplicates
+          const inShoppingList = shoppingList.some(si => si.name.toLowerCase() === item.name.toLowerCase());
+          // Check if we already asked about this item in this session
+          const alreadyAsked = notifiedItems.has(`stockout-${item.id}`);
+          return !inShoppingList && !alreadyAsked;
+        }
+        return false;
       });
 
-      // Confidence-gated stockout popup.
-      // Fire only when we're sure: both local & AI agree days <= 0, or AI unavailable and local <= -1.
-      const confidentStockouts = inventory.filter(item => {
-        const local = localMap[item.id];
-        const ai = aiMap[item.id];
-        const confident = aiAvailable
-          ? (typeof ai === 'number' && ai <= 0 && local <= 0)
-          : local <= -1;
-        if (!confident) return false;
-        const inShoppingList = shoppingList.some(si => si.name.toLowerCase() === item.name.toLowerCase());
-        if (inShoppingList) return false;
-        const last = notifiedItems[`stockout-${item.id}`] ?? 0;
-        return now - last > STOCKOUT_COOLDOWN_MS;
-      });
-
-      if (confidentStockouts.length > 0) {
-        setStockoutItems(confidentStockouts);
+      if (potentialStockouts.length > 0) {
+        setStockoutItems(potentialStockouts);
         setIsStockoutModalOpen(true);
+        
+        // Mark as notified so we don't show it again immediately
         setNotifiedItems(prev => {
-          const next = { ...prev };
-          confidentStockouts.forEach(i => { next[`stockout-${i.id}`] = now; });
+          const next = new Set(prev);
+          potentialStockouts.forEach(i => next.add(`stockout-${i.id}`));
           return next;
         });
       }
@@ -718,10 +528,7 @@ function AppContent() {
       }, 1000);
       return () => clearTimeout(timer);
     }
-  // notifiedItems intentionally excluded — updating it must not re-trigger predictions
-  // (that would create a feedback loop: stockout found → notify → re-predict → repeat).
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [inventory, household, shoppingList, lastPredictionRun]);
+  }, [inventory, household, shoppingList, notifiedItems, lastPredictionRun]);
 
   // Expiry Warning Logic
   useEffect(() => {
@@ -753,44 +560,27 @@ function AppContent() {
 
   // Cleanup old deleted items (older than 2 days)
   useEffect(() => {
-    if (!user) return;
-
+    if (!user || deletedItems.length === 0) return;
+    
     const cleanup = async () => {
-      const now = Date.now();
-      const TWO_DAYS = 2 * 24 * 60 * 60 * 1000;
-      const THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000;
-
-      // 1. Expired deletedItems (> 2 days old)
-      const expiredDeleted = deletedItems.filter(
-        item => now - new Date(item.deletedAt).getTime() > TWO_DAYS
-      );
-      if (expiredDeleted.length > 0) {
-        const batch = writeBatch(db);
-        expiredDeleted.forEach(item => batch.delete(doc(db, 'deletedItems', item.id)));
-        await batch.commit();
-      }
-
-      // 2. Old aiUsageLogs (> 30 days) — bounded fetch so we don't full-scan
-      const logCutoff = new Date(now - THIRTY_DAYS).toISOString();
-      const oldLogsSnap = await getDocs(
-        query(
-          collection(db, 'aiUsageLogs'),
-          where('uid', '==', user.uid),
-          where('timestamp', '<', logCutoff),
-          limit(500)
-        )
-      );
-      if (!oldLogsSnap.empty) {
-        const batch = writeBatch(db);
-        oldLogsSnap.docs.forEach(d => batch.delete(d.ref));
-        await batch.commit();
+      const now = new Date().getTime();
+      const twoDaysInMs = 2 * 24 * 60 * 60 * 1000;
+      
+      const itemsToDelete = deletedItems.filter(item => {
+        const deletedAt = new Date(item.deletedAt).getTime();
+        return now - deletedAt > twoDaysInMs;
+      });
+      
+      if (itemsToDelete.length > 0) {
+        console.log(`Cleaning up ${itemsToDelete.length} old deleted items`);
+        const batch = itemsToDelete.map(item => deleteDoc(doc(db, 'deletedItems', item.id)));
+        await Promise.all(batch);
       }
     };
-
-    // Run once 10 seconds after load — non-blocking housekeeping.
-    const timer = setTimeout(cleanup, 10000);
+    
+    const timer = setTimeout(cleanup, 5000); // Run cleanup 5 seconds after load
     return () => clearTimeout(timer);
-  }, [user]); // deletedItems deliberately excluded — cleanup reads it from closure via state snapshot
+  }, [deletedItems, user]);
 
   const [loginError, setLoginError] = useState<string | null>(null);
 
@@ -803,19 +593,14 @@ function AppContent() {
       await signInWithPopup(auth, provider);
     } catch (error: any) {
       console.error("Login failed", error);
-      const serverResponse = error?.customData?.serverResponse;
-      if (serverResponse) console.error("Server response:", serverResponse);
       if (error.code === 'auth/unauthorized-domain') {
         setLoginError("This domain is not authorized in Firebase. Please add your Vercel URL to 'Authorized Domains' in the Firebase Console.");
       } else if (error.code === 'auth/popup-closed-by-user') {
         setLoginError("Login popup was closed before completion.");
       } else if (error.code === 'auth/cancelled-popup-request') {
         // Ignore this one, it happens when multiple clicks occur
-      } else if (error.code === 'auth/internal-error') {
-        const detail = serverResponse ? `: ${JSON.stringify(serverResponse)}` : '';
-        setLoginError(`Internal auth error${detail}. Check browser Console for details.`);
       } else {
-        setLoginError(`${error.code ? `[${error.code}] ` : ''}${error.message || "An unexpected error occurred during login."}`);
+        setLoginError(error.message || "An unexpected error occurred during login.");
       }
     }
   };
@@ -826,48 +611,30 @@ function AppContent() {
     window.location.reload();
   };
 
-  const handleAddGrocery = async (item: Omit<GroceryItem, 'id'>): Promise<string | null> => {
+  const handleAddGrocery = async (item: Omit<GroceryItem, 'id'>) => {
     if (!user) {
       console.error("No user found in handleAddGrocery");
-      return null;
+      return;
     }
     try {
-      const payload: any = { ...item, uid: user.uid };
-      if (payload.expiryDate) payload.expiryDate = toIsoDateString(payload.expiryDate);
-      if (!payload.expiryDate) delete payload.expiryDate;
-      console.log("Adding grocery item:", payload);
-      const ref = await addDoc(collection(db, 'inventory'), payload);
+      console.log("Adding grocery item:", item);
+      await addDoc(collection(db, 'inventory'), { ...item, uid: user.uid });
       console.log("Successfully added item to inventory");
       setHasChanges(true);
       setIsAddModalOpen(false);
       setActiveTab('pantry');
-      return ref.id;
     } catch (error) {
       console.error("Error in handleAddGrocery:", error);
       handleFirestoreError(error, OperationType.CREATE, 'inventory');
-      return null;
-    }
-  };
-
-  const handlePatchExpiry = async (id: string, expiryDate: string) => {
-    try {
-      const iso = toIsoDateString(expiryDate);
-      if (!iso) return;
-      await updateDoc(doc(db, 'inventory', id), { expiryDate: iso });
-    } catch (error) {
-      console.error("Failed to patch expiry:", error);
     }
   };
 
   const handleAddMultipleGrocery = async (items: any[]) => {
     if (!user) return;
     try {
-      const batch = items.map(item => {
-        const payload: any = { ...item, uid: user.uid };
-        if (payload.expiryDate) payload.expiryDate = toIsoDateString(payload.expiryDate);
-        if (!payload.expiryDate) delete payload.expiryDate;
-        return addDoc(collection(db, 'inventory'), payload);
-      });
+      const batch = items.map(item => 
+        addDoc(collection(db, 'inventory'), { ...item, uid: user.uid })
+      );
       await Promise.all(batch);
       setHasChanges(true);
       setIsAddModalOpen(false);
@@ -896,36 +663,20 @@ function AppContent() {
     }
   };
 
-  const handleRestoreGrocery = (item: DeletedItem) => {
-    setRestoreContext(item);
-    setIsAddModalOpen(true);
-  };
-
-  const handleAddOrRestoreGrocery = async (item: Omit<GroceryItem, 'id'>): Promise<string | null> => {
-    if (!user) return null;
-    if (restoreContext) {
-      try {
-        const payload: any = { ...item, uid: user.uid };
-        if (payload.expiryDate) payload.expiryDate = toIsoDateString(payload.expiryDate);
-        if (!payload.expiryDate) delete payload.expiryDate;
-        const ref = await addDoc(collection(db, 'inventory'), payload);
-        await deleteDoc(doc(db, 'deletedItems', restoreContext.id));
-        setHasChanges(true);
-        setIsAddModalOpen(false);
-        setRestoreContext(null);
-        setActiveTab('pantry');
-        return ref.id;
-      } catch (error) {
-        handleFirestoreError(error, OperationType.CREATE, 'inventory');
-        return null;
-      }
+  const handleRestoreGrocery = async (item: DeletedItem) => {
+    if (!user) return;
+    try {
+      const { id, deletedAt, ...groceryData } = item;
+      await addDoc(collection(db, 'inventory'), {
+        ...groceryData,
+        uid: user.uid,
+        lastUpdated: new Date().toISOString()
+      });
+      await deleteDoc(doc(db, 'deletedItems', id));
+      setHasChanges(true);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.CREATE, 'inventory');
     }
-    return handleAddGrocery(item);
-  };
-
-  const closeAddModal = () => {
-    setIsAddModalOpen(false);
-    setRestoreContext(null);
   };
 
   const handlePermanentDelete = async (id: string) => {
@@ -1105,10 +856,7 @@ function AppContent() {
 
   const handleEditInventory = async (id: string, updates: Partial<GroceryItem>) => {
     try {
-      const normalized: any = { ...updates };
-      if (normalized.expiryDate) normalized.expiryDate = toIsoDateString(normalized.expiryDate);
-      if ('expiryDate' in normalized && !normalized.expiryDate) delete normalized.expiryDate;
-      await updateDoc(doc(db, 'inventory', id), normalized);
+      await updateDoc(doc(db, 'inventory', id), updates);
       setHasChanges(true);
       setIsEditModalOpen(false);
       setItemToEdit(null);
@@ -1188,8 +936,8 @@ function AppContent() {
       setSearchResults(results);
     } catch (error: any) {
       console.error('Search failed:', error);
-      let message = error?.message || "Search failed. Please try again later.";
-      if (error?.message?.includes('RESOURCE_EXHAUSTED')) {
+      let message = "Search failed. Please try again later.";
+      if (error.message?.includes('RESOURCE_EXHAUSTED')) {
         message = "AI Search quota exceeded. Google Search grounding is currently unavailable. Please try again in a few minutes.";
       }
       setSearchError(message);
@@ -1413,7 +1161,7 @@ function AppContent() {
               <Settings className="w-5 h-5" />
             </button>
             
-            <div className="relative" ref={settingsMenuRef}>
+            <div className="relative">
               <button 
                 onClick={() => setIsSettingsMenuOpen(!isSettingsMenuOpen)}
                 className="w-8 h-8 rounded-full bg-cred-gray border border-white/10 flex items-center justify-center text-[10px] font-black uppercase tracking-widest overflow-hidden hover:border-white/20 transition-all"
@@ -1495,7 +1243,7 @@ function AppContent() {
           icon={<Activity className="w-5 h-5" />}
           label="Health"
         />
-        {user?.email === import.meta.env.VITE_ADMIN_EMAIL && (
+        {user?.email === "dailygkquiz2026@gmail.com" && (
           <NavButton 
             active={activeTab === 'dev'} 
             onClick={() => setActiveTab('dev')}
@@ -1523,31 +1271,17 @@ function AppContent() {
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
               className="w-full max-w-4xl max-h-[90vh] overflow-y-auto no-scrollbar relative"
             >
-              <button
-                onClick={closeAddModal}
+              <button 
+                onClick={() => setIsAddModalOpen(false)}
                 className="absolute top-6 right-6 p-2 bg-white/10 hover:bg-white/20 text-white rounded-full z-10 transition-all"
               >
                 <X className="w-6 h-6" />
               </button>
-              {restoreContext && (
-                <div className="mb-3 p-3 rounded-xl bg-blue-500/10 border border-blue-400/30 text-blue-200 text-sm">
-                  Restoring <span className="font-semibold">{restoreContext.name}</span> — please enter the latest quantity, purchase date and expiry.
-                </div>
-              )}
-              <GroceryForm
-                key={restoreContext?.id ?? 'new'}
-                onAdd={handleAddOrRestoreGrocery}
-                onAddMultiple={handleAddMultipleGrocery}
+              <GroceryForm 
+                onAdd={handleAddGrocery} 
+                onAddMultiple={handleAddMultipleGrocery} 
                 inventory={inventory}
                 onUpdateQuantity={handleUpdateInventoryQuantity}
-                onPatchExpiry={handlePatchExpiry}
-                prefill={restoreContext ? {
-                  name: restoreContext.name,
-                  category: restoreContext.category,
-                  unit: restoreContext.unit,
-                  usageFrequency: restoreContext.usageFrequency,
-                  price: restoreContext.price,
-                } : null}
               />
             </motion.div>
           </div>
@@ -1673,17 +1407,17 @@ function AppContent() {
                                   </p>
                                 </div>
                               </div>
-                              <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <div className="flex items-center gap-2">
                                 <button
                                   onClick={() => handleRestoreGrocery(item)}
-                                  className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-all"
-                                  title="Restore to Inventory (enter latest details)"
+                                  className="p-2 text-gray-700 dark:text-white hover:bg-gray-200 dark:hover:bg-white/20 rounded-lg transition-all"
+                                  title="Restore to Inventory"
                                 >
                                   <RotateCcw className="w-4 h-4" />
                                 </button>
                                 <button
                                   onClick={() => handlePermanentDelete(item.id)}
-                                  className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all"
+                                  className="p-2 text-gray-700 dark:text-white hover:bg-red-100 dark:hover:bg-red-500/40 rounded-lg transition-all"
                                   title="Delete Permanently"
                                 >
                                   <Trash className="w-4 h-4" />
@@ -1764,7 +1498,7 @@ function AppContent() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
             >
-              <CalorieTracker inventory={inventory} userProfile={userProfile} />
+              <CalorieTracker inventory={inventory} />
             </motion.div>
           )}
 
@@ -1783,7 +1517,7 @@ function AppContent() {
             </motion.div>
           )}
 
-          {activeTab === 'dev' && user?.email === import.meta.env.VITE_ADMIN_EMAIL && user?.emailVerified && (
+          {activeTab === 'dev' && user?.email === "dailygkquiz2026@gmail.com" && user?.emailVerified && (
             <motion.div
               key="dev"
               initial={{ opacity: 0, y: 20 }}
@@ -1859,7 +1593,6 @@ function AppContent() {
       {isMarketingOpen && (
         <MarketingIntro onClose={handleCloseMarketing} />
       )}
-
     </div>
   );
 }

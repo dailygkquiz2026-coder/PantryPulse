@@ -30,9 +30,8 @@ service cloud.firestore {
       return !(field in request.resource.data) || request.resource.data[field] == resource.data[field];
     }
     function isAdmin() {
-      return isAuthenticated() &&
-        (request.auth.token.isAdmin == true ||
-         (request.auth.token.email == "dailygkquiz2026@gmail.com" && request.auth.token.email_verified == true));
+      return isAuthenticated() && 
+        (request.auth.token.email == "dailygkquiz2026@gmail.com" && request.auth.token.email_verified == true);
     }
     function hasOnlyAllowedFields(fields) {
       return request.resource.data.keys().hasOnly(fields);
@@ -45,10 +44,10 @@ service cloud.firestore {
       return hasOnlyAllowedFields(['id', 'name', 'category', 'quantity', 'unit', 'purchaseDate', 'usageFrequency', 'lastUpdated', 'uid', 'imageUrl', 'expiryDate', 'restockHistory', 'price']) &&
              data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
              data.category is string && data.category.size() < 50 &&
-             data.quantity is number && data.quantity >= 0 && data.quantity < 100000 &&
+             data.quantity is number &&
              data.unit is string && data.unit.size() < 20 &&
              (!('price' in data) || data.price is number) &&
-             data.usageFrequency is number && data.usageFrequency > 0 && data.usageFrequency <= 100 &&
+             data.usageFrequency is number &&
              isValidDateString(data.purchaseDate) &&
              isValidDateString(data.lastUpdated) &&
              (!('imageUrl' in data) || isValidUrl(data.imageUrl)) &&
@@ -75,8 +74,7 @@ service cloud.firestore {
     function isValidHousehold(data) {
       return hasOnlyAllowedFields(['members', 'adults', 'children', 'preferences', 'uid', 'name', 'address', 'phone']) &&
              data.members is number && data.members >= 1 && data.members < 100 &&
-             data.adults is number && data.adults >= 0 && data.adults < 50 &&
-             data.children is number && data.children >= 0 && data.children < 50 &&
+             data.adults is number && data.children is number &&
              data.preferences is list && data.preferences.size() < 50 &&
              (!('name' in data) || (data.name is string && data.name.size() < 100)) &&
              (!('address' in data) || (data.address is string && data.address.size() < 200)) &&
@@ -112,7 +110,7 @@ service cloud.firestore {
     }
 
     function isValidUserProfile(data) {
-      return hasOnlyAllowedFields(['uid', 'weight', 'height', 'age', 'gender', 'ethnicity', 'bmr', 'tdee', 'shareAnonymousData', 'tier', 'createdAt', 'email', 'hasSeenIntro', 'introViewCount']) &&
+      return hasOnlyAllowedFields(['uid', 'weight', 'height', 'age', 'gender', 'ethnicity', 'bmr', 'tdee', 'shareAnonymousData', 'tier', 'createdAt', 'email']) &&
              data.uid == request.auth.uid &&
              (!('email' in data) || isValidEmail(data.email)) &&
              (!('weight' in data) || data.weight is number) &&
@@ -124,9 +122,7 @@ service cloud.firestore {
              (!('tdee' in data) || data.tdee is number) &&
              (!('shareAnonymousData' in data) || data.shareAnonymousData is bool) &&
              (!('tier' in data) || data.tier in ['vanilla', 'pro']) &&
-             (!('createdAt' in data) || isValidDateString(data.createdAt)) &&
-             (!('hasSeenIntro' in data) || data.hasSeenIntro is bool) &&
-             (!('introViewCount' in data) || (data.introViewCount is number && data.introViewCount >= 0 && data.introViewCount <= 10));
+             (!('createdAt' in data) || isValidDateString(data.createdAt));
     }
 
     function isValidFeedback(data) {
@@ -158,7 +154,7 @@ service cloud.firestore {
     match /userProfiles/{userId} {
       allow read: if isOwner(userId) || isAdmin();
       allow create: if isOwner(userId) && isValidUserProfile(request.resource.data);
-      allow update: if isOwner(userId) && isUnchanged('uid') && isUnchanged('tier') && isValidUserProfile(request.resource.data);
+      allow update: if isOwner(userId) && isUnchanged('uid') && isValidUserProfile(request.resource.data);
       allow delete: if isOwner(userId);
     }
 
