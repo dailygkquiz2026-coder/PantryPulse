@@ -484,13 +484,23 @@ function AppContent() {
         const daysPassed = (now - lastUpdated) / (1000 * 60 * 60 * 24);
         
         let localPrediction = 30;
+        let multiplier = 1;
+
+        if (['pcs', 'bottle', 'pack', 'packet', 'box', 'can', 'jar'].includes(item.unit.toLowerCase())) {
+          // Assume these standard packaging formats contain an average of 15-30 uses 
+          multiplier = 20; 
+        } else if (['kg', 'l'].includes(item.unit.toLowerCase()) && item.category !== 'Produce') {
+          // A kg of rice or a Liter of milk has multiple servings
+          multiplier = 5;
+        }
+
         if (dailyUsage > 0) {
           // Total days it would last - days already passed
-          localPrediction = (qty / dailyUsage) - daysPassed;
+          localPrediction = ((qty * multiplier) / dailyUsage) - daysPassed;
 
           // CATEGORY-SPECIFIC CAP: Bread/Dairy/Produce usually don't last > 4-7 days total
           if (['Bakery', 'Produce', 'Dairy'].includes(item.category || '')) {
-            const maxLifespan = (item.category === 'Bakery') ? 4 : 7;
+            const maxLifespan = (item.category === 'Bakery') ? 5 : 7;
             localPrediction = Math.min(localPrediction, maxLifespan - daysPassed);
           }
         }

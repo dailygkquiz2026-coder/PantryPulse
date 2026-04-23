@@ -53,14 +53,14 @@ export default function UpdateQuantityModal({ isOpen, onClose, item, onConfirm }
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-2">Estimated Quantity Left ({item.unit})</label>
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">Estimated Quantity Left ({item.unit})</label>
                 <input
                   type="number"
                   value={quantity}
                   onChange={(e) => setQuantity(e.target.value)}
                   min="0"
                   step="0.1"
-                  className="cred-input text-lg font-bold"
+                  className="w-full px-6 py-4 rounded-xl bg-white text-black text-lg font-bold outline-none focus:ring-2 focus:ring-amber-500 transition-all shadow-inner"
                 />
               </div>
             </div>
