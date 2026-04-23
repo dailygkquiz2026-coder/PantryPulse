@@ -64,45 +64,45 @@ export default function RestockModal({ isOpen, onClose, item, onConfirm, onSkip 
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-2">Quantity</label>
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">Quantity</label>
                   <input
                     type="number"
                     value={quantity}
                     onChange={(e) => setQuantity(e.target.value)}
-                    className="cred-input"
+                    className="w-full px-6 py-4 rounded-xl bg-white text-black font-bold outline-none focus:ring-2 focus:ring-green-500 transition-all shadow-inner"
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-2">Unit</label>
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">Unit</label>
                   <select
                     value={unit}
                     onChange={(e) => setUnit(e.target.value)}
-                    className="cred-input appearance-none"
+                    className="w-full px-6 py-4 rounded-xl bg-white text-black font-bold outline-none focus:ring-2 focus:ring-green-500 transition-all shadow-inner appearance-none border-r-8 border-transparent"
                   >
                     {UNITS.map(u => (
-                      <option key={u} value={u}>{u}</option>
+                      <option key={u} value={u} className="text-black bg-white">{u}</option>
                     ))}
                   </select>
                 </div>
                 <div className="space-y-1 col-span-2">
-                  <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-2">Category</label>
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">Category</label>
                   <select
                     value={category}
                     onChange={(e) => setCategory(e.target.value)}
-                    className="cred-input appearance-none"
+                    className="w-full px-6 py-4 rounded-xl bg-white text-black font-bold outline-none focus:ring-2 focus:ring-green-500 transition-all shadow-inner appearance-none border-r-8 border-transparent"
                   >
                     {CATEGORIES.map(cat => (
-                      <option key={cat} value={cat}>{cat}</option>
+                      <option key={cat} value={cat} className="text-black bg-white">{cat}</option>
                     ))}
                   </select>
                 </div>
                 <div className="space-y-1 col-span-2">
-                  <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-2">Usage (x/day)</label>
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">Usage (x/day)</label>
                   <input
                     type="number"
                     value={usageFrequency}
                     onChange={(e) => setUsageFrequency(e.target.value)}
-                    className="cred-input"
+                    className="w-full px-6 py-4 rounded-xl bg-white text-black font-bold outline-none focus:ring-2 focus:ring-green-500 transition-all shadow-inner"
                   />
                 </div>
               </div>

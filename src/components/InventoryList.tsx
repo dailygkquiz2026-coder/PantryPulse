@@ -37,8 +37,14 @@ export default function InventoryList({ items, onDelete, onAddToShopping, onUpda
       ) : (
         items.map((item, index) => {
           const daysRemaining = predictions[item.id];
-          const isStockout = daysRemaining !== undefined && daysRemaining <= 0;
-          const isLow = daysRemaining !== undefined && daysRemaining > 0 && daysRemaining < 3;
+          const updateTime = Math.max(
+            new Date(item.lastUpdated || item.purchaseDate).getTime(),
+            new Date(item.purchaseDate).getTime()
+          );
+          const hoursSinceUpdate = (new Date().getTime() - updateTime) / (1000 * 60 * 60);
+
+          const isStockout = daysRemaining !== undefined && daysRemaining <= 0 && (hoursSinceUpdate > 24 || item.quantity <= 0);
+          const isLow = daysRemaining !== undefined && daysRemaining > 0 && daysRemaining < 3 && (hoursSinceUpdate > 24 || item.quantity <= 0);
           
           const expiryDate = item.expiryDate ? new Date(item.expiryDate) : null;
           const isExpiringSoon = expiryDate ? (expiryDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24) < 3 : false;
