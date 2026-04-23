@@ -984,12 +984,8 @@ function AppContent() {
     setSearchItem(name);
     setIsPriceModalOpen(true);
     setSearchError(null);
-    
-    if (!userLocation) {
-      setIsSearching(false);
-      setSearchResults(null);
-      return;
-    }
+    setIsSearching(true);
+    setSearchResults(null);
 
     setIsSearching(true);
     setSearchResults(null);

@@ -4,7 +4,7 @@ import { collection, addDoc } from "firebase/firestore";
 
 let aiInstance: any = null;
 
-async function logAIUsage(uid: string | undefined, type: string, model: string = "gemini-3-flash-preview") {
+async function logAIUsage(uid: string | undefined, type: string, model: string = "gemini-2.0-flash") {
   if (!uid) return;
   try {
     await addDoc(collection(db, 'aiUsageLogs'), {
@@ -67,7 +67,7 @@ export async function predictMultipleRestocks(
   const now = new Date();
 
   const response = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
+    model: "gemini-2.0-flash",
     contents: `You are a precise household inventory AI. Predict DAYS REMAINING until depletion for each item.
 
     CONTEXT:
@@ -123,7 +123,7 @@ export async function predictRestock(
 ) {
   const ai = getAI();
   const response = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
+    model: "gemini-2.0-flash",
     contents: `Predict how many days it will take for a household of ${members} people to consume ${quantity} ${unit} of ${itemName}, given it's used ${usageFrequency} times per day. Provide a single number representing days.`,
     config: {
       responseMimeType: "application/json",
@@ -144,7 +144,7 @@ export async function analyzeProductImage(base64Image: string, uid?: string) {
   if (uid) logAIUsage(uid, 'analyze_product');
   const ai = getAI();
   const response = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
+    model: "gemini-2.0-flash",
     contents: [
       {
         inlineData: {
@@ -175,10 +175,10 @@ export async function analyzeProductImage(base64Image: string, uid?: string) {
 }
 
 export async function analyzeInvoice(base64Data: string, mimeType: string, uid?: string) {
-  if (uid) logAIUsage(uid, 'analyze_invoice', "gemini-3.1-pro-preview");
+  if (uid) logAIUsage(uid, 'analyze_invoice', "gemini-2.0-flash");
   const ai = getAI();
   const response = await ai.models.generateContent({
-    model: "gemini-3.1-pro-preview",
+    model: "gemini-2.0-flash",
     contents: [
       {
         inlineData: {
@@ -246,7 +246,7 @@ export async function analyzeInvoice(base64Data: string, mimeType: string, uid?:
 export async function fetchProductImage(itemName: string) {
   const ai = getAI();
   const response = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
+    model: "gemini-2.0-flash",
     contents: `Find a high-quality, direct image URL for the grocery product: "${itemName}". 
     The URL must be a public, direct link to an image (jpg, png, or webp). 
     Return only the URL as a string in a JSON object.`,
@@ -270,7 +270,7 @@ export async function getItemSuggestions(prefix: string) {
   if (prefix.length < 2) return [];
   const ai = getAI();
   const response = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
+    model: "gemini-2.0-flash",
     contents: `Provide a list of 5 common grocery items that start with or are similar to "${prefix}". Provide only the names as a JSON array of strings.`,
     config: {
       responseMimeType: "application/json",
@@ -286,7 +286,7 @@ export async function getItemSuggestions(prefix: string) {
 export async function predictExpiryDate(itemName: string, category: string) {
   const ai = getAI();
   const response = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
+    model: "gemini-2.0-flash",
     contents: `Research the typical shelf life and expiry duration for the grocery item: "${itemName}" in the category: "${category}". 
     
     Consider factors like:
@@ -349,14 +349,14 @@ export async function searchCheapestSource(itemName: string, location?: string, 
   }
 
   // Fallback: Gemini with Google Search grounding
-  if (uid) logAIUsage(uid, 'price_comparison', "gemini-3.1-pro-preview");
+  if (uid) logAIUsage(uid, 'price_comparison', "gemini-2.0-flash");
   const ai = getAI();
   const locationContext = location ? ` for the location/pincode associated with coordinates: ${location}` : " (if location is not provided, assume a general search in India)";
   const purchaseContext = previousPurchase ? `The user previously bought "${previousPurchase}".` : "";
   
   const response = await ai.models.generateContent({
-    model: "gemini-3.1-pro-preview",
-    contents: `You are a highly accurate real-time shopping assistant for the Indian market. 
+    model: "gemini-2.0-flash",
+    contents: `You are a highly accurate real-time shopping assistant for the Indian market.
     Find and compare current prices for ${itemName}${locationContext}. 
     ${purchaseContext}
     
@@ -434,7 +434,7 @@ export async function getTrendingRecipes(location?: string, uid?: string) {
   const locationContext = location ? ` for the location: ${location}` : " (assume a general search in India)";
   
   const response = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
+    model: "gemini-2.0-flash",
     contents: `Search the internet for the top 4 trending recipes that people are making right now${locationContext}. 
     
     For each recipe, provide:
@@ -510,7 +510,7 @@ export async function searchRecipes(query: string, uid?: string) {
   const ai = getAI();
   
   const response = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
+    model: "gemini-2.0-flash",
     contents: `Search for the top 3 best recipes for: "${query}". 
     
     For each recipe, provide:
@@ -572,14 +572,14 @@ export async function searchRecipes(query: string, uid?: string) {
 export async function generateInventoryInsight(inventory: any[], uid?: string) {
   if (inventory.length < 5) return 'Not enough data to create insight. Add more items to your pantry to receive AI consumption insights.';
   
-  if (uid) logAIUsage(uid, 'inventory_insight', 'gemini-3-flash-preview');
+  if (uid) logAIUsage(uid, 'inventory_insight', 'gemini-2.0-flash');
   
   const ai = getAI();
   const minimalInventory = inventory.map(i => ({ name: i.name, category: i.category, quantity: i.quantity, usage: i.usageFrequency }));
   
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-2.0-flash",
       contents: `Analyze this household pantry inventory and provide a single, cohesive, highly insightful paragraph (about 3-4 sentences) about their dietary habits and consumption patterns. Notice what they have a lot of, what they lack, and suggest one practical improvement. Make it read like a seamless paragraph. \n\nInventory: ${JSON.stringify(minimalInventory)}`,
       config: {
         responseMimeType: "application/json",

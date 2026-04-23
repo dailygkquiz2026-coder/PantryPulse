@@ -16,7 +16,7 @@ async function logAIUsage(uid: string, type: string) {
       uid,
       type,
       timestamp: new Date().toISOString(),
-      model: "gemini-3-flash-preview",
+      model: "gemini-2.0-flash",
       estimatedCost: 0.0005 // Rough estimate for Gemini Flash
     });
   } catch (error) {
@@ -30,7 +30,7 @@ export async function analyzeMealImage(base64Image: string, userDescription?: st
   }
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-2.0-flash",
       contents: [
         {
           inlineData: {
@@ -74,7 +74,7 @@ export async function analyzeMealDescription(description: string, uid?: string):
   }
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-2.0-flash",
       contents: [
         {
           text: `The user has described a meal: "${description}". Identify each food item mentioned, estimate its portion size, and calculate the probable calorie count for that portion. Return the result as a JSON array of objects with 'name', 'calories' (number), and 'portion' (string) properties.`,
