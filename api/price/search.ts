@@ -1,3 +1,5 @@
+import firebaseConfig from '../../firebase-applet-config.json';
+
 const STORE_MAP: Record<string, string> = {
   bigbasket: 'BigBasket',
   blinkit: 'Blinkit',
@@ -57,7 +59,7 @@ async function verifyToken(authHeader: string | undefined): Promise<boolean> {
     if (parts.length !== 3) return false;
     const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString());
     if (payload.exp < Math.floor(Date.now() / 1000)) return false;
-    const apiKey = process.env.FIREBASE_WEB_API_KEY;
+    const apiKey = process.env.FIREBASE_WEB_API_KEY ?? firebaseConfig.apiKey;
     if (!apiKey) return false;
     const res = await fetch(
       `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${apiKey}`,

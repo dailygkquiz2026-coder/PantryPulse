@@ -21,7 +21,7 @@ async function logAIUsage(uid: string | undefined, type: string, model: string =
 
 // Simple in-memory cache for search results to mitigate quota issues
 const searchCache: Record<string, { data: any, timestamp: number }> = {};
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const CACHE_TTL = 30 * 60 * 1000; // 30 minutes — prices don't change that fast
 
 function getAI() {
   if (!aiInstance) {
