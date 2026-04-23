@@ -411,7 +411,7 @@ export async function searchCheapestSource(itemName: string, location?: string, 
             unit: { type: Type.STRING },
             sourceUrl: { type: Type.STRING }
           },
-          required: ["productName", "storeName", "price", "link", "quantity", "productImage", "sourceVerification", "pricePerUnit", "unit", "sourceUrl"]
+          required: ["productName", "storeName", "price", "link", "quantity", "pricePerUnit", "unit", "sourceVerification"]
         }
       },
       tools: [{ googleSearch: {} }]
