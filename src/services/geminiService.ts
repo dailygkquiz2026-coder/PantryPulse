@@ -1,5 +1,5 @@
 import { GoogleGenAI, Type } from "@google/genai";
-import { db } from "../firebase";
+import { db, auth } from "../firebase";
 import { collection, addDoc } from "firebase/firestore";
 
 let aiInstance: any = null;
@@ -320,12 +320,35 @@ export async function predictExpiryDate(itemName: string, category: string) {
 export async function searchCheapestSource(itemName: string, location?: string, previousPurchase?: string, uid?: string) {
   const cacheKey = `price-${itemName}-${location || 'global'}`;
   const now = Date.now();
-  
+
   if (searchCache[cacheKey] && (now - searchCache[cacheKey].timestamp < CACHE_TTL)) {
     console.log(`Returning cached price results for: ${itemName}`);
     return searchCache[cacheKey].data;
   }
 
+  // Try Serper API first — faster and 35x cheaper than Gemini grounding
+  try {
+    const token = await auth.currentUser?.getIdToken();
+    if (token) {
+      const serperRes = await fetch('/api/price/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ itemName, location })
+      });
+      if (serperRes.ok) {
+        const results = await serperRes.json();
+        if (Array.isArray(results) && results.length > 0) {
+          searchCache[cacheKey] = { data: results, timestamp: Date.now() };
+          if (uid) logAIUsage(uid, 'price_comparison_serper', 'serper');
+          return results;
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('Serper price search failed, falling back to Gemini:', err);
+  }
+
+  // Fallback: Gemini with Google Search grounding
   if (uid) logAIUsage(uid, 'price_comparison', "gemini-3-flash-preview");
   const ai = getAI();
   const locationContext = location ? ` for the location/pincode: ${location}` : " (assume India)";
